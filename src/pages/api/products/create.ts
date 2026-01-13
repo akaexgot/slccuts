@@ -7,7 +7,7 @@ export const POST: APIRoute = async ({ request }) => {
     try {
         const data = await request.json();
 
-        const { name, slug, description, price, category_id, active, is_offer, stock } = data;
+        const { name, slug, description, price, category_id, active, is_offer, stock, image_url } = data;
 
         if (!name || !slug || price === undefined) {
             return new Response(JSON.stringify({ error: 'Name, slug and price are required' }), {
@@ -45,6 +45,14 @@ export const POST: APIRoute = async ({ request }) => {
                 product_id: newProduct.id,
                 quantity: stock !== undefined ? parseInt(stock) : 0
             });
+
+            // Insert image if provided
+            if (image_url) {
+                await supabase.from('product_images').insert({
+                    product_id: newProduct.id,
+                    image_url: image_url
+                });
+            }
         }
 
         return new Response(JSON.stringify({

@@ -13,7 +13,7 @@ const sort = url.searchParams.get("sort") || "newest";
 let query = supabase
     .from("products")
     .select(
-        "*, product_images(image_url), stock(quantity), category:categories!inner(*)",
+        "*, product_images(image_url), stock(quantity), category:categories(*)",
     )
     .eq("active", true);
 
