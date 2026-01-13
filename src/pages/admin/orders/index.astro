@@ -40,11 +40,14 @@ if (currentStatus !== "all") {
 }
 
 if (searchId) {
-    // If it looks like a full UUID, try exact match, otherwise contains
-    if (searchId.length > 20) {
-        query = query.eq("id", searchId);
-    } else {
-        query = query.ilike("id", `%${searchId}%`);
+    // Clean searchId (remove # and spaces)
+    const cleanId = searchId.replace("#", "").trim();
+
+    if (cleanId.length > 20) {
+        query = query.eq("id", cleanId);
+    } else if (cleanId.length > 0) {
+        // Match the START of the ID (since we show order.id.slice(0, 8))
+        query = query.ilike("id", `${cleanId}%`);
     }
 }
 
