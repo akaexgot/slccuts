@@ -1,0 +1,678 @@
+---
+export const prerender = false;
+
+import AdminLayout from "../../../layouts/AdminLayout.astro";
+import { supabase } from "../../../lib/supabase";
+
+// Fetch all categories
+const { data: categories } = await supabase
+    .from("categories")
+    .select("*")
+    .order("name");
+
+// Handle POST actions
+if (Astro.request.method === "POST") {
+    const formData = await Astro.request.formData();
+    const action = formData.get("action");
+    const categoryId = formData.get("categoryId");
+    const name = formData.get("name")?.toString();
+    const slug = formData.get("slug")?.toString();
+    const imageUrl = formData.get("imageUrl")?.toString();
+
+    if (action === "create" && name && slug) {
+        await supabase
+            .from("categories")
+            .insert({ name, slug, image_url: imageUrl });
+    }
+
+    if (action === "update" && categoryId && name && slug) {
+        await supabase
+            .from("categories")
+            .update({ name, slug, image_url: imageUrl })
+            .eq("id", categoryId);
+    }
+
+    if (action === "delete" && categoryId) {
+        await supabase.from("categories").delete().eq("id", categoryId);
+    }
+
+    return Astro.redirect("/admin/categories");
+}
+---
+
+<AdminLayout title="Categorías" activeSection="categories">
+    <!-- Header -->
+    <div class="flex justify-between items-center mb-8">
+        <p class="text-gray-400">Gestiona las categorías de tus productos</p>
+        <button
+            type="button"
+            id="openCreateModal"
+            class="bg-white text-black px-6 py-3 font-bold uppercase tracking-wider hover:bg-gray-200 transition-colors rounded-lg"
+        >
+            + Nueva Categoría
+        </button>
+    </div>
+
+    <!-- Categories Table -->
+    <div class="bg-gray-800 rounded-xl overflow-hidden">
+        <table class="w-full">
+            <thead class="bg-gray-900">
+                <tr>
+                    <th
+                        class="text-left px-6 py-4 text-sm uppercase tracking-wider text-gray-400 w-20"
+                        >Imagen</th
+                    >
+                    <th
+                        class="text-left px-6 py-4 text-sm uppercase tracking-wider text-gray-400"
+                        >Nombre</th
+                    >
+                    <th
+                        class="text-left px-6 py-4 text-sm uppercase tracking-wider text-gray-400"
+                        >Slug</th
+                    >
+                    <th
+                        class="text-right px-6 py-4 text-sm uppercase tracking-wider text-gray-400"
+                        >Acciones</th
+                    >
+                </tr>
+            </thead>
+            <tbody class="divide-y divide-gray-700">
+                {
+                    categories?.map((category) => (
+                        <tr class="hover:bg-gray-750 transition-colors">
+                            <td class="px-6 py-4">
+                                <div class="w-12 h-12 bg-gray-900 rounded-lg overflow-hidden border border-white/10">
+                                    {category.image_url ? (
+                                        <img
+                                            src={category.image_url}
+                                            alt={category.name}
+                                            class="w-full h-full object-cover"
+                                        />
+                                    ) : (
+                                        <div class="w-full h-full flex items-center justify-center text-gray-600">
+                                            <svg
+                                                xmlns="http://www.w3.org/2000/svg"
+                                                width="20"
+                                                height="20"
+                                                viewBox="0 0 24 24"
+                                                fill="none"
+                                                stroke="currentColor"
+                                                stroke-width="2"
+                                                stroke-linecap="round"
+                                                stroke-linejoin="round"
+                                            >
+                                                <rect
+                                                    width="18"
+                                                    height="18"
+                                                    x="3"
+                                                    y="3"
+                                                    rx="2"
+                                                    ry="2"
+                                                />
+                                                <circle cx="9" cy="9" r="2" />
+                                                <path d="m21 15-3.086-3.086a2 2 0 0 0-2.828 0L6 21" />
+                                            </svg>
+                                        </div>
+                                    )}
+                                </div>
+                            </td>
+                            <td class="px-6 py-4">
+                                <span class="font-bold text-white uppercase tracking-tight italic">
+                                    {category.name}
+                                </span>
+                            </td>
+                            <td class="px-6 py-4">
+                                <span class="text-gray-400 font-mono text-sm">
+                                    /{category.slug}
+                                </span>
+                            </td>
+                            <td class="px-6 py-4 text-right space-x-3">
+                                <button
+                                    class="text-blue-400 hover:text-blue-300 transition-colors edit-btn"
+                                    data-category={JSON.stringify(category)}
+                                >
+                                    <svg
+                                        xmlns="http://www.w3.org/2000/svg"
+                                        width="18"
+                                        height="18"
+                                        viewBox="0 0 24 24"
+                                        fill="none"
+                                        stroke="currentColor"
+                                        stroke-width="2"
+                                        stroke-linecap="round"
+                                        stroke-linejoin="round"
+                                    >
+                                        <>
+                                            <path d="M17 3a2.85 2.83 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5Z" />
+                                            <path d="m15 5 4 4" />
+                                        </>
+                                    </svg>
+                                </button>
+                                <button
+                                    class="text-red-400 hover:text-red-300 transition-colors delete-btn"
+                                    data-id={category.id}
+                                    data-name={category.name}
+                                >
+                                    <svg
+                                        xmlns="http://www.w3.org/2000/svg"
+                                        width="18"
+                                        height="18"
+                                        viewBox="0 0 24 24"
+                                        fill="none"
+                                        stroke="currentColor"
+                                        stroke-width="2"
+                                        stroke-linecap="round"
+                                        stroke-linejoin="round"
+                                    >
+                                        <>
+                                            <path d="M3 6h18" />
+                                            <path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6" />
+                                            <path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2" />
+                                            <line
+                                                x1="10"
+                                                x2="10"
+                                                y1="11"
+                                                y2="17"
+                                            />
+                                            <line
+                                                x1="14"
+                                                x2="14"
+                                                y1="11"
+                                                y2="17"
+                                            />
+                                        </>
+                                    </svg>
+                                </button>
+                            </td>
+                        </tr>
+                    ))
+                }
+            </tbody>
+        </table>
+    </div>
+
+    <!-- Toast -->
+    <div
+        id="toast"
+        class="fixed bottom-8 right-8 bg-white text-black px-6 py-4 rounded-2xl shadow-2xl transform translate-y-32 opacity-0 transition-all duration-500 z-[100] flex items-center gap-3 font-bold uppercase tracking-widest text-[10px]"
+    >
+        <div
+            id="toastIcon"
+            class="w-6 h-6 rounded-full bg-black text-white flex items-center justify-center"
+        >
+            ✓
+        </div>
+        <span id="toastMessage">Categoría guardada</span>
+    </div>
+
+    <!-- Modal Form -->
+    <div id="categoryModal" class="fixed inset-0 z-50 hidden p-4">
+        <div class="absolute inset-0 bg-black/90 backdrop-blur-md"></div>
+        <div class="relative min-h-screen flex items-center justify-center">
+            <div
+                class="bg-gray-800 rounded-[2.5rem] w-full max-w-xl overflow-hidden shadow-2xl border border-white/5"
+            >
+                <div
+                    class="p-10 border-b border-white/5 flex justify-between items-center"
+                >
+                    <h2
+                        id="modalTitle"
+                        class="text-2xl font-black uppercase tracking-tighter italic"
+                    >
+                        Nueva Categoría
+                    </h2>
+                    <button
+                        class="text-gray-400 hover:text-white close-modal transition-colors"
+                    >
+                        <svg
+                            xmlns="http://www.w3.org/2000/svg"
+                            width="28"
+                            height="28"
+                            viewBox="0 0 24 24"
+                            fill="none"
+                            stroke="currentColor"
+                            stroke-width="2"
+                            stroke-linecap="round"
+                            stroke-linejoin="round"
+                            ><path d="M18 6 6 18"></path><path d="m6 6 12 12"
+                            ></path></svg
+                        >
+                    </button>
+                </div>
+
+                <form id="categoryForm" method="POST" class="p-10 space-y-8">
+                    <input
+                        type="hidden"
+                        name="action"
+                        id="formAction"
+                        value="create"
+                    />
+                    <input
+                        type="hidden"
+                        name="categoryId"
+                        id="formCategoryId"
+                    />
+                    <input type="hidden" name="imageUrl" id="formImageUrl" />
+
+                    <!-- Image Upload -->
+                    <div>
+                        <label
+                            class="block text-[10px] font-black uppercase tracking-[0.2em] text-gray-500 mb-4"
+                            >Imagen de Portada (Homepage)</label
+                        >
+
+                        <div class="flex items-start gap-6">
+                            <!-- Preview -->
+                            <div
+                                id="imagePreviewContainer"
+                                class="hidden relative group/img shrink-0"
+                            >
+                                <img
+                                    id="imagePreview"
+                                    src=""
+                                    class="w-32 h-32 object-cover rounded-3xl border border-white/10"
+                                />
+                                <button
+                                    type="button"
+                                    id="removeImage"
+                                    class="absolute -top-2 -right-2 bg-red-600 text-white w-7 h-7 rounded-full flex items-center justify-center font-bold shadow-xl hover:scale-110 transition-transform"
+                                    >×</button
+                                >
+                            </div>
+
+                            <!-- Drop Zone -->
+                            <div
+                                id="dropZone"
+                                class="flex-1 border-2 border-dashed border-gray-700 rounded-3xl p-8 text-center hover:border-white/20 hover:bg-white/5 transition-all cursor-pointer group relative overflow-hidden"
+                            >
+                                <input
+                                    type="file"
+                                    id="fileInput"
+                                    class="hidden"
+                                    accept="image/*"
+                                />
+                                <div id="uploadContent">
+                                    <div
+                                        class="w-12 h-12 bg-gray-900 rounded-2xl flex items-center justify-center mx-auto mb-3 group-hover:scale-110 transition-transform"
+                                    >
+                                        <svg
+                                            xmlns="http://www.w3.org/2000/svg"
+                                            width="24"
+                                            height="24"
+                                            viewBox="0 0 24 24"
+                                            fill="none"
+                                            stroke="currentColor"
+                                            stroke-width="2"
+                                            stroke-linecap="round"
+                                            stroke-linejoin="round"
+                                            class="text-gray-400 group-hover:text-white"
+                                            ><path
+                                                d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"
+                                            ></path><polyline
+                                                points="17 8 12 3 7 8"
+                                            ></polyline><line
+                                                x1="12"
+                                                x2="12"
+                                                y1="3"
+                                                y2="15"></line></svg
+                                        >
+                                    </div>
+                                    <p
+                                        class="text-[10px] font-black text-white/40 uppercase tracking-[0.2em] group-hover:text-white transition-colors"
+                                    >
+                                        Arrastra o haz clic
+                                    </p>
+                                </div>
+                                <!-- Progress Loader -->
+                                <div
+                                    id="uploadProgress"
+                                    class="hidden absolute inset-0 bg-gray-900/80 backdrop-blur-sm flex items-center justify-center"
+                                >
+                                    <div
+                                        class="flex flex-col items-center gap-3"
+                                    >
+                                        <svg
+                                            class="animate-spin h-8 w-8 text-white"
+                                            xmlns="http://www.w3.org/2000/svg"
+                                            fill="none"
+                                            viewBox="0 0 24 24"
+                                            ><circle
+                                                class="opacity-25"
+                                                cx="12"
+                                                cy="12"
+                                                r="10"
+                                                stroke="currentColor"
+                                                stroke-width="4"></circle><path
+                                                class="opacity-75"
+                                                fill="currentColor"
+                                                d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
+                                            ></path></svg
+                                        >
+                                        <span
+                                            class="text-[9px] font-black text-white uppercase tracking-widest"
+                                            >Subiendo...</span
+                                        >
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-8">
+                        <div>
+                            <label
+                                class="block text-[10px] font-black uppercase tracking-[0.2em] text-gray-500 mb-3"
+                                >Nombre</label
+                            >
+                            <input
+                                type="text"
+                                name="name"
+                                id="categoryName"
+                                required
+                                class="w-full bg-gray-900/50 border border-white/5 rounded-2xl px-6 py-4 text-white focus:outline-none focus:border-white/20 transition-all font-bold placeholder:text-gray-700"
+                                placeholder="Ej: Camisetas"
+                            />
+                        </div>
+
+                        <div>
+                            <label
+                                class="block text-[10px] font-black uppercase tracking-[0.2em] text-gray-500 mb-3"
+                                >Slug (URL)</label
+                            >
+                            <input
+                                type="text"
+                                name="slug"
+                                id="categorySlug"
+                                required
+                                class="w-full bg-gray-900/50 border border-white/5 rounded-2xl px-6 py-4 text-white focus:outline-none focus:border-white/20 transition-all font-mono font-bold text-sm text-gray-400 bg-black/20"
+                                placeholder="ej: camisetas"
+                            />
+                        </div>
+                    </div>
+
+                    <div class="pt-6 flex gap-4">
+                        <button
+                            type="button"
+                            class="flex-1 px-8 py-4 border border-white/5 text-gray-500 font-black uppercase tracking-[0.2em] text-[10px] hover:bg-white/5 hover:text-white transition-all rounded-2xl close-modal"
+                        >
+                            Cancelar
+                        </button>
+                        <button
+                            type="submit"
+                            class="flex-1 bg-white text-black font-black uppercase tracking-[0.2em] text-[10px] hover:bg-gray-200 transition-all rounded-2xl py-4 shadow-xl shadow-white/5"
+                        >
+                            Guardar Cambios
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <!-- Delete Confirmation Modal -->
+    <div id="deleteModal" class="fixed inset-0 z-50 hidden p-4">
+        <div class="absolute inset-0 bg-black/95 backdrop-blur-xl"></div>
+        <div class="relative min-h-screen flex items-center justify-center">
+            <div
+                class="bg-gray-800 rounded-[2.5rem] w-full max-w-[360px] overflow-hidden shadow-2xl border border-white/5"
+            >
+                <div class="p-10 text-center">
+                    <div
+                        class="w-16 h-16 bg-red-500/10 rounded-3xl flex items-center justify-center mx-auto mb-6"
+                    >
+                        <svg
+                            xmlns="http://www.w3.org/2000/svg"
+                            width="32"
+                            height="32"
+                            viewBox="0 0 24 24"
+                            fill="none"
+                            stroke="#ef4444"
+                            stroke-width="2"
+                            stroke-linecap="round"
+                            stroke-linejoin="round"
+                            ><path d="M3 6h18"></path><path
+                                d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6"
+                            ></path><path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2"
+                            ></path><line x1="10" x2="10" y1="11" y2="17"
+                            ></line><line x1="14" x2="14" y1="11" y2="17"
+                            ></line></svg
+                        >
+                    </div>
+                    <h2
+                        class="text-2xl font-black uppercase tracking-tight italic text-white mb-3"
+                    >
+                        ¿Eliminar?
+                    </h2>
+                    <p
+                        class="text-xs font-bold text-gray-500 uppercase tracking-widest leading-loose mb-8"
+                    >
+                        Esta acción no se puede deshacer. Los productos quedarán
+                        sin categoría.
+                    </p>
+
+                    <form method="POST" class="flex flex-col gap-3">
+                        <input type="hidden" name="action" value="delete" />
+                        <input type="hidden" name="categoryId" id="deleteId" />
+                        <button
+                            type="submit"
+                            class="w-full bg-red-600 text-white font-black uppercase tracking-[0.2em] text-[10px] hover:bg-red-700 transition-all rounded-2xl py-4 shadow-xl shadow-red-500/20"
+                        >
+                            Sí, Eliminar
+                        </button>
+                        <button
+                            type="button"
+                            class="w-full px-8 py-4 text-gray-500 font-black uppercase tracking-[0.2em] text-[10px] hover:text-white transition-all rounded-2xl close-delete-modal"
+                        >
+                            No, Volver
+                        </button>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</AdminLayout>
+
+<script>
+    const modal = document.getElementById("categoryModal");
+    const deleteModal = document.getElementById("deleteModal");
+    const form = document.getElementById("categoryForm") as HTMLFormElement;
+    const modalTitle = document.getElementById("modalTitle");
+    const formAction = document.getElementById(
+        "formAction",
+    ) as HTMLInputElement;
+    const formCategoryId = document.getElementById(
+        "formCategoryId",
+    ) as HTMLInputElement;
+    const nameInput = document.getElementById(
+        "categoryName",
+    ) as HTMLInputElement;
+    const slugInput = document.getElementById(
+        "categorySlug",
+    ) as HTMLInputElement;
+    const deleteId = document.getElementById("deleteId") as HTMLInputElement;
+
+    // Image Upload Elements
+    const dropZone = document.getElementById("dropZone");
+    const fileInput = document.getElementById("fileInput") as HTMLInputElement;
+    const formImageUrl = document.getElementById(
+        "formImageUrl",
+    ) as HTMLInputElement;
+    const imagePreviewContainer = document.getElementById(
+        "imagePreviewContainer",
+    );
+    const imagePreview = document.getElementById(
+        "imagePreview",
+    ) as HTMLImageElement;
+    const removeImageBtn = document.getElementById("removeImage");
+    const uploadContent = document.getElementById("uploadContent");
+    const uploadProgress = document.getElementById("uploadProgress");
+
+    // Toast
+    const toast = document.getElementById("toast");
+    const toastMessage = document.getElementById("toastMessage");
+
+    function showToast(message: string, isError = false) {
+        if (toastMessage) toastMessage.innerText = message;
+        toast?.classList.remove("translate-y-32", "opacity-0");
+        setTimeout(
+            () => toast?.classList.add("translate-y-32", "opacity-0"),
+            3000,
+        );
+    }
+
+    // Helper to generate slug
+    const generateSlug = (text: string) => {
+        return text
+            .toLowerCase()
+            .normalize("NFD")
+            .replace(/[\u0300-\u036f]/g, "")
+            .replace(/[^\w ]+/g, "")
+            .replace(/ +/g, "-");
+    };
+
+    nameInput?.addEventListener("input", (e) => {
+        if (formAction.value === "create") {
+            slugInput.value = generateSlug(
+                (e.target as HTMLInputElement).value,
+            );
+        }
+    });
+
+    // Image Upload Handlers
+    dropZone?.addEventListener("click", () => fileInput.click());
+
+    dropZone?.addEventListener("dragover", (e) => {
+        e.preventDefault();
+        dropZone.classList.add("border-white/20", "bg-white/5");
+    });
+
+    dropZone?.addEventListener("dragleave", () => {
+        dropZone.classList.remove("border-white/20", "bg-white/5");
+    });
+
+    dropZone?.addEventListener("drop", async (e) => {
+        e.preventDefault();
+        dropZone.classList.remove("border-white/20", "bg-white/5");
+        const files = e.dataTransfer?.files;
+        if (files && files.length > 0) await handleUpload(files[0]);
+    });
+
+    fileInput?.addEventListener("change", async () => {
+        if (fileInput.files && fileInput.files.length > 0) {
+            await handleUpload(fileInput.files[0]);
+        }
+    });
+
+    async function handleUpload(file: File) {
+        if (!file.type.startsWith("image/")) {
+            showToast("Por favor, sube una imagen", true);
+            return;
+        }
+
+        uploadProgress?.classList.remove("hidden");
+
+        try {
+            const formData = new FormData();
+            formData.append("file", file);
+
+            const response = await fetch("/api/categories/upload", {
+                method: "POST",
+                body: formData,
+            });
+
+            const data = await response.json();
+
+            if (data.success) {
+                formImageUrl.value = data.url;
+                imagePreview.src = data.url;
+                imagePreviewContainer?.classList.remove("hidden");
+                dropZone?.classList.add("hidden");
+                showToast("Imagen subida");
+            } else {
+                showToast(data.error || "Error al subir", true);
+            }
+        } catch (error) {
+            showToast("Error de conexión", true);
+        } finally {
+            uploadProgress?.classList.add("hidden");
+            fileInput.value = "";
+        }
+    }
+
+    removeImageBtn?.addEventListener("click", (e) => {
+        e.stopPropagation();
+        formImageUrl.value = "";
+        imagePreview.src = "";
+        imagePreviewContainer?.classList.add("hidden");
+        dropZone?.classList.remove("hidden");
+    });
+
+    // Open Create Modal
+    document
+        .getElementById("openCreateModal")
+        ?.addEventListener("click", () => {
+            modalTitle!.innerText = "Nueva Categoría";
+            formAction.value = "create";
+            form.reset();
+            formImageUrl.value = "";
+            imagePreview.src = "";
+            imagePreviewContainer?.classList.add("hidden");
+            dropZone?.classList.remove("hidden");
+            modal?.classList.remove("hidden");
+        });
+
+    // Open Edit Modal
+    document.querySelectorAll(".edit-btn").forEach((btn) => {
+        btn.addEventListener("click", () => {
+            const category = JSON.parse(btn.getAttribute("data-category")!);
+            modalTitle!.innerText = "Editar Categoría";
+            formAction.value = "update";
+            formCategoryId.value = category.id;
+            nameInput.value = category.name;
+            slugInput.value = category.slug;
+
+            // Handle Image
+            if (category.image_url) {
+                formImageUrl.value = category.image_url;
+                imagePreview.src = category.image_url;
+                imagePreviewContainer?.classList.remove("hidden");
+                dropZone?.classList.add("hidden");
+            } else {
+                formImageUrl.value = "";
+                imagePreview.src = "";
+                imagePreviewContainer?.classList.add("hidden");
+                dropZone?.classList.remove("hidden");
+            }
+
+            modal?.classList.remove("hidden");
+        });
+    });
+
+    // Open Delete Modal
+    document.querySelectorAll(".delete-btn").forEach((btn) => {
+        btn.addEventListener("click", () => {
+            const id = btn.getAttribute("data-id");
+            deleteId.value = id!;
+            deleteModal?.classList.remove("hidden");
+        });
+    });
+
+    // Close Modals
+    document.querySelectorAll(".close-modal").forEach((btn) => {
+        btn.addEventListener("click", () => {
+            modal?.classList.add("hidden");
+        });
+    });
+
+    document.querySelectorAll(".close-delete-modal").forEach((btn) => {
+        btn.addEventListener("click", () => {
+            deleteModal?.classList.add("hidden");
+        });
+    });
+
+    // Close on backdrop click
+    window.addEventListener("click", (e) => {
+        if (e.target === modal) modal?.classList.add("hidden");
+        if (e.target === deleteModal) deleteModal?.classList.add("hidden");
+    });
+</script>

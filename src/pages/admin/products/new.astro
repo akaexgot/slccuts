@@ -1,0 +1,463 @@
+---
+export const prerender = false;
+
+import AdminLayout from "../../../layouts/AdminLayout.astro";
+import { supabase } from "../../../lib/supabase";
+
+// Fetch categories for dropdown
+const { data: categories } = await supabase
+    .from("categories")
+    .select("*")
+    .order("name");
+
+let error = "";
+let success = false;
+
+// Handle form submission
+if (Astro.request.method === "POST") {
+    const formData = await Astro.request.formData();
+
+    const name = formData.get("name") as string;
+    const slug = formData.get("slug") as string;
+    const description = formData.get("description") as string;
+    const price = parseFloat(formData.get("price") as string) * 100; // Convert to cents
+    const categoryId = formData.get("category_id") as string;
+    const imageUrl = formData.get("image_url") as string;
+    const isOffer = formData.get("is_offer") === "on";
+    const active = formData.get("active") === "on";
+    const stock = parseInt(formData.get("stock") as string) || 0;
+
+    // Insert product
+    const { data: newProduct, error: insertError } = await supabase
+        .from("products")
+        .insert({
+            name,
+            slug,
+            description,
+            price,
+            category_id: categoryId || null,
+            is_offer: isOffer,
+            active,
+        })
+        .select()
+        .single();
+
+    if (insertError) {
+        error = insertError.message;
+    } else if (newProduct && imageUrl) {
+        // Insert product image
+        await supabase.from("product_images").insert({
+            product_id: newProduct.id,
+            image_url: imageUrl,
+        });
+
+        // Upsert stock entry (trigger might have created it already)
+        await supabase.from("stock").upsert({
+            product_id: newProduct.id,
+            quantity: stock,
+        });
+
+        return Astro.redirect("/admin/products");
+    } else if (newProduct) {
+        return Astro.redirect("/admin/products");
+    }
+}
+---
+
+<AdminLayout title="Nuevo Producto" activeSection="products">
+    <div class="max-w-2xl">
+        <a
+            href="/admin/products"
+            class="text-gray-400 hover:text-white mb-6 inline-flex items-center gap-2"
+        >
+            <svg
+                xmlns="http://www.w3.org/2000/svg"
+                width="16"
+                height="16"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="2"
+                ><path d="m12 19-7-7 7-7"></path><path d="M19 12H5"></path></svg
+            >
+            Volver a productos
+        </a>
+
+        {
+            error && (
+                <div class="bg-red-500/20 border border-red-500 text-red-400 px-4 py-3 rounded-lg mb-6">
+                    {error}
+                </div>
+            )
+        }
+
+        <form method="POST" class="space-y-6 bg-gray-800 rounded-xl p-8 mt-4">
+            <!-- Name -->
+            <div>
+                <label
+                    for="name"
+                    class="block text-sm font-bold uppercase tracking-wider mb-2"
+                >
+                    Nombre del Producto *
+                </label>
+                <input
+                    type="text"
+                    id="name"
+                    name="name"
+                    required
+                    class="w-full bg-gray-900 border border-gray-700 rounded-lg px-4 py-3 text-white focus:border-white focus:outline-none transition-colors"
+                    placeholder="Ej: Cera Mate Premium"
+                />
+            </div>
+
+            <!-- Slug -->
+            <div>
+                <label
+                    for="slug"
+                    class="block text-sm font-bold uppercase tracking-wider mb-2"
+                >
+                    Slug (URL) *
+                </label>
+                <input
+                    type="text"
+                    id="slug"
+                    name="slug"
+                    required
+                    class="w-full bg-gray-900 border border-gray-700 rounded-lg px-4 py-3 text-white focus:border-white focus:outline-none transition-colors"
+                    placeholder="Ej: cera-mate-premium"
+                />
+            </div>
+
+            <!-- Description -->
+            <div>
+                <label
+                    for="description"
+                    class="block text-sm font-bold uppercase tracking-wider mb-2"
+                >
+                    Descripción
+                </label>
+                <textarea
+                    id="description"
+                    name="description"
+                    rows="3"
+                    class="w-full bg-gray-900 border border-gray-700 rounded-lg px-4 py-3 text-white focus:border-white focus:outline-none transition-colors resize-none"
+                    placeholder="Describe el producto..."></textarea>
+            </div>
+
+            <!-- Price, Stock & Category Row -->
+            <div class="grid grid-cols-3 gap-4">
+                <div>
+                    <label
+                        for="price"
+                        class="block text-sm font-bold uppercase tracking-wider mb-2"
+                    >
+                        Precio (€) *
+                    </label>
+                    <input
+                        type="number"
+                        id="price"
+                        name="price"
+                        step="0.01"
+                        min="0"
+                        required
+                        class="w-full bg-gray-900 border border-gray-700 rounded-lg px-4 py-3 text-white focus:border-white focus:outline-none transition-colors"
+                        placeholder="12.00"
+                    />
+                </div>
+                <div>
+                    <label
+                        for="stock"
+                        class="block text-sm font-bold uppercase tracking-wider mb-2"
+                    >
+                        Stock *
+                    </label>
+                    <input
+                        type="number"
+                        id="stock"
+                        name="stock"
+                        min="0"
+                        required
+                        class="w-full bg-gray-900 border border-gray-700 rounded-lg px-4 py-3 text-white focus:border-white focus:outline-none transition-colors"
+                        placeholder="50"
+                    />
+                </div>
+                <div>
+                    <label
+                        for="category_id"
+                        class="block text-sm font-bold uppercase tracking-wider mb-2"
+                    >
+                        Categoría
+                    </label>
+                    <select
+                        id="category_id"
+                        name="category_id"
+                        class="w-full bg-gray-900 border border-gray-700 rounded-lg px-4 py-3 text-white focus:border-white focus:outline-none transition-colors"
+                    >
+                        <option value="">Sin categoría</option>
+                        {
+                            categories?.map(
+                                (cat: { id: number; name: string }) => (
+                                    <option value={cat.id}>{cat.name}</option>
+                                ),
+                            )
+                        }
+                    </select>
+                </div>
+            </div>
+
+            <!-- Image Upload -->
+            <div>
+                <label
+                    class="block text-sm font-bold uppercase tracking-wider mb-2"
+                >
+                    Imagen del Producto
+                </label>
+                <input type="hidden" id="image_url" name="image_url" />
+
+                <!-- Drop Zone -->
+                <div
+                    id="dropZone"
+                    class="border-2 border-dashed border-gray-600 rounded-xl p-6 text-center transition-all duration-300 cursor-pointer hover:border-gray-400"
+                >
+                    <input
+                        type="file"
+                        id="fileInput"
+                        accept="image/*"
+                        class="hidden"
+                    />
+
+                    <div id="uploadContent" class="pointer-events-none">
+                        <div
+                            class="w-12 h-12 bg-gray-700 rounded-full flex items-center justify-center mx-auto mb-3"
+                        >
+                            <svg
+                                xmlns="http://www.w3.org/2000/svg"
+                                width="24"
+                                height="24"
+                                viewBox="0 0 24 24"
+                                fill="none"
+                                stroke="currentColor"
+                                stroke-width="2"
+                                class="text-gray-400"
+                            >
+                                <path
+                                    d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"
+                                ></path>
+                                <polyline points="17 8 12 3 7 8"></polyline>
+                                <line x1="12" x2="12" y1="3" y2="15"></line>
+                            </svg>
+                        </div>
+                        <p class="text-white font-bold mb-1">
+                            Arrastra una imagen aquí
+                        </p>
+                        <p class="text-gray-400 text-sm">
+                            o haz clic para seleccionar
+                        </p>
+                    </div>
+
+                    <!-- Upload Progress -->
+                    <div id="uploadProgress" class="hidden pointer-events-none">
+                        <div class="w-12 h-12 mx-auto mb-3">
+                            <svg
+                                class="animate-spin text-white"
+                                xmlns="http://www.w3.org/2000/svg"
+                                fill="none"
+                                viewBox="0 0 24 24"
+                            >
+                                <circle
+                                    class="opacity-25"
+                                    cx="12"
+                                    cy="12"
+                                    r="10"
+                                    stroke="currentColor"
+                                    stroke-width="4"></circle>
+                                <path
+                                    class="opacity-75"
+                                    fill="currentColor"
+                                    d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
+                                ></path>
+                            </svg>
+                        </div>
+                        <p class="text-white font-bold">Subiendo...</p>
+                    </div>
+                </div>
+
+                <!-- Image Preview -->
+                <div id="imagePreview" class="hidden mt-4">
+                    <div class="relative inline-block">
+                        <img
+                            id="previewImg"
+                            src=""
+                            alt="Preview"
+                            class="w-32 h-32 object-cover rounded-lg"
+                        />
+                        <button
+                            type="button"
+                            id="removeImage"
+                            class="absolute -top-2 -right-2 bg-red-600 hover:bg-red-700 text-white rounded-full w-6 h-6 flex items-center justify-center text-sm font-bold"
+                        >
+                            ×
+                        </button>
+                    </div>
+                    <p class="text-green-400 text-sm mt-2">✓ Imagen lista</p>
+                </div>
+            </div>
+
+            <!-- Toggles -->
+            <div class="flex gap-8">
+                <label class="flex items-center gap-3 cursor-pointer">
+                    <input
+                        type="checkbox"
+                        name="active"
+                        checked
+                        class="w-5 h-5 rounded bg-gray-900 border-gray-700 text-white focus:ring-0"
+                    />
+                    <span class="text-sm font-bold uppercase tracking-wider"
+                        >Activo</span
+                    >
+                </label>
+                <label class="flex items-center gap-3 cursor-pointer">
+                    <input
+                        type="checkbox"
+                        name="is_offer"
+                        class="w-5 h-5 rounded bg-gray-900 border-gray-700 text-red-500 focus:ring-0"
+                    />
+                    <span class="text-sm font-bold uppercase tracking-wider"
+                        >🔥 Marcar como Oferta</span
+                    >
+                </label>
+            </div>
+
+            <!-- Submit -->
+            <button
+                type="submit"
+                class="w-full bg-white text-black font-bold uppercase tracking-wider py-4 rounded-lg hover:bg-gray-200 transition-colors"
+            >
+                Crear Producto
+            </button>
+        </form>
+    </div>
+</AdminLayout>
+
+<script>
+    // Auto-generate slug from name
+    const nameInput = document.getElementById("name") as HTMLInputElement;
+    const slugInput = document.getElementById("slug") as HTMLInputElement;
+
+    nameInput?.addEventListener("input", () => {
+        const slug = nameInput.value
+            .toLowerCase()
+            .normalize("NFD")
+            .replace(/[\u0300-\u036f]/g, "")
+            .replace(/[^a-z0-9]+/g, "-")
+            .replace(/(^-|-$)/g, "");
+        slugInput.value = slug;
+    });
+
+    // Image Upload Logic
+    const dropZone = document.getElementById("dropZone") as HTMLDivElement;
+    const fileInput = document.getElementById("fileInput") as HTMLInputElement;
+    const uploadContent = document.getElementById(
+        "uploadContent",
+    ) as HTMLDivElement;
+    const uploadProgress = document.getElementById(
+        "uploadProgress",
+    ) as HTMLDivElement;
+    const imagePreview = document.getElementById(
+        "imagePreview",
+    ) as HTMLDivElement;
+    const previewImg = document.getElementById(
+        "previewImg",
+    ) as HTMLImageElement;
+    const removeImage = document.getElementById(
+        "removeImage",
+    ) as HTMLButtonElement;
+    const imageUrlInput = document.getElementById(
+        "image_url",
+    ) as HTMLInputElement;
+
+    // Click to open file dialog
+    dropZone?.addEventListener("click", () => fileInput?.click());
+
+    // Drag & Drop handlers
+    dropZone?.addEventListener("dragover", (e) => {
+        e.preventDefault();
+        dropZone.classList.add("border-white", "bg-gray-700/50");
+        dropZone.classList.remove("border-gray-600");
+    });
+
+    dropZone?.addEventListener("dragleave", (e) => {
+        e.preventDefault();
+        dropZone.classList.remove("border-white", "bg-gray-700/50");
+        dropZone.classList.add("border-gray-600");
+    });
+
+    dropZone?.addEventListener("drop", (e) => {
+        e.preventDefault();
+        dropZone.classList.remove("border-white", "bg-gray-700/50");
+        dropZone.classList.add("border-gray-600");
+
+        const files = e.dataTransfer?.files;
+        if (files && files.length > 0) {
+            handleFile(files[0]);
+        }
+    });
+
+    fileInput?.addEventListener("change", () => {
+        if (fileInput.files && fileInput.files.length > 0) {
+            handleFile(fileInput.files[0]);
+        }
+    });
+
+    async function handleFile(file: File) {
+        if (!file.type.startsWith("image/")) {
+            alert("Solo se permiten imágenes");
+            return;
+        }
+
+        // Show progress
+        uploadContent?.classList.add("hidden");
+        uploadProgress?.classList.remove("hidden");
+
+        try {
+            const formData = new FormData();
+            formData.append("file", file);
+
+            const response = await fetch("/api/products/upload", {
+                method: "POST",
+                body: formData,
+            });
+
+            const result = await response.json();
+
+            if (result.success) {
+                // Set the URL in hidden input
+                imageUrlInput.value = result.url;
+
+                // Show preview
+                previewImg.src = result.url;
+                imagePreview?.classList.remove("hidden");
+                dropZone?.classList.add("hidden");
+            } else {
+                alert("Error al subir: " + result.error);
+                uploadContent?.classList.remove("hidden");
+            }
+        } catch (error) {
+            console.error("Upload error:", error);
+            alert("Error al subir la imagen");
+            uploadContent?.classList.remove("hidden");
+        }
+
+        uploadProgress?.classList.add("hidden");
+        if (fileInput) fileInput.value = "";
+    }
+
+    // Remove image
+    removeImage?.addEventListener("click", () => {
+        imageUrlInput.value = "";
+        previewImg.src = "";
+        imagePreview?.classList.add("hidden");
+        dropZone?.classList.remove("hidden");
+        uploadContent?.classList.remove("hidden");
+    });
+</script>

@@ -1,0 +1,83 @@
+---
+export const prerender = false;
+import ShopLayout from "../../layouts/ShopLayout.astro";
+import ProductCard from "../../components/ui/ProductCard.astro";
+import { supabase } from "../../lib/supabase";
+
+// Check global settings first - REMOVED to always show offers
+// const { data: settings } = await supabase
+//     .from("settings")
+//     .select("*")
+//     .eq("key", "flash_offers_enabled")
+//     .single();
+// const isEnabled = settings?.value;
+const isEnabled = true; // Always enable offers page
+
+const url = new URL(Astro.request.url);
+const categorySlug = url.searchParams.get("category");
+const priceRange = url.searchParams.get("price_range");
+const sort = url.searchParams.get("sort") || "newest";
+
+let products = [];
+if (isEnabled) {
+    let query = supabase
+        .from("products")
+        .select(
+            "*, product_images(image_url), stock(quantity), category:categories!inner(*)",
+        )
+        .eq("active", true)
+        .eq("is_offer", true);
+
+    if (categorySlug) {
+        query = query.eq("category.slug", categorySlug);
+    }
+
+    if (priceRange) {
+        const [min, max] = priceRange.split("-").map(Number);
+        if (!isNaN(min)) query = query.gte("price", min * 100);
+        if (!isNaN(max)) query = query.lte("price", max * 100);
+    }
+
+    if (sort === "price_asc") {
+        query = query.order("price", { ascending: true });
+    } else if (sort === "price_desc") {
+        query = query.order("price", { ascending: false });
+    } else {
+        query = query.order("created_at", { ascending: false });
+    }
+
+    const { data } = await query;
+    products = data || [];
+}
+---
+
+<ShopLayout
+    title="Ofertas | SLC CUTS"
+    description="Descuentos exclusivos. ¡No te los pierdas!"
+>
+    {
+        products.length === 0 ? (
+            <div class="col-span-full py-20 text-center text-gray-500 bg-gray-50 rounded-xl">
+                <p>No hay ofertas activas en este momento.</p>
+                <a
+                    href="/shop/new"
+                    class="inline-block mt-6 text-black border-b-2 border-black font-bold hover:text-gray-600 hover:border-gray-600 transition-colors"
+                >
+                    Ver Novedades
+                </a>
+            </div>
+        ) : (
+            <div class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-6">
+                {products.map((product: any, index: number) => (
+                    <ProductCard
+                        product={{
+                            ...product,
+                            image_url: product.product_images?.[0]?.image_url,
+                        }}
+                        loading={index < 5 ? "eager" : "lazy"}
+                    />
+                ))}
+            </div>
+        )
+    }
+</ShopLayout>

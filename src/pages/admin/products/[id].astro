@@ -1,0 +1,235 @@
+---
+import AdminLayout from "../../../layouts/AdminLayout.astro";
+import { supabase } from "../../../lib/supabase";
+
+const { id } = Astro.params;
+const isEditMode = id && id !== "new";
+
+let product = {
+    name: "",
+    description: "",
+    price: 0,
+    category_id: null,
+    is_offer: false,
+    active: true,
+};
+let stock = { quantity: 0 };
+let categories = [];
+
+// Fetch categories
+const { data: categoriesData } = await supabase.from("categories").select("*");
+categories = categoriesData || [];
+
+// If edit mode, fetch product
+if (isEditMode) {
+    const { data: productData, error } = await supabase
+        .from("products")
+        .select(`*, stock(quantity)`)
+        .eq("id", id)
+        .single();
+
+    if (productData) {
+        product = productData;
+        if (productData.stock) stock = productData.stock; // Simplify stock handling usually getting array or object depending on query
+    }
+}
+
+// Handle Form Submission (Server Side)
+if (Astro.request.method === "POST") {
+    const formData = await Astro.request.formData();
+    const name = formData.get("name") as string;
+    const description = formData.get("description") as string;
+    const price = parseFloat(formData.get("price") as string);
+    const category_id = formData.get("category_id");
+    const quantity = parseInt(formData.get("quantity") as string);
+    const is_offer = formData.get("is_offer") === "on";
+    const active = formData.get("active") === "on";
+
+    let productId;
+
+    if (isEditMode) {
+        // Update
+        const { error: updateError } = await supabase
+            .from("products")
+            .update({ name, description, price, category_id, is_offer, active })
+            .eq("id", id);
+
+        if (!updateError) {
+            // Update Stock
+            await supabase
+                .from("stock")
+                .update({ quantity })
+                .eq("product_id", id);
+            return Astro.redirect("/admin/products");
+        }
+    } else {
+        // Create
+        const { data: newProduct, error: createError } = await supabase
+            .from("products")
+            .insert({ name, description, price, category_id, is_offer, active })
+            .select()
+            .single();
+
+        if (newProduct) {
+            productId = newProduct.id;
+            // Create Stock
+            await supabase
+                .from("stock")
+                .insert({ product_id: productId, quantity });
+            return Astro.redirect("/admin/products");
+        }
+    }
+}
+---
+
+<AdminLayout title={isEditMode ? "Editar Producto" : "Nuevo Producto"}>
+    <div class="max-w-3xl mx-auto">
+        <form method="POST" class="space-y-6">
+            <div
+                class="bg-white p-6 rounded-xl shadow-sm border border-gray-100"
+            >
+                <h2 class="text-lg font-bold mb-4 text-gray-900">
+                    Información General
+                </h2>
+
+                <div class="grid gap-6">
+                    <div>
+                        <label
+                            class="block text-sm font-medium text-gray-700 mb-1"
+                            >Nombre del Producto</label
+                        >
+                        <input
+                            name="name"
+                            type="text"
+                            value={product.name}
+                            required
+                            class="w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm p-2 border"
+                        />
+                    </div>
+
+                    <div>
+                        <label
+                            class="block text-sm font-medium text-gray-700 mb-1"
+                            >Descripción</label
+                        >
+                        <textarea
+                            name="description"
+                            rows="3"
+                            class="w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm p-2 border"
+                            >{product.description}</textarea
+                        >
+                    </div>
+
+                    <div class="grid grid-cols-2 gap-6">
+                        <div>
+                            <label
+                                class="block text-sm font-medium text-gray-700 mb-1"
+                                >Precio (€)</label
+                            >
+                            <input
+                                name="price"
+                                type="number"
+                                step="0.01"
+                                value={product.price}
+                                required
+                                class="w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm p-2 border"
+                            />
+                        </div>
+                        <div>
+                            <label
+                                class="block text-sm font-medium text-gray-700 mb-1"
+                                >Categoría</label
+                            >
+                            <select
+                                name="category_id"
+                                class="w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm p-2 border"
+                            >
+                                <option value="">Seleccionar...</option>
+                                {
+                                    categories.map((cat) => (
+                                        <option
+                                            value={cat.id}
+                                            selected={
+                                                product.category_id === cat.id
+                                            }
+                                        >
+                                            {cat.name}
+                                        </option>
+                                    ))
+                                }
+                            </select>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div
+                class="bg-white p-6 rounded-xl shadow-sm border border-gray-100"
+            >
+                <h2 class="text-lg font-bold mb-4 text-gray-900">
+                    Inventario y Estado
+                </h2>
+                <div class="grid gap-6 md:grid-cols-2">
+                    <div>
+                        <label
+                            class="block text-sm font-medium text-gray-700 mb-1"
+                            >Stock Disponible</label
+                        >
+                        <input
+                            name="quantity"
+                            type="number"
+                            value={stock.quantity}
+                            required
+                            class="w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm p-2 border"
+                        />
+                    </div>
+
+                    <div class="space-y-4">
+                        <div class="flex items-center">
+                            <input
+                                id="active"
+                                name="active"
+                                type="checkbox"
+                                checked={product.active}
+                                class="h-4 w-4 text-indigo-600 focus:ring-indigo-500 border-gray-300 rounded"
+                            />
+                            <label
+                                for="active"
+                                class="ml-2 block text-sm text-gray-900"
+                                >Producto Activo (Visible)</label
+                            >
+                        </div>
+                        <div class="flex items-center">
+                            <input
+                                id="is_offer"
+                                name="is_offer"
+                                type="checkbox"
+                                checked={product.is_offer}
+                                class="h-4 w-4 text-indigo-600 focus:ring-indigo-500 border-gray-300 rounded"
+                            />
+                            <label
+                                for="is_offer"
+                                class="ml-2 block text-sm text-gray-900"
+                                >Oferta (Marcar como descuento)</label
+                            >
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="flex justify-end gap-4">
+                <a
+                    href="/admin/products"
+                    class="bg-white text-gray-700 px-4 py-2 border border-gray-300 rounded-md shadow-sm text-sm font-medium hover:bg-gray-50"
+                    >Cancelar</a
+                >
+                <button
+                    type="submit"
+                    class="bg-indigo-600 text-white px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500"
+                >
+                    {isEditMode ? "Guardar Cambios" : "Crear Producto"}
+                </button>
+            </div>
+        </form>
+    </div>
+</AdminLayout>

@@ -1,0 +1,584 @@
+---
+import AdminLayout from "../../../layouts/AdminLayout.astro";
+import { supabase } from "../../../lib/supabase";
+import EmailModal from "../../../components/admin/EmailModal";
+import StatusSelect from "../../../components/admin/StatusSelect";
+import ShippingModal from "../../../components/admin/ShippingModal";
+
+export const prerender = false;
+
+// Get current filter from URL
+const currentStatus = Astro.url.searchParams.get("status") || "all";
+
+const statusFlow = ["pending", "paid", "shipped", "completed"];
+
+const statusColors = {
+    pending: "#3b82f6", // Blue
+    paid: "#22c55e", // Green
+    shipped: "#8b5cf6", // Purple
+    completed: "#f59e0b", // Amber
+    cancelled: "#ef4444", // Red
+};
+
+// Fetch orders with items and filter by status if not "all"
+let query = supabase.from("orders").select(
+    `
+        *,
+        order_items (
+            quantity,
+            price,
+            product:products (name)
+        )
+    `,
+);
+
+if (currentStatus !== "all") {
+    query = query.eq("status", currentStatus);
+}
+
+const { data: orders } = await query.order("created_at", { ascending: false });
+
+const formatPrice = (price: number) => {
+    return new Intl.NumberFormat("es-ES", {
+        style: "currency",
+        currency: "EUR",
+    }).format(price / 100);
+};
+
+const formatDate = (dateString: string) => {
+    return new Date(dateString).toLocaleDateString("es-ES", {
+        day: "2-digit",
+        month: "short",
+        year: "numeric",
+        hour: "2-digit",
+        minute: "2-digit",
+    });
+};
+---
+
+<AdminLayout title="Pedidos" activeSection="orders">
+    <div
+        class="mb-10 flex flex-col lg:flex-row lg:items-center justify-between gap-6"
+    >
+        <div>
+            <h1 class="text-3xl font-black text-white tracking-tight mb-2">
+                Gestión de Pedidos
+            </h1>
+            <p class="text-gray-500 font-medium">
+                Supervisa y actualiza el estado de las compras de tus clientes
+            </p>
+        </div>
+
+        <!-- Status Filter Tabs -->
+        <div
+            class="inline-flex p-1.5 bg-gray-900/80 backdrop-blur-xl rounded-2xl border border-white/5 shadow-2xl overflow-x-auto scrollbar-hide max-w-full"
+        >
+            {
+                [
+                    "all",
+                    "pending",
+                    "paid",
+                    "shipped",
+                    "completed",
+                    "cancelled",
+                ].map((status) => (
+                    <a
+                        href={`/admin/orders?status=${status}`}
+                        class={`whitespace-nowrap px-5 py-2.5 rounded-xl text-[10px] font-black uppercase tracking-[0.15em] transition-all duration-300 ${
+                            currentStatus === status
+                                ? "bg-white text-black shadow-[0_0_20px_rgba(255,255,255,0.2)] scale-105 z-10"
+                                : "text-gray-500 hover:text-white"
+                        }`}
+                    >
+                        {status === "all"
+                            ? "Todos"
+                            : status === "pending"
+                              ? "Pendientes"
+                              : status === "paid"
+                                ? "Pagados"
+                                : status === "shipped"
+                                  ? "Enviados"
+                                  : status === "completed"
+                                    ? "Listos"
+                                    : "Cancelados"}
+                    </a>
+                ))
+            }
+        </div>
+    </div>
+
+    <ShippingModal client:only="react" />
+
+    <!-- Orders Table -->
+    <div class="space-y-6">
+        {
+            orders?.map((order: any) => {
+                const contact = order.contact_info || {};
+                let address = order.shipping_address || {};
+
+                if (typeof address === "string") {
+                    try {
+                        address = JSON.parse(address);
+                    } catch (e) {
+                        address = {};
+                    }
+                }
+
+                const isPickup = order.shipping_method === "pickup";
+                const currentStatusIndex = statusFlow.indexOf(order.status);
+                const isCancelled = order.status === "cancelled";
+
+                return (
+                    <div class="group relative bg-[#0f1117] hover:bg-[#141721] rounded-[2rem] border border-white/[0.03] hover:border-white/[0.08] transition-all duration-500 overflow-visible">
+                        {/* Background Glow Effect */}
+                        <div class="absolute -right-10 -top-10 w-40 h-40 bg-white/5 blur-[80px] rounded-full group-hover:bg-white/10 transition-all duration-700 pointer-events-none" />
+
+                        <div class="relative p-8 lg:p-10 flex flex-col lg:flex-row items-start lg:items-center gap-10">
+                            {/* 1. ID / Date Section */}
+                            <div class="w-full lg:w-40 flex-shrink-0">
+                                <span class="inline-flex items-center px-3 py-1 bg-white/5 border border-white/10 rounded-full text-[10px] font-bold text-white/50 mb-3 tracking-widest">
+                                    #{order.id.slice(0, 8).toUpperCase()}
+                                </span>
+                                <div class="space-y-1">
+                                    <p class="text-white font-black text-lg leading-none italic uppercase">
+                                        {
+                                            formatDate(order.created_at).split(
+                                                ",",
+                                            )[0]
+                                        }
+                                    </p>
+                                    <p class="text-gray-500 text-[10px] font-bold uppercase tracking-widest">
+                                        {
+                                            formatDate(order.created_at).split(
+                                                ",",
+                                            )[1]
+                                        }
+                                    </p>
+                                </div>
+                            </div>
+
+                            {/* 2. Client Info */}
+                            <div class="w-full lg:w-64 flex-shrink-0">
+                                <h3 class="text-white font-black text-xl mb-4 tracking-tight group-hover:text-white transition-colors">
+                                    {contact.name || "Invitado Especial"}
+                                </h3>
+                                <div class="flex flex-col gap-2">
+                                    <a
+                                        href={`tel:${contact.phone}`}
+                                        class="flex items-center gap-3 text-gray-500 hover:text-white transition-colors group/link p-0.5"
+                                    >
+                                        <div class="w-7 h-7 flex items-center justify-center rounded-lg bg-gray-900 border border-white/5 text-xs">
+                                            📱
+                                        </div>
+                                        <span class="text-[11px] font-bold tracking-widest uppercase">
+                                            {contact.phone || "Sin teléfono"}
+                                        </span>
+                                    </a>
+                                    <div class="flex items-center gap-3 text-gray-500 p-0.5">
+                                        <div class="w-7 h-7 flex items-center justify-center rounded-lg bg-gray-900 border border-white/5 text-xs">
+                                            ✉️
+                                        </div>
+                                        <span class="text-[10px] font-bold tracking-tight truncate max-w-[180px]">
+                                            {contact.email || order.guest_email}
+                                        </span>
+                                    </div>
+                                </div>
+                            </div>
+
+                            {/* 3. Delivery / Payment Method */}
+                            <div class="w-full lg:w-48 flex-shrink-0 grid grid-cols-2 lg:grid-cols-1 gap-4">
+                                <div class="bg-gray-900/50 p-4 rounded-2xl border border-white/5">
+                                    <span class="text-[9px] font-black text-gray-600 uppercase tracking-widest block mb-2">
+                                        Entrega
+                                    </span>
+                                    <p class="text-white text-xs font-black italic flex items-center gap-2">
+                                        {isPickup ? "🏪 TIENDA" : "🚚 ENVÍO"}
+                                    </p>
+                                </div>
+                                <div class="bg-gray-900/50 p-4 rounded-2xl border border-white/5">
+                                    <span class="text-[9px] font-black text-gray-600 uppercase tracking-widest block mb-2">
+                                        Pago
+                                    </span>
+                                    <p class="text-white text-xs font-black italic flex items-center gap-2">
+                                        {order.payment_method === "cash"
+                                            ? "💵 EFECTIVO"
+                                            : "💳 ONLINE"}
+                                    </p>
+                                </div>
+                            </div>
+
+                            {/* 4. Product List (Compact) */}
+                            <div class="w-full lg:w-56 flex-shrink-0">
+                                <span class="text-[9px] font-black text-gray-600 uppercase tracking-widest block mb-3">
+                                    Productos
+                                </span>
+                                <ul class="space-y-2">
+                                    {order.order_items?.map((item: any) => (
+                                        <li class="flex items-center gap-3 group/item">
+                                            <span class="w-7 h-7 flex-shrink-0 flex items-center justify-center rounded-lg bg-white/5 border border-white/10 text-[10px] font-black text-white leading-none">
+                                                {item.quantity}
+                                            </span>
+                                            <span class="text-[11px] font-bold text-gray-400 group-hover/item:text-white transition-colors truncate italic">
+                                                {item.product_name ||
+                                                    item.product?.name ||
+                                                    "Producto"}
+                                                {item.size && (
+                                                    <span class="text-gray-600 text-[9px] ml-1 font-black">
+                                                        [{item.size}]
+                                                    </span>
+                                                )}
+                                            </span>
+                                        </li>
+                                    ))}
+                                </ul>
+                            </div>
+
+                            {/* 5. Progress Stepper - THE HERO */}
+                            <div class="flex-1 w-full lg:min-w-[200px]">
+                                <div class="mb-5 flex justify-between items-end">
+                                    <span
+                                        id={`status-label-${order.id}`}
+                                        class="status-label text-[10px] font-black uppercase tracking-widest transition-colors duration-500"
+                                        style={{
+                                            color: statusColors[
+                                                order.status as keyof typeof statusColors
+                                            ],
+                                        }}
+                                    >
+                                        Progreso del Pedido
+                                    </span>
+                                    <span
+                                        id={`progress-text-${order.id}`}
+                                        class="progress-text text-[10px] font-black uppercase tracking-widest text-gray-600 italic"
+                                    >
+                                        {!isCancelled
+                                            ? `${Math.round(((currentStatusIndex + 1) / 4) * 100)}% Completado`
+                                            : "CANCELADO"}
+                                    </span>
+                                </div>
+
+                                <div class="relative flex items-center justify-between">
+                                    {/* Connector Background */}
+                                    <div class="absolute left-0 right-0 h-1 bg-gray-800/50 rounded-full" />
+                                    {/* Connector Progress */}
+                                    <div
+                                        id={`progress-line-${order.id}`}
+                                        class="progress-line absolute left-0 h-1 transition-all duration-1000 rounded-full"
+                                        style={
+                                            !isCancelled
+                                                ? {
+                                                      width: `${(currentStatusIndex / (statusFlow.length - 1)) * 100}%`,
+                                                      backgroundColor:
+                                                          statusColors[
+                                                              order.status as keyof typeof statusColors
+                                                          ],
+                                                      boxShadow: `0 0 15px ${statusColors[order.status as keyof typeof statusColors]}80`,
+                                                  }
+                                                : {
+                                                      width: "100%",
+                                                      backgroundColor:
+                                                          statusColors.cancelled,
+                                                      boxShadow: `0 0 15px ${statusColors.cancelled}80`,
+                                                      opacity: "0.3",
+                                                  }
+                                        }
+                                    />
+
+                                    {statusFlow.map((s, idx) => (
+                                        <div
+                                            class={`relative z-10 flex flex-col items-center ${isCancelled ? "opacity-30" : ""}`}
+                                        >
+                                            <div
+                                                id={`status-dot-${order.id}-${s}`}
+                                                class="status-dot w-6 h-6 rounded-full border-4 transition-all duration-700 flex items-center justify-center"
+                                                style={
+                                                    !isCancelled &&
+                                                    idx <= currentStatusIndex
+                                                        ? {
+                                                              backgroundColor:
+                                                                  statusColors[
+                                                                      s as keyof typeof statusColors
+                                                                  ],
+                                                              borderColor:
+                                                                  "#0f1117",
+                                                              boxShadow: `0 0 20px ${statusColors[s as keyof typeof statusColors]}60`,
+                                                              transform:
+                                                                  "scale(1.1)",
+                                                          }
+                                                        : {
+                                                              backgroundColor:
+                                                                  "#1f2937",
+                                                              borderColor:
+                                                                  "#0f1117",
+                                                          }
+                                                }
+                                            >
+                                                {!isCancelled &&
+                                                    idx <
+                                                        currentStatusIndex && (
+                                                        <svg
+                                                            xmlns="http://www.w3.org/2000/svg"
+                                                            width="10"
+                                                            height="10"
+                                                            viewBox="0 0 24 24"
+                                                            fill="none"
+                                                            stroke="black"
+                                                            stroke-width="4"
+                                                            stroke-linecap="round"
+                                                            stroke-linejoin="round"
+                                                        >
+                                                            <path d="M20 6 9 17l-5-5" />
+                                                        </svg>
+                                                    )}
+                                            </div>
+                                            <span
+                                                id={`status-text-${order.id}-${s}`}
+                                                class={`status-text absolute top-8 text-[8px] font-black uppercase tracking-tighter whitespace-nowrap transition-colors duration-500 ${!isCancelled && idx <= currentStatusIndex ? "text-white" : "text-gray-700"}`}
+                                            >
+                                                {s === "pending"
+                                                    ? "Recibido"
+                                                    : s === "paid"
+                                                      ? "Pagado"
+                                                      : s === "shipped"
+                                                        ? "Enviado"
+                                                        : "Listo"}
+                                            </span>
+                                        </div>
+                                    ))}
+                                </div>
+                            </div>
+
+                            {/* 5. Total & Actions */}
+                            <div class="w-full lg:w-48 flex-shrink-0 flex flex-row lg:flex-col items-center lg:items-end justify-between lg:justify-center gap-6 border-t lg:border-t-0 lg:border-l border-white/5 pt-6 lg:pt-0 lg:pl-10">
+                                <div class="text-right">
+                                    <p class="text-gray-600 text-[10px] font-black uppercase tracking-widest mb-1">
+                                        Total
+                                    </p>
+                                    <p class="text-3xl font-black text-white italic tracking-tighter">
+                                        {formatPrice(
+                                            order.total_amount ||
+                                                order.total_price,
+                                        )}
+                                    </p>
+                                </div>
+                                <div class="flex flex-col gap-4 w-full max-w-[160px]">
+                                    <StatusSelect
+                                        client:load
+                                        id={order.id}
+                                        initialStatus={order.status}
+                                    />
+                                    <div class="flex gap-2">
+                                        {!isPickup && (
+                                            <button
+                                                type="button"
+                                                class="shipping-btn flex-1 h-12 flex items-center justify-center rounded-2xl bg-white/5 hover:bg-white text-white hover:text-black transition-all duration-300 border border-white/5 text-xl shadow-lg hover:shadow-white/10 active:scale-95"
+                                                data-id={order.id}
+                                                data-address={JSON.stringify(
+                                                    address,
+                                                )}
+                                                title="Ver dirección"
+                                            >
+                                                🗺️
+                                            </button>
+                                        )}
+                                        {contact.phone && (
+                                            <a
+                                                href={`tel:${contact.phone}`}
+                                                class="flex-1 h-12 flex items-center justify-center rounded-2xl bg-white/5 hover:bg-white text-white hover:text-black transition-all duration-300 border border-white/5 text-xl shadow-lg hover:shadow-white/10 active:scale-95"
+                                                title="Llamar"
+                                            >
+                                                📞
+                                            </a>
+                                        )}
+                                        <button
+                                            data-email={
+                                                contact.email ||
+                                                order.guest_email
+                                            }
+                                            data-order-id={order.id}
+                                            data-status={order.status}
+                                            class="email-btn flex-1 h-12 flex items-center justify-center rounded-2xl bg-white/5 hover:bg-white text-white hover:text-black transition-all duration-300 border border-white/5 text-xl shadow-lg hover:shadow-white/10 active:scale-95"
+                                            title="Enviar Email"
+                                        >
+                                            📧
+                                        </button>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                );
+            })
+        }
+
+        {
+            (!orders || orders.length === 0) && (
+                <div class="text-center py-32 bg-gray-900/30 rounded-[3rem] border border-dashed border-white/10">
+                    <div class="w-24 h-24 bg-white/5 rounded-full flex items-center justify-center mx-auto mb-8 animate-pulse text-4xl">
+                        🛒
+                    </div>
+                    <h2 class="text-2xl font-black text-white italic uppercase mb-2">
+                        Buscamos registros...
+                    </h2>
+                    <p class="text-gray-500 font-bold uppercase tracking-widest text-xs">
+                        No se han encontrado pedidos con este criterio
+                    </p>
+                    <a
+                        href="/admin/orders"
+                        class="inline-block mt-8 text-[10px] font-black text-white border-b-2 border-white/10 hover:border-white transition-all pb-1 uppercase tracking-widest"
+                    >
+                        Ver todos los pedidos
+                    </a>
+                </div>
+            )
+        }
+    </div>
+
+    <EmailModal client:only="react" />
+</AdminLayout>
+
+<script>
+    // Handle clicks on email buttons
+    document.addEventListener("click", (e) => {
+        const target = (e.target as HTMLElement).closest(".email-btn");
+        if (target) {
+            console.log("Email button clicked");
+            const btn = target as HTMLElement;
+            const email = btn.dataset.email;
+            const orderId = btn.dataset.orderId;
+            const status = btn.dataset.status;
+
+            if (email && orderId) {
+                console.log("Dispatching open-email-modal event", {
+                    email,
+                    orderId,
+                    status,
+                });
+                // Dispatch custom event directly instead of importing helper
+                const event = new CustomEvent("open-email-modal", {
+                    detail: { to: email, orderId, status: status || "pending" },
+                });
+                window.dispatchEvent(event);
+            } else {
+                console.error("Missing email or orderId data attributes");
+            }
+        }
+    });
+
+    // Listen for status updates from StatusSelect component
+    window.addEventListener("order-status-updated", ((e: CustomEvent) => {
+        const { orderId, status } = e.detail;
+
+        // 1. Update Email Button Data
+        const btn = document.querySelector(
+            `.email-btn[data-order-id="${orderId}"]`,
+        ) as HTMLElement;
+        if (btn) btn.dataset.status = status;
+
+        // 2. Update Stepper Logic
+        const flow = ["pending", "paid", "shipped", "completed"];
+        const colors: Record<string, string> = {
+            pending: "#3b82f6",
+            paid: "#22c55e",
+            shipped: "#8b5cf6",
+            completed: "#f59e0b",
+            cancelled: "#ef4444",
+        };
+
+        const isCancelled = status === "cancelled";
+        const statusIdx = flow.indexOf(status);
+
+        // Update Percentage Text
+        const progressText = document.getElementById(
+            `progress-text-${orderId}`,
+        );
+        if (progressText) {
+            progressText.innerText = isCancelled
+                ? "CANCELADO"
+                : `${Math.round(((statusIdx + 1) / 4) * 100)}% Completado`;
+        }
+
+        // Update Label Color
+        const label = document.getElementById(`status-label-${orderId}`);
+        if (label) label.style.color = colors[status];
+
+        // Update Progress Line
+        const line = document.getElementById(`progress-line-${orderId}`);
+        if (line) {
+            if (isCancelled) {
+                line.style.width = "100%";
+                line.style.backgroundColor = colors.cancelled;
+                line.style.boxShadow = `0 0 15px ${colors.cancelled}80`;
+                line.style.opacity = "0.3";
+            } else {
+                const width = (statusIdx / (flow.length - 1)) * 100;
+                line.style.width = `${width}%`;
+                line.style.backgroundColor = colors[status];
+                line.style.boxShadow = `0 0 15px ${colors[status]}80`;
+                line.style.opacity = "1";
+            }
+        }
+
+        // Update Dots Opacity and State
+        flow.forEach((s, idx) => {
+            const dot = document.getElementById(`status-dot-${orderId}-${s}`);
+            const text = document.getElementById(`status-text-${orderId}-${s}`);
+            const dotContainer = dot?.parentElement;
+
+            if (dotContainer) {
+                dotContainer.style.opacity = isCancelled ? "0.3" : "1";
+            }
+
+            if (dot && !isCancelled) {
+                if (idx <= statusIdx) {
+                    dot.style.backgroundColor = colors[s];
+                    dot.style.boxShadow = `0 0 20px ${colors[s]}60`;
+                    dot.style.transform = "scale(1.1)";
+                    if (idx < statusIdx && !dot.querySelector("svg")) {
+                        dot.innerHTML = `
+                            <svg xmlns="http://www.w3.org/2000/svg" width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="black" stroke-width="4" stroke-linecap="round" stroke-linejoin="round">
+                                <path d="M20 6 9 17l-5-5" />
+                            </svg>
+                        `;
+                    } else if (idx === statusIdx) {
+                        dot.innerHTML = "";
+                    }
+                } else {
+                    dot.style.backgroundColor = "#1f2937";
+                    dot.style.boxShadow = "none";
+                    dot.style.transform = "scale(1)";
+                    dot.innerHTML = "";
+                }
+            } else if (dot && isCancelled) {
+                dot.style.backgroundColor = "#1f2937";
+                dot.style.boxShadow = "none";
+                dot.style.transform = "scale(1)";
+                dot.innerHTML = "";
+            }
+
+            if (text) {
+                text.className = `status-text absolute top-8 text-[8px] font-black uppercase tracking-tighter whitespace-nowrap transition-colors duration-500 ${!isCancelled && idx <= statusIdx ? "text-white" : "text-gray-700"}`;
+            }
+        });
+    }) as EventListener);
+
+    // 4. Shipping Modal Dispatcher
+    document.addEventListener("click", (e) => {
+        const btn = (e.target as HTMLElement).closest(".shipping-btn");
+        if (btn) {
+            const orderId = btn.getAttribute("data-id")!;
+            const addressRaw = btn.getAttribute("data-address")!;
+
+            try {
+                const address = JSON.parse(addressRaw);
+                // Dispatch custom event for ShippingModal.tsx
+                const event = new CustomEvent("open-shipping-modal", {
+                    detail: { address, orderId },
+                });
+                window.dispatchEvent(event);
+            } catch (err) {
+                console.error("Error parsing address JSON:", err);
+            }
+        }
+    });
+</script>

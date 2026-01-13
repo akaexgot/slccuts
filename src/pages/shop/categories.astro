@@ -1,0 +1,90 @@
+---
+export const prerender = false;
+import Layout from "../../layouts/Layout.astro";
+import { supabase } from "../../lib/supabase";
+import { Image } from "astro:assets";
+
+const { data: categories } = await supabase
+    .from("categories")
+    .select("*")
+    .order("name");
+---
+
+<Layout title="Nuestras Categorías | SLC CUTS">
+    <div class="bg-gray-50 py-12 mb-8">
+        <div class="container mx-auto px-4 text-center">
+            <h1 class="text-4xl font-bold mb-4 tracking-tight text-gray-900">
+                Nuestras Categorías
+            </h1>
+            <p class="text-gray-600 max-w-2xl mx-auto text-lg">
+                Explora nuestra colección dividida por estilos para encontrar
+                exactamente lo que buscas.
+            </p>
+        </div>
+    </div>
+
+    <div class="container mx-auto px-4 pb-20">
+        <div class="grid md:grid-cols-2 lg:grid-cols-3 gap-8">
+            {
+                categories && categories.length > 0 ? (
+                    categories.map((cat: any, i: number) => {
+                        // Logic to select image based on category name (approximate)
+                        let imgUrl =
+                            "https://images.unsplash.com/photo-1585747860715-2ba37e788b70?q=80&w=800&auto=format&fit=crop"; // Default: Barber Shop
+                        const lowerName = cat.name.toLowerCase();
+
+                        if (
+                            lowerName.includes("corte") ||
+                            lowerName.includes("pelo")
+                        ) {
+                            imgUrl =
+                                "https://images.unsplash.com/photo-1503951914875-befbb7470d03?q=80&w=800&auto=format&fit=crop"; // Haircut
+                        } else if (
+                            lowerName.includes("barba") ||
+                            lowerName.includes("afeitado")
+                        ) {
+                            imgUrl =
+                                "https://images.unsplash.com/photo-1621605815971-fbc98d665033?q=80&w=800&auto=format&fit=crop"; // Beard/Tools
+                        } else if (
+                            lowerName.includes("producto") ||
+                            lowerName.includes("cera") ||
+                            lowerName.includes("champú")
+                        ) {
+                            imgUrl =
+                                "https://images.unsplash.com/photo-1620916566398-39f1143ab7be?q=80&w=800&auto=format&fit=crop"; // Products
+                        }
+
+                        return (
+                            <a
+                                href={`/shop/${cat.slug}`}
+                                class="group relative aspect-video overflow-hidden rounded-2xl bg-gray-200 cursor-pointer shadow-sm hover:shadow-xl transition-all"
+                            >
+                                <Image
+                                    src={imgUrl}
+                                    alt={cat.name}
+                                    width={600}
+                                    height={337}
+                                    class="absolute inset-0 w-full h-full object-cover transition-transform duration-700 group-hover:scale-110 grayscale group-hover:grayscale-0"
+                                    loading={i < 3 ? "eager" : "lazy"}
+                                />
+                                <div class="absolute inset-0 bg-black/40 group-hover:bg-black/50 transition-colors" />
+                                <div class="absolute inset-0 flex flex-col items-center justify-center p-4">
+                                    <h3 class="text-3xl font-bold text-white mb-2">
+                                        {cat.name}
+                                    </h3>
+                                    <span class="text-white/90 text-sm font-medium border border-white/30 px-4 py-2 rounded-full backdrop-blur-sm group-hover:bg-white group-hover:text-black transition-all">
+                                        Ver Productos
+                                    </span>
+                                </div>
+                            </a>
+                        );
+                    })
+                ) : (
+                    <div class="col-span-full text-center py-20 text-gray-400">
+                        No hay categorías definidas aún.
+                    </div>
+                )
+            }
+        </div>
+    </div>
+</Layout>

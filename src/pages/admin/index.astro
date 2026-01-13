@@ -1,0 +1,1810 @@
+---
+export const prerender = false;
+
+import AdminLayout from "../../layouts/AdminLayout.astro";
+import { supabase } from "../../lib/supabase";
+
+// --- AUTH PROTECTION HANDLED IN AdminLayout.astro (Client Side) ---
+
+// Fetch counts for dashboard
+const { count: productCount } = await supabase
+    .from("products")
+    .select("*", { count: "exact", head: true });
+const { count: orderCount } = await supabase
+    .from("orders")
+    .select("*", { count: "exact", head: true });
+const { count: galleryCount } = await supabase
+    .from("gallery_images")
+    .select("*", { count: "exact", head: true });
+const { count: newsCount } = await supabase
+    .from("news")
+    .select("*", { count: "exact", head: true });
+
+// Fetch categories for product form
+const { data: categories } = await supabase
+    .from("categories")
+    .select("*")
+    .order("name");
+
+// Fetch sales data for chart (last 7 days)
+const sevenDaysAgo = new Date();
+sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7);
+
+const { data: salesData } = await supabase
+    .from("order_items")
+    .select(
+        `
+        quantity,
+        price,
+        product:products(name),
+        order:orders(created_at, status)
+    `,
+    )
+    .gte("order.created_at", sevenDaysAgo.toISOString())
+    .eq("order.status", "paid");
+
+// Fetch visits data for chart (last 7 days)
+const { data: visitsData } = await supabase
+    .from("page_visits")
+    .select("page_path, visited_at")
+    .gte("visited_at", sevenDaysAgo.toISOString());
+
+// Process sales by product
+const salesByProduct: Record<string, number> = {};
+salesData?.forEach((item: any) => {
+    const productName = item.product?.name || "Desconocido";
+    salesByProduct[productName] =
+        (salesByProduct[productName] || 0) + (item.quantity * item.price) / 100;
+});
+
+// Process visits by day
+const visitsByDay: Record<string, number> = {};
+const days = ["Dom", "Lun", "Mar", "Mié", "Jue", "Vie", "Sáb"];
+for (let i = 6; i >= 0; i--) {
+    const date = new Date();
+    date.setDate(date.getDate() - i);
+    const dayName = days[date.getDay()];
+    // const dateStr = date.toISOString().split("T")[0]; // Unused
+    visitsByDay[`${dayName} ${date.getDate()}`] = 0;
+}
+
+visitsData?.forEach((visit: any) => {
+    const date = new Date(visit.visited_at);
+    const dayName = days[date.getDay()];
+    const key = `${dayName} ${date.getDate()}`;
+    if (visitsByDay.hasOwnProperty(key)) {
+        visitsByDay[key]++;
+    }
+});
+
+// Sales Defaults (for empty state)
+let salesLabels = Object.keys(salesByProduct).slice(0, 6);
+let salesValues = salesLabels.map((k) => salesByProduct[k]);
+
+if (salesLabels.length === 0) {
+    salesLabels = [
+        "Producto A",
+        "Producto B",
+        "Producto C",
+        "Producto D",
+        "Producto E",
+    ];
+    salesValues = [0, 0, 0, 0, 0];
+}
+
+const visitsLabels = Object.keys(visitsByDay);
+const visitsValues = Object.values(visitsByDay);
+---
+
+<AdminLayout title="Dashboard" activeSection="dashboard">
+    <!-- Welcome Header with Logo -->
+    <div class="flex items-center gap-6 mb-10">
+        <img
+            src="/logoblancotransparente.png"
+            alt="SLC CUTS"
+            class="h-20 w-20 object-contain"
+        />
+        <div>
+            <h2 class="text-3xl font-bold text-white">Bienvenido al Panel</h2>
+            <p class="text-gray-400 mt-1">Gestiona tu barbería desde aquí</p>
+        </div>
+    </div>
+
+    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+        <!-- Products Card -->
+        <a
+            href="/admin/products"
+            class="bg-gray-800 rounded-xl p-6 hover:bg-gray-700 transition-colors group"
+        >
+            <div class="flex items-center justify-between mb-4">
+                <div
+                    class="w-12 h-12 bg-blue-500/20 rounded-lg flex items-center justify-center"
+                >
+                    <svg
+                        xmlns="http://www.w3.org/2000/svg"
+                        width="24"
+                        height="24"
+                        viewBox="0 0 24 24"
+                        fill="none"
+                        stroke="currentColor"
+                        stroke-width="2"
+                        class="text-blue-400"
+                    >
+                        <path d="m7.5 4.27 9 5.15"></path>
+                        <path
+                            d="M21 8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16Z"
+                        ></path>
+                        <path d="m3.3 7 8.7 5 8.7-5"></path>
+                        <path d="M12 22V12"></path>
+                    </svg>
+                </div>
+                <svg
+                    xmlns="http://www.w3.org/2000/svg"
+                    width="20"
+                    height="20"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    stroke-width="2"
+                    class="text-gray-500 group-hover:text-white transition-colors"
+                >
+                    <path d="m9 18 6-6-6-6"></path>
+                </svg>
+            </div>
+            <h3 class="text-3xl font-bold mb-1">{productCount || 0}</h3>
+            <p class="text-gray-400 uppercase text-sm tracking-wider">
+                Productos
+            </p>
+        </a>
+
+        <!-- Orders Card -->
+        <a
+            href="/admin/orders"
+            class="bg-gray-800 rounded-xl p-6 hover:bg-gray-700 transition-colors group"
+        >
+            <div class="flex items-center justify-between mb-4">
+                <div
+                    class="w-12 h-12 bg-green-500/20 rounded-lg flex items-center justify-center"
+                >
+                    <svg
+                        xmlns="http://www.w3.org/2000/svg"
+                        width="24"
+                        height="24"
+                        viewBox="0 0 24 24"
+                        fill="none"
+                        stroke="currentColor"
+                        stroke-width="2"
+                        class="text-green-400"
+                    >
+                        <path
+                            d="M6 2 3 6v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6l-3-4Z"
+                        ></path>
+                        <path d="M3 6h18"></path>
+                        <path d="M16 10a4 4 0 0 1-8 0"></path>
+                    </svg>
+                </div>
+                <svg
+                    xmlns="http://www.w3.org/2000/svg"
+                    width="20"
+                    height="20"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    stroke-width="2"
+                    class="text-gray-500 group-hover:text-white transition-colors"
+                >
+                    <path d="m9 18 6-6-6-6"></path>
+                </svg>
+            </div>
+            <h3 class="text-3xl font-bold mb-1">{orderCount || 0}</h3>
+            <p class="text-gray-400 uppercase text-sm tracking-wider">
+                Pedidos
+            </p>
+        </a>
+
+        <!-- Gallery Card -->
+        <a
+            href="/admin/gallery"
+            class="bg-gray-800 rounded-xl p-6 hover:bg-gray-700 transition-colors group"
+        >
+            <div class="flex items-center justify-between mb-4">
+                <div
+                    class="w-12 h-12 bg-purple-500/20 rounded-lg flex items-center justify-center"
+                >
+                    <svg
+                        xmlns="http://www.w3.org/2000/svg"
+                        width="24"
+                        height="24"
+                        viewBox="0 0 24 24"
+                        fill="none"
+                        stroke="currentColor"
+                        stroke-width="2"
+                        class="text-purple-400"
+                    >
+                        <rect width="18" height="18" x="3" y="3" rx="2" ry="2"
+                        ></rect>
+                        <circle cx="9" cy="9" r="2"></circle>
+                        <path d="m21 15-3.086-3.086a2 2 0 0 0-2.828 0L6 21"
+                        ></path>
+                    </svg>
+                </div>
+                <svg
+                    xmlns="http://www.w3.org/2000/svg"
+                    width="20"
+                    height="20"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    stroke-width="2"
+                    class="text-gray-500 group-hover:text-white transition-colors"
+                >
+                    <path d="m9 18 6-6-6-6"></path>
+                </svg>
+            </div>
+            <h3 class="text-3xl font-bold mb-1">{galleryCount || 0}</h3>
+            <p class="text-gray-400 uppercase text-sm tracking-wider">
+                Fotos Galería
+            </p>
+        </a>
+
+        <!-- News Card -->
+        <a
+            href="/admin/news"
+            class="bg-gray-800 rounded-xl p-6 hover:bg-gray-700 transition-colors group"
+        >
+            <div class="flex items-center justify-between mb-4">
+                <div
+                    class="w-12 h-12 bg-pink-500/20 rounded-lg flex items-center justify-center"
+                >
+                    <svg
+                        xmlns="http://www.w3.org/2000/svg"
+                        width="24"
+                        height="24"
+                        viewBox="0 0 24 24"
+                        fill="none"
+                        stroke="currentColor"
+                        stroke-width="2"
+                        class="text-pink-400"
+                    >
+                        <path
+                            d="M4 22h16a2 2 0 0 0 2-2V4a2 2 0 0 0-2-2H8a2 2 0 0 0-2 2v16a2 2 0 0 1-2 2Zm0 0a2 2 0 0 1-2-2v-9c0-1.1.9-2 2-2h2"
+                        ></path>
+                        <path d="M18 14h-8"></path>
+                        <path d="M15 18h-5"></path>
+                        <path d="M10 6h8v4h-8V6Z"></path>
+                    </svg>
+                </div>
+                <svg
+                    xmlns="http://www.w3.org/2000/svg"
+                    width="20"
+                    height="20"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    stroke-width="2"
+                    class="text-gray-500 group-hover:text-white transition-colors"
+                >
+                    <path d="m9 18 6-6-6-6"></path>
+                </svg>
+            </div>
+            <h3 class="text-3xl font-bold mb-1">{newsCount || 0}</h3>
+            <p class="text-gray-400 uppercase text-sm tracking-wider">
+                Noticias
+            </p>
+        </a>
+    </div>
+
+    <!-- Quick Actions -->
+    <div class="mt-12">
+        <h2 class="text-xl font-bold uppercase tracking-wider mb-6">
+            Acciones Rápidas
+        </h2>
+        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+            <button
+                type="button"
+                id="openProductModal"
+                class="bg-blue-600 hover:bg-blue-700 text-white px-6 py-4 rounded-lg font-bold uppercase tracking-wider text-center transition-colors"
+            >
+                + Nuevo Producto
+            </button>
+            <button
+                type="button"
+                id="openGalleryModal"
+                class="bg-purple-600 hover:bg-purple-700 text-white px-6 py-4 rounded-lg font-bold uppercase tracking-wider text-center transition-colors"
+            >
+                + Subir Foto
+            </button>
+            <button
+                type="button"
+                id="openCategoryModal"
+                class="bg-emerald-600 hover:bg-emerald-700 text-white px-6 py-4 rounded-lg font-bold uppercase tracking-wider text-center transition-colors"
+            >
+                + Nueva Categoría
+            </button>
+            <button
+                type="button"
+                id="openNewsModal"
+                class="bg-pink-600 hover:bg-pink-700 text-white px-6 py-4 rounded-lg font-bold uppercase tracking-wider text-center transition-colors"
+            >
+                + Nueva Noticia
+            </button>
+        </div>
+    </div>
+
+    <!-- Analytics Charts -->
+    <div class="mt-12 grid grid-cols-1 lg:grid-cols-2 gap-8">
+        <!-- Sales Chart -->
+        <div class="bg-gray-800 rounded-xl p-6">
+            <h3 class="text-lg font-bold uppercase tracking-wider mb-4">
+                💰 Ventas por Producto (7 días)
+            </h3>
+            <div class="h-64">
+                <canvas id="salesChart"></canvas>
+            </div>
+        </div>
+
+        <!-- Visits Chart -->
+        <div class="bg-gray-800 rounded-xl p-6">
+            <h3 class="text-lg font-bold uppercase tracking-wider mb-4">
+                📈 Visitas Web (7 días)
+            </h3>
+            <div class="h-64">
+                <canvas id="visitsChart"></canvas>
+            </div>
+        </div>
+    </div>
+
+    <!-- MODAL: New Product -->
+    <div
+        id="productModal"
+        class="fixed inset-0 z-50 hidden items-center justify-center"
+    >
+        <div
+            class="absolute inset-0 bg-black/80 backdrop-blur-sm"
+            data-close-modal
+        >
+        </div>
+        <div
+            class="relative bg-gray-900 border border-gray-700 rounded-2xl p-8 max-w-lg w-full mx-4 shadow-2xl max-h-[90vh] overflow-y-auto"
+        >
+            <button
+                type="button"
+                class="absolute top-4 right-4 text-gray-400 hover:text-white text-2xl"
+                data-close-modal>×</button
+            >
+            <h3
+                class="text-2xl font-black uppercase tracking-tighter italic mb-6"
+            >
+                Nuevo Producto
+            </h3>
+            <form id="productForm" class="space-y-4">
+                <div>
+                    <label
+                        class="block text-sm font-bold uppercase tracking-wider mb-2"
+                        >Nombre *</label
+                    >
+                    <input
+                        type="text"
+                        name="name"
+                        required
+                        class="w-full bg-gray-800 border border-gray-700 rounded-lg px-4 py-3 text-white focus:border-white focus:outline-none"
+                        placeholder="Ej: Cera Mate Premium"
+                    />
+                </div>
+                <div>
+                    <label
+                        class="block text-sm font-bold uppercase tracking-wider mb-2"
+                        >Slug (URL) *</label
+                    >
+                    <input
+                        type="text"
+                        name="slug"
+                        required
+                        class="w-full bg-gray-800 border border-gray-700 rounded-lg px-4 py-3 text-white focus:border-white focus:outline-none"
+                        placeholder="cera-mate-premium"
+                    />
+                </div>
+                <div>
+                    <label
+                        class="block text-sm font-bold uppercase tracking-wider mb-2"
+                        >Descripción</label
+                    >
+                    <textarea
+                        name="description"
+                        rows="2"
+                        class="w-full bg-gray-800 border border-gray-700 rounded-lg px-4 py-3 text-white focus:border-white focus:outline-none resize-none"
+                    ></textarea>
+                </div>
+                <div class="grid grid-cols-2 gap-4">
+                    <div>
+                        <label
+                            class="block text-sm font-bold uppercase tracking-wider mb-2"
+                            >Precio (€) *</label
+                        >
+                        <input
+                            type="number"
+                            name="price"
+                            step="0.01"
+                            min="0"
+                            required
+                            class="w-full bg-gray-800 border border-gray-700 rounded-lg px-4 py-3 text-white focus:border-white focus:outline-none"
+                            placeholder="12.00"
+                        />
+                    </div>
+                    <div>
+                        <label
+                            class="block text-sm font-bold uppercase tracking-wider mb-2"
+                            >Categoría</label
+                        >
+                        <select
+                            name="category_id"
+                            class="w-full bg-gray-800 border border-gray-700 rounded-lg px-4 py-3 text-white focus:border-white focus:outline-none"
+                        >
+                            <option value="">Sin categoría</option>
+                            {
+                                categories?.map((cat: any) => (
+                                    <option value={cat.id}>{cat.name}</option>
+                                ))
+                            }
+                        </select>
+                    </div>
+                </div>
+                <!-- Product Image Upload Section -->
+                <div class="space-y-2 mt-4">
+                    <label
+                        class="block text-sm font-bold uppercase tracking-wider"
+                        >Imagen del Producto</label
+                    >
+                    <input
+                        type="hidden"
+                        name="imageUrl"
+                        id="prodFormImageUrl"
+                    />
+
+                    <div
+                        id="prodDropZone"
+                        class="border-2 border-dashed border-gray-700 rounded-xl p-8 text-center cursor-pointer hover:border-white/20 hover:bg-white/5 transition-all group"
+                    >
+                        <div class="space-y-2">
+                            <div
+                                class="text-3xl group-hover:scale-110 transition-transform"
+                            >
+                                📸
+                            </div>
+                            <p class="text-sm text-gray-400">
+                                Arrastra una imagen o <span
+                                    class="text-white underline"
+                                    >haz clic aquí</span
+                                >
+                            </p>
+                            <p
+                                class="text-[10px] text-gray-600 uppercase font-bold tracking-widest"
+                            >
+                                Recomendado: 800x800px (JPG/PNG)
+                            </p>
+                        </div>
+                    </div>
+
+                    <div
+                        id="prodImagePreviewContainer"
+                        class="hidden relative group rounded-xl overflow-hidden border border-gray-700 aspect-square bg-black shadow-2xl"
+                    >
+                        <img
+                            id="prodImagePreview"
+                            src=""
+                            class="w-full h-full object-contain"
+                        />
+                        <div
+                            class="absolute inset-0 bg-black/60 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center gap-4"
+                        >
+                            <button
+                                type="button"
+                                id="removeProdImage"
+                                class="bg-red-600 hover:bg-red-700 text-white px-4 py-2 rounded-lg text-xs font-black uppercase tracking-widest transition-colors shadow-lg"
+                            >
+                                Eliminar foto
+                            </button>
+                        </div>
+                    </div>
+
+                    <div id="prodUploadProgress" class="hidden">
+                        <div
+                            class="h-1 w-full bg-gray-800 rounded-full overflow-hidden"
+                        >
+                            <div
+                                class="h-full bg-blue-600 animate-pulse w-full"
+                            >
+                            </div>
+                        </div>
+                        <p
+                            class="text-[9px] text-blue-500 font-black uppercase tracking-widest mt-2 animate-pulse"
+                        >
+                            Subiendo imagen...
+                        </p>
+                    </div>
+
+                    <input
+                        type="file"
+                        id="prodFileInput"
+                        class="hidden"
+                        accept="image/*"
+                    />
+                </div>
+
+                <div class="flex gap-4 mt-6">
+                    <label class="flex items-center gap-2 cursor-pointer">
+                        <input
+                            type="checkbox"
+                            name="active"
+                            checked
+                            class="w-4 h-4"
+                        />
+                        <span class="text-sm">Activo</span>
+                    </label>
+                    <label class="flex items-center gap-2 cursor-pointer">
+                        <input
+                            type="checkbox"
+                            name="is_offer"
+                            class="w-4 h-4"
+                        />
+                        <span class="text-sm">🔥 Oferta</span>
+                    </label>
+                </div>
+
+                <button
+                    type="submit"
+                    class="w-full mt-6 bg-blue-600 hover:bg-blue-700 text-white font-bold uppercase tracking-wider py-3 rounded-lg transition-colors"
+                >
+                    Crear Producto
+                </button>
+            </form>
+        </div>
+    </div>
+
+    <!-- MODAL: Gallery Upload -->
+    <div
+        id="galleryModal"
+        class="fixed inset-0 z-50 hidden items-center justify-center"
+    >
+        <div
+            class="absolute inset-0 bg-black/80 backdrop-blur-sm"
+            data-close-modal
+        >
+        </div>
+        <div
+            class="relative bg-gray-900 border border-gray-700 rounded-2xl p-8 max-w-lg w-full mx-4 shadow-2xl"
+        >
+            <button
+                type="button"
+                class="absolute top-4 right-4 text-gray-400 hover:text-white text-2xl"
+                data-close-modal>×</button
+            >
+            <h3
+                class="text-2xl font-black uppercase tracking-tighter italic mb-6"
+            >
+                Subir Foto
+            </h3>
+
+            <!-- Default Drop Zone -->
+            <div
+                id="galleryDropZone"
+                class="border-2 border-dashed border-gray-600 rounded-xl p-8 text-center cursor-pointer hover:border-gray-400 transition-colors"
+                style="display: block;"
+            >
+                <input
+                    type="file"
+                    id="galleryFileInput"
+                    accept="image/*"
+                    multiple
+                    class="hidden"
+                />
+                <div id="galleryUploadContent">
+                    <div
+                        class="w-16 h-16 bg-gray-700 rounded-full flex items-center justify-center mx-auto mb-4"
+                    >
+                        <svg
+                            xmlns="http://www.w3.org/2000/svg"
+                            width="32"
+                            height="32"
+                            viewBox="0 0 24 24"
+                            fill="none"
+                            stroke="currentColor"
+                            stroke-width="2"
+                            class="text-gray-400"
+                        >
+                            <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"
+                            ></path>
+                            <polyline points="17 8 12 3 7 8"></polyline>
+                            <line x1="12" x2="12" y1="3" y2="15"></line>
+                        </svg>
+                    </div>
+                    <p class="text-white font-bold mb-2">
+                        Arrastra una imagen aquí
+                    </p>
+                    <p class="text-gray-400 text-sm">
+                        o haz clic para seleccionar
+                    </p>
+                </div>
+            </div>
+
+            <!-- Preview Section -->
+            <div id="galleryPreviewSection" class="hidden">
+                <div
+                    id="galleryPreviewGrid"
+                    class="grid grid-cols-3 gap-3 mb-6 max-h-[300px] overflow-y-auto"
+                >
+                    <!-- Previews go here -->
+                </div>
+                <div class="flex gap-3 justify-end">
+                    <button
+                        id="cancelGalleryUpload"
+                        class="px-4 py-2 bg-gray-700 hover:bg-gray-600 text-white rounded-lg text-sm font-bold"
+                    >
+                        Cancelar
+                    </button>
+                    <button
+                        id="confirmGalleryUpload"
+                        class="px-4 py-2 bg-green-600 hover:bg-green-500 text-white rounded-lg text-sm font-bold flex items-center gap-2"
+                    >
+                        <svg
+                            xmlns="http://www.w3.org/2000/svg"
+                            width="16"
+                            height="16"
+                            viewBox="0 0 24 24"
+                            fill="none"
+                            stroke="currentColor"
+                            stroke-width="2"
+                            ><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"
+                            ></path><polyline points="17 8 12 3 7 8"
+                            ></polyline><line x1="12" x2="12" y1="3" y2="15"
+                            ></line></svg
+                        >
+                        Confirmar Subida
+                    </button>
+                </div>
+            </div>
+
+            <div id="galleryUploadProgress" class="hidden text-center py-6">
+                <div class="w-16 h-16 mx-auto mb-4">
+                    <svg
+                        class="animate-spin text-purple-500"
+                        xmlns="http://www.w3.org/2000/svg"
+                        fill="none"
+                        viewBox="0 0 24 24"
+                    >
+                        <circle
+                            class="opacity-25"
+                            cx="12"
+                            cy="12"
+                            r="10"
+                            stroke="currentColor"
+                            stroke-width="4"></circle>
+                        <path
+                            class="opacity-75"
+                            fill="currentColor"
+                            d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
+                        ></path>
+                    </svg>
+                </div>
+                <p class="text-white font-bold">Subiendo...</p>
+            </div>
+
+            <div id="gallerySuccess" class="hidden text-center mt-4">
+                <p class="text-green-400 font-bold">
+                    ✓ Foto subida correctamente
+                </p>
+            </div>
+        </div>
+    </div>
+
+    <!-- MODAL: New Category -->
+    <div
+        id="categoryModal"
+        class="fixed inset-0 z-50 hidden items-center justify-center p-4"
+    >
+        <div
+            class="absolute inset-0 bg-black/90 backdrop-blur-md"
+            data-close-modal
+        >
+        </div>
+        <div
+            class="relative bg-gray-900 border border-white/10 rounded-[2.5rem] w-full max-w-xl overflow-hidden shadow-2xl"
+        >
+            <div
+                class="p-10 border-b border-white/5 flex justify-between items-center"
+            >
+                <h2
+                    class="text-2xl font-black uppercase tracking-tighter italic"
+                >
+                    Nueva Categoría
+                </h2>
+                <button
+                    class="text-gray-400 hover:text-white transition-colors text-3xl"
+                    data-close-modal>×</button
+                >
+            </div>
+
+            <form id="categoryForm" class="p-10 space-y-8">
+                <input type="hidden" name="imageUrl" id="formImageUrl" />
+
+                <!-- Image Upload -->
+                <div>
+                    <label
+                        class="block text-[10px] font-black uppercase tracking-[0.2em] text-gray-500 mb-4"
+                        >Imagen de Portada (Homepage)</label
+                    >
+
+                    <div class="flex items-start gap-6">
+                        <!-- Preview -->
+                        <div
+                            id="imagePreviewContainer"
+                            class="hidden relative group/img shrink-0"
+                        >
+                            <img
+                                id="imagePreview"
+                                src=""
+                                class="w-32 h-32 object-cover rounded-3xl border border-white/10"
+                            />
+                            <button
+                                type="button"
+                                id="removeImage"
+                                class="absolute -top-2 -right-2 bg-red-600 text-white w-7 h-7 rounded-full flex items-center justify-center font-bold shadow-xl hover:scale-110 transition-transform"
+                                >×</button
+                            >
+                        </div>
+
+                        <!-- Drop Zone -->
+                        <div
+                            id="dropZone"
+                            class="flex-1 border-2 border-dashed border-gray-700 rounded-3xl p-8 text-center hover:border-white/20 hover:bg-white/5 transition-all cursor-pointer group relative overflow-hidden"
+                        >
+                            <input
+                                type="file"
+                                id="fileInput"
+                                class="hidden"
+                                accept="image/*"
+                            />
+                            <div id="uploadContent">
+                                <div
+                                    class="w-12 h-12 bg-gray-900 rounded-2xl flex items-center justify-center mx-auto mb-3 group-hover:scale-110 transition-transform"
+                                >
+                                    <svg
+                                        xmlns="http://www.w3.org/2000/svg"
+                                        width="24"
+                                        height="24"
+                                        viewBox="0 0 24 24"
+                                        fill="none"
+                                        stroke="currentColor"
+                                        stroke-width="2"
+                                        stroke-linecap="round"
+                                        stroke-linejoin="round"
+                                        class="text-gray-400 group-hover:text-white"
+                                        ><path
+                                            d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"
+                                        ></path><polyline points="17 8 12 3 7 8"
+                                        ></polyline><line
+                                            x1="12"
+                                            x2="12"
+                                            y1="3"
+                                            y2="15"></line></svg
+                                    >
+                                </div>
+                                <p
+                                    class="text-[10px] font-black text-white/40 uppercase tracking-[0.2em] group-hover:text-white transition-colors"
+                                >
+                                    Arrastra o haz clic
+                                </p>
+                            </div>
+                            <!-- Progress Loader -->
+                            <div
+                                id="uploadProgress"
+                                class="hidden absolute inset-0 bg-gray-900/80 backdrop-blur-sm flex items-center justify-center"
+                            >
+                                <div class="flex flex-col items-center gap-3">
+                                    <svg
+                                        class="animate-spin h-8 w-8 text-white"
+                                        xmlns="http://www.w3.org/2000/svg"
+                                        fill="none"
+                                        viewBox="0 0 24 24"
+                                        ><circle
+                                            class="opacity-25"
+                                            cx="12"
+                                            cy="12"
+                                            r="10"
+                                            stroke="currentColor"
+                                            stroke-width="4"></circle><path
+                                            class="opacity-75"
+                                            fill="currentColor"
+                                            d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
+                                        ></path></svg
+                                    >
+                                    <span
+                                        class="text-[9px] font-black text-white uppercase tracking-widest"
+                                        >Subiendo...</span
+                                    >
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-8">
+                    <div>
+                        <label
+                            class="block text-[10px] font-black uppercase tracking-[0.2em] text-gray-500 mb-3"
+                            >Nombre</label
+                        >
+                        <input
+                            type="text"
+                            name="name"
+                            id="categoryName"
+                            required
+                            class="w-full bg-gray-900/50 border border-white/5 rounded-2xl px-6 py-4 text-white focus:outline-none focus:border-white/20 transition-all font-bold placeholder:text-gray-700"
+                            placeholder="Ej: Camisetas"
+                        />
+                    </div>
+
+                    <div>
+                        <label
+                            class="block text-[10px] font-black uppercase tracking-[0.2em] text-gray-500 mb-3"
+                            >Slug (URL)</label
+                        >
+                        <input
+                            type="text"
+                            name="slug"
+                            id="categorySlug"
+                            required
+                            class="w-full bg-gray-900/50 border border-white/5 rounded-2xl px-6 py-4 text-white focus:outline-none focus:border-white/20 transition-all font-mono font-bold text-sm text-gray-400 bg-black/20"
+                            placeholder="ej: camisetas"
+                        />
+                    </div>
+                </div>
+
+                <div class="pt-6 flex gap-4">
+                    <button
+                        type="button"
+                        class="flex-1 px-8 py-4 border border-white/5 text-gray-500 font-black uppercase tracking-[0.2em] text-[10px] hover:bg-white/5 hover:text-white transition-all rounded-2xl"
+                        data-close-modal
+                    >
+                        Cancelar
+                    </button>
+                    <button
+                        type="submit"
+                        class="flex-1 bg-white text-black font-black uppercase tracking-[0.2em] text-[10px] hover:bg-gray-200 transition-all rounded-2xl py-4 shadow-xl shadow-white/5"
+                    >
+                        Crear Categoría
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- MODAL: News -->
+    <div
+        id="newsModal"
+        class="fixed inset-0 z-50 hidden items-center justify-center p-4"
+    >
+        <div
+            class="absolute inset-0 bg-black/90 backdrop-blur-md"
+            data-close-modal
+        >
+        </div>
+        <div
+            class="relative bg-gray-900 border border-white/10 rounded-[2.5rem] w-full max-w-2xl mx-4 overflow-hidden shadow-2xl"
+        >
+            <div
+                class="p-8 border-b border-white/5 flex justify-between items-center bg-black/20"
+            >
+                <div>
+                    <h2
+                        class="text-2xl font-black uppercase tracking-tighter italic text-white"
+                    >
+                        Nueva Noticia
+                    </h2>
+                    <p
+                        class="text-[10px] font-bold text-gray-500 uppercase tracking-widest mt-1"
+                    >
+                        Comparte novedades con tus clientes
+                    </p>
+                </div>
+                <button
+                    class="text-gray-400 hover:text-white transition-colors text-3xl"
+                    data-close-modal>×</button
+                >
+            </div>
+
+            <form
+                id="newsForm"
+                class="p-8 space-y-6 max-h-[70vh] overflow-y-auto"
+            >
+                <div>
+                    <label
+                        class="block text-[10px] font-black uppercase tracking-widest text-gray-500 mb-3"
+                        >Título de la Noticia *</label
+                    >
+                    <input
+                        type="text"
+                        name="title"
+                        required
+                        class="w-full bg-gray-800 border border-white/5 rounded-xl px-4 py-4 text-white focus:border-pink-500/50 focus:outline-none transition-colors italic font-bold"
+                        placeholder="Ej: ¡Nueva Apertura este Sábado!"
+                    />
+                </div>
+
+                <div>
+                    <label
+                        class="block text-[10px] font-black uppercase tracking-widest text-gray-500 mb-3"
+                        >Slug (para la URL) *</label
+                    >
+                    <input
+                        type="text"
+                        name="slug"
+                        required
+                        class="w-full bg-gray-800 border border-white/5 rounded-xl px-4 py-3 text-white focus:border-pink-500/50 focus:outline-none transition-colors font-mono text-sm"
+                        placeholder="ej-nueva-apertura"
+                    />
+                </div>
+
+                <div>
+                    <label
+                        class="block text-[10px] font-black uppercase tracking-widest text-gray-500 mb-3"
+                        >Contenido de la Publicación *</label
+                    >
+                    <textarea
+                        name="content"
+                        required
+                        rows="6"
+                        class="w-full bg-gray-800 border border-white/5 rounded-xl px-4 py-4 text-white focus:border-pink-500/50 focus:outline-none transition-colors resize-none leading-relaxed"
+                        placeholder="Escribe aquí el texto completo..."
+                    ></textarea>
+                </div>
+
+                <!-- News Image Upload -->
+                <div class="space-y-3">
+                    <label
+                        class="block text-[10px] font-black uppercase tracking-widest text-gray-500"
+                        >Imagen de Portada</label
+                    >
+                    <input
+                        type="hidden"
+                        name="image_url"
+                        id="newsFormImageUrl"
+                    />
+
+                    <div
+                        id="newsDropZone"
+                        class="border-2 border-dashed border-white/10 rounded-2xl p-8 text-center cursor-pointer hover:border-pink-500/30 hover:bg-white/5 transition-all group"
+                    >
+                        <div class="space-y-3">
+                            <div
+                                class="text-4xl group-hover:scale-110 transition-transform"
+                            >
+                                📸
+                            </div>
+                            <p
+                                class="text-sm text-gray-400 font-bold uppercase tracking-widest"
+                            >
+                                Arrastra o haz clic
+                            </p>
+                        </div>
+                    </div>
+
+                    <div
+                        id="newsImagePreviewContainer"
+                        class="hidden relative group rounded-2xl overflow-hidden border border-white/10 aspect-video bg-black shadow-2xl"
+                    >
+                        <img
+                            id="newsImagePreview"
+                            src=""
+                            class="w-full h-full object-cover"
+                        />
+                        <div
+                            class="absolute inset-0 bg-black/60 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center gap-4"
+                        >
+                            <button
+                                type="button"
+                                id="removeNewsImage"
+                                class="bg-red-600 hover:bg-red-700 text-white px-4 py-2 rounded-xl text-[10px] font-black uppercase tracking-widest transition-colors shadow-lg"
+                                >Eliminar</button
+                            >
+                        </div>
+                    </div>
+
+                    <div id="newsUploadProgress" class="hidden">
+                        <div
+                            class="h-1 w-full bg-gray-800 rounded-full overflow-hidden"
+                        >
+                            <div
+                                class="h-full bg-pink-500 animate-pulse w-full"
+                            >
+                            </div>
+                        </div>
+                    </div>
+
+                    <input
+                        type="file"
+                        id="newsFileInput"
+                        class="hidden"
+                        accept="image/*"
+                    />
+                </div>
+
+                <button
+                    type="submit"
+                    id="newsSubmitBtn"
+                    class="w-full bg-white text-black font-black uppercase tracking-[0.2em] py-5 rounded-2xl shadow-xl hover:shadow-white/10 active:scale-[0.98] transition-all"
+                >
+                    Publicar Ahora
+                </button>
+            </form>
+        </div>
+    </div>
+
+    <!-- Toast Notification -->
+    <div
+        id="toast"
+        class="fixed bottom-6 right-6 bg-green-600 text-white px-6 py-4 rounded-xl shadow-2xl transform translate-y-24 opacity-0 transition-all duration-300 z-50"
+    >
+        <div class="flex items-center gap-3">
+            <svg
+                xmlns="http://www.w3.org/2000/svg"
+                width="24"
+                height="24"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="2"
+            >
+                <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"></path>
+                <polyline points="22 4 12 14.01 9 11.01"></polyline>
+            </svg>
+            <span id="toastMessage">¡Creado correctamente!</span>
+        </div>
+    </div>
+
+    <!-- Chart.js CDN -->
+    <script is:inline src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+    <script
+        is:inline
+        define:vars={{
+            salesLabels,
+            salesValues,
+            visitsLabels,
+            visitsValues,
+        }}
+    >
+        function initCharts() {
+            if (typeof Chart === "undefined") {
+                console.log("Waiting for Chart.js...");
+                setTimeout(initCharts, 100);
+                return;
+            }
+
+            const salesCtx = document.getElementById("salesChart");
+            const visitsCtx = document.getElementById("visitsChart");
+
+            // Destroy existing charts to prevent duplication on re-runs
+            if (window.salesChartInstance) window.salesChartInstance.destroy();
+            if (window.visitsChartInstance)
+                window.visitsChartInstance.destroy();
+
+            if (salesCtx) {
+                window.salesChartInstance = new Chart(salesCtx, {
+                    type: "bar",
+                    data: {
+                        labels: salesLabels,
+                        datasets: [
+                            {
+                                label: "Ventas (€)",
+                                data: salesValues,
+                                backgroundColor: "rgba(59, 130, 246, 0.8)",
+                                borderColor: "rgb(59, 130, 246)",
+                                borderWidth: 1,
+                                borderRadius: 6,
+                            },
+                        ],
+                    },
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        plugins: {
+                            legend: { display: false },
+                        },
+                        scales: {
+                            y: {
+                                beginAtZero: true,
+                                grid: { color: "rgba(255,255,255,0.1)" },
+                                ticks: { color: "#9ca3af" },
+                            },
+                            x: {
+                                grid: { display: false },
+                                ticks: { color: "#9ca3af" },
+                            },
+                        },
+                    },
+                });
+            }
+
+            if (visitsCtx) {
+                window.visitsChartInstance = new Chart(visitsCtx, {
+                    type: "bar",
+                    data: {
+                        labels: visitsLabels,
+                        datasets: [
+                            {
+                                label: "Visitas",
+                                data: visitsValues,
+                                backgroundColor: "rgba(168, 85, 247, 0.8)",
+                                borderColor: "rgb(168, 85, 247)",
+                                borderWidth: 1,
+                                borderRadius: 6,
+                            },
+                        ],
+                    },
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        plugins: {
+                            legend: { display: false },
+                        },
+                        scales: {
+                            y: {
+                                beginAtZero: true,
+                                grid: { color: "rgba(255,255,255,0.1)" },
+                                ticks: { color: "#9ca3af", stepSize: 1 },
+                            },
+                            x: {
+                                grid: { display: false },
+                                ticks: { color: "#9ca3af" },
+                            },
+                        },
+                    },
+                });
+            }
+        }
+
+        // Start initialization
+        initCharts();
+
+        // Re-init on navigation (Astro view transitions support if enabled, though strict here)
+        document.addEventListener("astro:page-load", initCharts);
+    </script>
+
+    <script>
+        import { supabase } from "../../lib/supabase";
+
+        // Modal Management
+        const productModal = document.getElementById("productModal");
+        const galleryModal = document.getElementById("galleryModal");
+        const categoryModal = document.getElementById("categoryModal");
+        const newsModal = document.getElementById("newsModal");
+        const toast = document.getElementById("toast");
+        const toastMessage = document.getElementById("toastMessage");
+
+        function openModal(modal: HTMLElement | null) {
+            modal?.classList.remove("hidden");
+            modal?.classList.add("flex");
+        }
+
+        function closeModal(modal: HTMLElement | null) {
+            modal?.classList.add("hidden");
+            modal?.classList.remove("flex");
+        }
+
+        function showToast(message: string, isError = false) {
+            if (toastMessage) toastMessage.textContent = message;
+            toast?.classList.toggle("bg-green-600", !isError);
+            toast?.classList.toggle("bg-red-600", isError);
+            toast?.classList.remove("translate-y-24", "opacity-0");
+            setTimeout(() => {
+                toast?.classList.add("translate-y-24", "opacity-0");
+            }, 3000);
+        }
+
+        // Open modals
+        document
+            .getElementById("openProductModal")
+            ?.addEventListener("click", () => openModal(productModal));
+        document
+            .getElementById("openGalleryModal")
+            ?.addEventListener("click", () => openModal(galleryModal));
+        document
+            .getElementById("openCategoryModal")
+            ?.addEventListener("click", () => openModal(categoryModal));
+        document
+            .getElementById("openNewsModal")
+            ?.addEventListener("click", () => openModal(newsModal));
+
+        // Close modals
+        document.querySelectorAll("[data-close-modal]").forEach((btn) => {
+            btn.addEventListener("click", (e) => {
+                const modal = (e.target as HTMLElement).closest(".fixed");
+                closeModal(modal as HTMLElement);
+            });
+        });
+
+        const generateSlug = (value: string) => {
+            return value
+                .toLowerCase()
+                .normalize("NFD")
+                .replace(/[\u0300-\u036f]/g, "")
+                .replace(/[^a-z0-9]+/g, "-")
+                .replace(/(^-|-$)/g, "");
+        };
+
+        // Close on Escape
+        document.addEventListener("keydown", (e) => {
+            if (e.key === "Escape") {
+                closeModal(productModal);
+                closeModal(galleryModal);
+                closeModal(categoryModal);
+                closeModal(newsModal);
+            }
+        });
+
+        // Gallery Upload Logic
+        const galleryDropZone = document.getElementById(
+            "galleryDropZone",
+        ) as HTMLDivElement;
+        const galleryFileInput = document.getElementById(
+            "galleryFileInput",
+        ) as HTMLInputElement;
+        const galleryUploadContent = document.getElementById(
+            "galleryUploadContent",
+        ) as HTMLDivElement;
+        const galleryUploadProgress = document.getElementById(
+            "galleryUploadProgress",
+        ) as HTMLDivElement;
+        const gallerySuccess = document.getElementById(
+            "gallerySuccess",
+        ) as HTMLDivElement;
+
+        // Preview Elements
+        const galleryPreviewSection = document.getElementById(
+            "galleryPreviewSection",
+        ) as HTMLDivElement;
+        const galleryPreviewGrid = document.getElementById(
+            "galleryPreviewGrid",
+        ) as HTMLDivElement;
+        const confirmGalleryUpload = document.getElementById(
+            "confirmGalleryUpload",
+        ) as HTMLButtonElement;
+        const cancelGalleryUpload = document.getElementById(
+            "cancelGalleryUpload",
+        ) as HTMLButtonElement;
+
+        let galleryPendingFiles: { file: File; description: string }[] = [];
+
+        galleryDropZone?.addEventListener("click", () =>
+            galleryFileInput?.click(),
+        );
+
+        galleryDropZone?.addEventListener("dragover", (e) => {
+            e.preventDefault();
+            galleryDropZone.classList.add("border-white", "bg-gray-700/50");
+            galleryDropZone.classList.remove("border-gray-600");
+        });
+
+        galleryDropZone?.addEventListener("dragleave", (e) => {
+            e.preventDefault();
+            galleryDropZone.classList.remove("border-white", "bg-gray-700/50");
+            galleryDropZone.classList.add("border-gray-600");
+        });
+
+        const handleGalleryFiles = (files: File[]) => {
+            const imageFiles = files.filter((f) => f.type.startsWith("image/"));
+            if (imageFiles.length === 0) return;
+
+            const newFiles = imageFiles.map((f) => ({
+                file: f,
+                description: "",
+            }));
+            galleryPendingFiles = [...galleryPendingFiles, ...newFiles];
+            renderGalleryPreviews();
+            if (galleryFileInput) galleryFileInput.value = "";
+        };
+
+        galleryDropZone?.addEventListener("drop", (e) => {
+            e.preventDefault();
+            galleryDropZone.classList.remove("border-white", "bg-gray-700/50");
+            galleryDropZone.classList.add("border-gray-600");
+
+            const files = e.dataTransfer?.files;
+            if (files && files.length > 0) {
+                handleGalleryFiles(Array.from(files));
+            }
+        });
+
+        galleryFileInput?.addEventListener("change", () => {
+            if (galleryFileInput.files && galleryFileInput.files.length > 0) {
+                handleGalleryFiles(Array.from(galleryFileInput.files));
+            }
+        });
+
+        function renderGalleryPreviews() {
+            if (galleryPendingFiles.length > 0) {
+                // galleryDropZone.style.display = "none"; // Keep visible
+                galleryPreviewSection.classList.remove("hidden");
+            } else {
+                galleryDropZone.style.display = "block";
+                galleryPreviewSection.classList.add("hidden");
+                return;
+            }
+
+            galleryPreviewGrid.innerHTML = "";
+            galleryPendingFiles.forEach((item, index) => {
+                const url = URL.createObjectURL(item.file);
+                const div = document.createElement("div");
+                div.className =
+                    "relative bg-gray-800 rounded-lg overflow-hidden border border-gray-600 group flex flex-col";
+                div.innerHTML = `
+                <div class="relative aspect-square w-full bg-gray-900 flex items-center justify-center">
+                    <img src="${url}" class="max-w-full max-h-full object-contain" />
+                    <button 
+                        type="button"
+                        onclick="removeGalleryPendingFile(${index})"
+                        class="absolute top-1 right-1 bg-red-600 text-white p-1 rounded-md opacity-0 group-hover:opacity-100 transition-opacity hover:bg-red-700 z-10"
+                    >
+                        <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
+                    </button>
+                </div>
+                <div class="p-2">
+                     <input 
+                        type="text" 
+                        value="${item.description}" 
+                        placeholder="Descripción (SEO)" 
+                        class="w-full bg-gray-700 border border-gray-600 rounded px-2 py-1 text-xs text-white placeholder-gray-400 focus:border-white focus:outline-none transition-colors"
+                        oninput="updateGalleryDescription(${index}, this.value)"
+                    />
+                </div>
+            `;
+                galleryPreviewGrid.appendChild(div);
+            });
+        }
+
+        (window as any).removeGalleryPendingFile = (index: number) => {
+            galleryPendingFiles = galleryPendingFiles.filter(
+                (_, i) => i !== index,
+            );
+            renderGalleryPreviews();
+        };
+
+        (window as any).updateGalleryDescription = (
+            index: number,
+            value: string,
+        ) => {
+            if (galleryPendingFiles[index]) {
+                galleryPendingFiles[index].description = value;
+            }
+        };
+
+        cancelGalleryUpload?.addEventListener("click", () => {
+            galleryPendingFiles = [];
+            renderGalleryPreviews();
+        });
+
+        confirmGalleryUpload?.addEventListener("click", async () => {
+            if (galleryPendingFiles.length === 0) return;
+
+            galleryPreviewSection.classList.add("hidden");
+            galleryUploadProgress.classList.remove("hidden");
+
+            let uploaded = 0;
+            for (const item of galleryPendingFiles) {
+                try {
+                    const formData = new FormData();
+                    formData.append("file", item.file);
+                    formData.append("description", item.description);
+                    formData.append("alt_text", item.description);
+
+                    const response = await fetch("/api/gallery/upload", {
+                        method: "POST",
+                        body: formData,
+                    });
+
+                    const result = await response.json();
+                    if (result.success) uploaded++;
+                } catch (e) {
+                    console.error(e);
+                }
+            }
+
+            galleryUploadProgress.classList.add("hidden");
+            gallerySuccess.classList.remove("hidden");
+            galleryPendingFiles = [];
+
+            setTimeout(() => {
+                gallerySuccess.classList.add("hidden");
+                renderGalleryPreviews(); // Will show dropzone
+                if (galleryModal) closeModal(galleryModal);
+                window.location.reload(); // Reload to update charts/counts if needed
+            }, 1500);
+        });
+
+        // --- Product Modal Logic ---
+        const prodForm = document.getElementById(
+            "productForm",
+        ) as HTMLFormElement;
+        const prodNameInput = prodForm?.querySelector(
+            'input[name="name"]',
+        ) as HTMLInputElement;
+        const prodSlugInput = prodForm?.querySelector(
+            'input[name="slug"]',
+        ) as HTMLInputElement;
+        const prodDropZone = document.getElementById("prodDropZone");
+        const prodFileInput = document.getElementById(
+            "prodFileInput",
+        ) as HTMLInputElement;
+        const prodImageUrlInput = document.getElementById(
+            "prodFormImageUrl",
+        ) as HTMLInputElement;
+        const prodPreviewContainer = document.getElementById(
+            "prodImagePreviewContainer",
+        );
+        const prodPreview = document.getElementById(
+            "prodImagePreview",
+        ) as HTMLImageElement;
+        const removeProdBtn = document.getElementById("removeProdImage");
+        const prodUploadProgress =
+            document.getElementById("prodUploadProgress");
+
+        prodNameInput?.addEventListener("input", (e) => {
+            const value = (e.target as HTMLInputElement).value;
+            if (prodSlugInput) prodSlugInput.value = generateSlug(value);
+        });
+
+        // Image Upload Handlers for Product
+        prodDropZone?.addEventListener("click", () => prodFileInput.click());
+
+        prodDropZone?.addEventListener("dragover", (e) => {
+            e.preventDefault();
+            prodDropZone.classList.add("border-white/20", "bg-white/5");
+        });
+
+        prodDropZone?.addEventListener("dragleave", () => {
+            prodDropZone.classList.remove("border-white/20", "bg-white/5");
+        });
+
+        prodDropZone?.addEventListener("drop", async (e: DragEvent) => {
+            e.preventDefault();
+            prodDropZone.classList.remove("border-white/20", "bg-white/5");
+            const files = e.dataTransfer?.files;
+            if (files && files.length > 0)
+                await handleProdImageUpload(files[0]);
+        });
+
+        prodFileInput?.addEventListener("change", async () => {
+            if (prodFileInput.files && prodFileInput.files.length > 0) {
+                await handleProdImageUpload(prodFileInput.files[0]);
+            }
+        });
+
+        async function handleProdImageUpload(file: File) {
+            if (!file.type.startsWith("image/")) {
+                showToast("Por favor, sube una imagen", true);
+                return;
+            }
+
+            prodUploadProgress?.classList.remove("hidden");
+
+            try {
+                const formData = new FormData();
+                formData.append("file", file);
+
+                const response = await fetch("/api/products/upload", {
+                    method: "POST",
+                    body: formData,
+                });
+
+                const data = await response.json();
+
+                if (data.success) {
+                    prodImageUrlInput.value = data.url;
+                    prodPreview.src = data.url;
+                    prodPreviewContainer?.classList.remove("hidden");
+                    prodDropZone?.classList.add("hidden");
+                    showToast("Imagen de producto subida");
+                } else {
+                    showToast(data.error || "Error al subir", true);
+                }
+            } catch (error) {
+                showToast("Error de conexión", true);
+            } finally {
+                prodUploadProgress?.classList.add("hidden");
+                prodFileInput.value = "";
+            }
+        }
+
+        removeProdBtn?.addEventListener("click", (e) => {
+            e.stopPropagation();
+            prodImageUrlInput.value = "";
+            prodPreview.src = "";
+            prodPreviewContainer?.classList.add("hidden");
+            prodDropZone?.classList.remove("hidden");
+        });
+
+        prodForm?.addEventListener("submit", async (e) => {
+            e.preventDefault();
+            const formData = new FormData(prodForm);
+
+            const data = {
+                name: formData.get("name"),
+                slug: formData.get("slug"),
+                description: formData.get("description"),
+                price: Math.round(
+                    parseFloat(formData.get("price") as string) * 100,
+                ),
+                category_id: formData.get("category_id")
+                    ? parseInt(formData.get("category_id") as string)
+                    : null,
+                image_url: formData.get("imageUrl"),
+                active: formData.get("active") === "on",
+                is_offer: formData.get("is_offer") === "on",
+            };
+
+            try {
+                const response = await fetch("/api/products/create", {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify(data),
+                });
+
+                if (response.ok) {
+                    closeModal(productModal);
+                    showToast("Producto creado correctamente");
+                    prodForm.reset();
+                    prodImageUrlInput.value = "";
+                    prodPreview.src = "";
+                    prodPreviewContainer?.classList.add("hidden");
+                    prodDropZone?.classList.remove("hidden");
+                    setTimeout(() => location.reload(), 1500);
+                } else {
+                    showToast("Error al crear producto", true);
+                }
+            } catch (err) {
+                showToast("Error de conexión", true);
+            }
+        });
+
+        // --- Category Logic ---
+        const categoryForm = document.getElementById(
+            "categoryForm",
+        ) as HTMLFormElement;
+        const catNameInput = document.getElementById(
+            "categoryName",
+        ) as HTMLInputElement;
+        const catSlugInput = document.getElementById(
+            "categorySlug",
+        ) as HTMLInputElement;
+        const dropZone = document.getElementById("dropZone");
+        const fileInput = document.getElementById(
+            "fileInput",
+        ) as HTMLInputElement;
+        const formImageUrl = document.getElementById(
+            "formImageUrl",
+        ) as HTMLInputElement;
+        const imagePreviewContainer = document.getElementById(
+            "imagePreviewContainer",
+        );
+        const imagePreview = document.getElementById(
+            "imagePreview",
+        ) as HTMLImageElement;
+        const removeImageBtn = document.getElementById("removeImage");
+        const uploadProgress = document.getElementById("uploadProgress");
+
+        catNameInput?.addEventListener("input", (e) => {
+            const value = (e.target as HTMLInputElement).value;
+            if (catSlugInput) catSlugInput.value = generateSlug(value);
+        });
+
+        // Image Upload Handlers
+        dropZone?.addEventListener("click", () => fileInput.click());
+
+        dropZone?.addEventListener("dragover", (e) => {
+            e.preventDefault();
+            dropZone.classList.add("border-white/20", "bg-white/5");
+        });
+
+        dropZone?.addEventListener("dragleave", () => {
+            dropZone.classList.remove("border-white/20", "bg-white/5");
+        });
+
+        dropZone?.addEventListener("drop", async (e: DragEvent) => {
+            e.preventDefault();
+            dropZone.classList.remove("border-white/20", "bg-white/5");
+            const files = e.dataTransfer?.files;
+            if (files && files.length > 0) await handleCatImageUpload(files[0]);
+        });
+
+        fileInput?.addEventListener("change", async () => {
+            if (fileInput.files && fileInput.files.length > 0) {
+                await handleCatImageUpload(fileInput.files[0]);
+            }
+        });
+
+        async function handleCatImageUpload(file: File) {
+            if (!file.type.startsWith("image/")) {
+                showToast("Por favor, sube una imagen", true);
+                return;
+            }
+
+            uploadProgress?.classList.remove("hidden");
+
+            try {
+                const formData = new FormData();
+                formData.append("file", file);
+
+                const response = await fetch("/api/categories/upload", {
+                    method: "POST",
+                    body: formData,
+                });
+
+                const data = await response.json();
+
+                if (data.success) {
+                    formImageUrl.value = data.url;
+                    imagePreview.src = data.url;
+                    imagePreviewContainer?.classList.remove("hidden");
+                    dropZone?.classList.add("hidden");
+                    showToast("Imagen subida");
+                } else {
+                    showToast(data.error || "Error al subir", true);
+                }
+            } catch (error) {
+                showToast("Error de conexión", true);
+            } finally {
+                uploadProgress?.classList.add("hidden");
+                fileInput.value = "";
+            }
+        }
+
+        removeImageBtn?.addEventListener("click", (e) => {
+            e.stopPropagation();
+            formImageUrl.value = "";
+            imagePreview.src = "";
+            imagePreviewContainer?.classList.add("hidden");
+            dropZone?.classList.remove("hidden");
+        });
+
+        categoryForm?.addEventListener("submit", async (e) => {
+            e.preventDefault();
+            const formData = new FormData(categoryForm);
+
+            const data = {
+                name: formData.get("name"),
+                slug: formData.get("slug"),
+                image_url: formData.get("imageUrl"),
+            };
+
+            try {
+                const response = await fetch("/api/categories/create", {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify(data),
+                });
+
+                if (response.ok) {
+                    closeModal(categoryModal);
+                    showToast("Categoría creada correctamente");
+                    categoryForm.reset();
+                    formImageUrl.value = "";
+                    imagePreview.src = "";
+                    imagePreviewContainer?.classList.add("hidden");
+                    dropZone?.classList.remove("hidden");
+                    setTimeout(() => location.reload(), 1500);
+                } else {
+                    showToast("Error al crear categoría", true);
+                }
+            } catch (err) {
+                showToast("Error de conexión", true);
+            }
+        });
+
+        // News Modal Logic
+        const newsForm = document.getElementById("newsForm") as HTMLFormElement;
+        const newsDropZone = document.getElementById("newsDropZone");
+        const newsFileInput = document.getElementById(
+            "newsFileInput",
+        ) as HTMLInputElement;
+        const newsPreviewContainer = document.getElementById(
+            "newsImagePreviewContainer",
+        );
+        const newsPreviewImg = document.getElementById(
+            "newsImagePreview",
+        ) as HTMLImageElement;
+        const newsProgress = document.getElementById("newsUploadProgress");
+        const newsHiddenUrlInput = document.getElementById(
+            "newsFormImageUrl",
+        ) as HTMLInputElement;
+        const removeNewsImgBtn = document.getElementById("removeNewsImage");
+        const newsSubmitBtn = document.getElementById(
+            "newsSubmitBtn",
+        ) as HTMLButtonElement;
+
+        newsDropZone?.addEventListener("click", () => newsFileInput.click());
+
+        newsFileInput?.addEventListener("change", async (e) => {
+            const files = (e.target as HTMLInputElement).files;
+            if (!files || files.length === 0) return;
+
+            const file = files[0];
+            const fileExt = file.name.split(".").pop();
+            const fileName = `${Math.random()}.${fileExt}`;
+            const filePath = `news/${fileName}`;
+
+            try {
+                newsDropZone?.classList.add("hidden");
+                newsProgress?.classList.remove("hidden");
+
+                const { error: uploadError } = await supabase.storage
+                    .from("news")
+                    .upload(filePath, file);
+
+                if (uploadError) throw uploadError;
+
+                const {
+                    data: { publicUrl },
+                } = supabase.storage.from("news").getPublicUrl(filePath);
+
+                newsHiddenUrlInput.value = publicUrl;
+                newsPreviewImg.src = publicUrl;
+                newsPreviewContainer?.classList.remove("hidden");
+            } catch (error) {
+                console.error("Full upload error:", error);
+                alert("Error al subir la imagen");
+                newsDropZone?.classList.remove("hidden");
+            } finally {
+                newsProgress?.classList.add("hidden");
+            }
+        });
+
+        removeNewsImgBtn?.addEventListener("click", () => {
+            newsHiddenUrlInput.value = "";
+            newsPreviewContainer?.classList.add("hidden");
+            newsDropZone?.classList.remove("hidden");
+            newsFileInput.value = "";
+        });
+
+        newsForm?.addEventListener("submit", async (e) => {
+            e.preventDefault();
+            newsSubmitBtn.disabled = true;
+            newsSubmitBtn.innerText = "Publicando...";
+
+            const formData = new FormData(newsForm);
+            const data: any = {
+                title: formData.get("title"),
+                slug: formData.get("slug"),
+                content: formData.get("content"),
+                image_url: formData.get("image_url"),
+                is_published: true,
+            };
+
+            try {
+                const { error } = await supabase.from("news").insert([data]);
+                if (error) throw error;
+
+                showToast("¡Noticia publicada correctamente!");
+                setTimeout(() => window.location.reload(), 1500);
+            } catch (error) {
+                console.error("Database Error:", error);
+                alert("Error al guardar la noticia");
+                newsSubmitBtn.disabled = false;
+                newsSubmitBtn.innerText = "Publicar Ahora";
+            }
+        });
+
+        // News Slug Auto-generation
+        const newsTitleInput = newsForm?.querySelector(
+            'input[name="title"]',
+        ) as HTMLInputElement;
+        const newsSlugInput = newsForm?.querySelector(
+            'input[name="slug"]',
+        ) as HTMLInputElement;
+
+        newsTitleInput?.addEventListener("input", (e) => {
+            const val = (e.target as HTMLInputElement).value;
+            newsSlugInput.value = generateSlug(val);
+        });
+    </script>
+</AdminLayout>

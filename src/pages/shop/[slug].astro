@@ -1,0 +1,86 @@
+---
+export const prerender = false;
+import ShopLayout from "../../layouts/ShopLayout.astro";
+import ProductCard from "../../components/ui/ProductCard.astro";
+import { supabase } from "../../lib/supabase";
+
+const { slug } = Astro.params;
+
+// Fetch category details
+const { data: category, error: catError } = await supabase
+    .from("categories")
+    .select("*")
+    .eq("slug", slug)
+    .single();
+
+if (catError || !category) {
+    return Astro.redirect("/404");
+}
+
+const url = new URL(Astro.request.url);
+const priceRange = url.searchParams.get("price_range");
+const sort = url.searchParams.get("sort") || "newest";
+
+// Build base query
+let query = supabase
+    .from("products")
+    .select(
+        "*, product_images(image_url), stock(quantity), category:categories!inner(*)",
+    )
+    .eq("active", true)
+    .eq("category_id", category.id);
+
+// Filter by price range
+if (priceRange) {
+    const [min, max] = priceRange.split("-").map(Number);
+    if (!isNaN(min)) query = query.gte("price", min * 100);
+    if (!isNaN(max)) query = query.lte("price", max * 100);
+}
+
+// Handle sorting
+if (sort === "price_asc") {
+    query = query.order("price", { ascending: true });
+} else if (sort === "price_desc") {
+    query = query.order("price", { ascending: false });
+} else {
+    query = query.order("created_at", { ascending: false });
+}
+
+const { data: products } = await query.limit(40);
+---
+
+<ShopLayout
+    title={category.name}
+    description={`Explora nuestra selección de ${category.name.toLowerCase()}.`}
+>
+    <div
+        class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-6"
+    >
+        {
+            products && products.length > 0 ? (
+                products.map((product: any, index: number) => (
+                    <ProductCard
+                        product={{
+                            ...product,
+                            image_url: product.product_images?.[0]?.image_url,
+                        }}
+                        loading={index < 5 ? "eager" : "lazy"}
+                    />
+                ))
+            ) : (
+                <div class="col-span-full py-20 text-center text-gray-500 bg-gray-100 rounded-xl">
+                    <p>
+                        No se encontraron productos en esta categoría con los
+                        filtros seleccionados.
+                    </p>
+                    <a
+                        href={`/shop/${slug}`}
+                        class="text-black font-bold border-b border-black mt-4 inline-block"
+                    >
+                        Limpiar filtros
+                    </a>
+                </div>
+            )
+        }
+    </div>
+</ShopLayout>

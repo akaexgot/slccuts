@@ -1,43 +1,57 @@
-# Astro Starter Kit: Minimal
+# SLC CUTS - Barbería de Autor & Shop Online
 
-```sh
-npm create astro@latest -- --template minimal
-```
+Proyecto de e-commerce y panel de administración para **SLC CUTS**, barbería especializada en estilo, maestría y vanguardia.
 
-> 🧑‍🚀 **Seasoned astronaut?** Delete this file. Have fun!
+## 🚀 Tecnologías
 
-## 🚀 Project Structure
+- **Framework**: [Astro](https://astro.build/)
+- **Frontend**: React (Components) + Vanilla CSS/Tailwind
+- **Database & Auth**: [Supabase](https://supabase.com/)
+- **Pagos**: [Stripe API](https://stripe.com/)
+- **Citas**: Integración con [Setmore](https://setmore.com/)
 
-Inside of your Astro project, you'll see the following folders and files:
+## 📂 Estructura del Proyecto
 
 ```text
 /
-├── public/
+├── database/           # Scripts SQL (Schema y Seed)
+├── public/             # Assets estáticos (Logo, Favicon)
 ├── src/
-│   └── pages/
-│       └── index.astro
-└── package.json
+│   ├── components/     # Componentes React y Astro
+│   ├── layouts/        # Plantillas base
+│   └── pages/          # Rutas del sitio (Públicas y Admin)
+└── package.json        # Dependencias y scripts
 ```
 
-Astro looks for `.astro` or `.md` files in the `src/pages/` directory. Each page is exposed as a route based on its file name.
+## 🛠️ Configuración Local
 
-There's nothing special about `src/components/`, but that's where we like to put any Astro/React/Vue/Svelte/Preact components.
+1.  **Instalar dependencias**:
+    ```bash
+    npm install
+    ```
 
-Any static assets, like images, can be placed in the `public/` directory.
+2.  **Configurar Variables de Entorno**:
+    Crea un archivo `.env.local` con las siguientes claves:
+    ```env
+    PUBLIC_SUPABASE_URL=tu_url_supabase
+    PUBLIC_SUPABASE_ANON_KEY=tu_clave_anon
+    STRIPE_SECRET_KEY=tu_clave_secreta_stripe
+    ```
 
-## 🧞 Commands
+3.  **Preparar Base de Datos**:
+    Ejecuta el contenido de `database/schema.sql` y `database/seed.sql` en el SQL Editor de Supabase.
 
-All commands are run from the root of the project, from a terminal:
+4.  **Iniciar Servidor de Desarrollo**:
+    ```bash
+    npm run dev
+    ```
 
-| Command                   | Action                                           |
-| :------------------------ | :----------------------------------------------- |
-| `npm install`             | Installs dependencies                            |
-| `npm run dev`             | Starts local dev server at `localhost:4321`      |
-| `npm run build`           | Build your production site to `./dist/`          |
-| `npm run preview`         | Preview your build locally, before deploying     |
-| `npm run astro ...`       | Run CLI commands like `astro add`, `astro check` |
-| `npm run astro -- --help` | Get help using the Astro CLI                     |
+## 🔐 Seguridad y Rendimiento
 
-## 👀 Want to learn more?
+- **Precios Blindados**: Validación de precios en el servidor vía Supabase para evitar manipulaciones en el checkout.
+- **Acceso Administrativo**: Protección por rol (admin) a nivel de servidor (SSR).
+- **Imágenes Optimizadas**: Uso de `astro:assets` para carga diferida y conversión automática a formatos modernos.
+- **SEO**: Meta etiquetas dinámicas y OpenGraph para redes sociales.
 
-Feel free to check [our documentation](https://docs.astro.build) or jump into our [Discord server](https://astro.build/chat).
+---
+© 2026 SLC CUTS. Todos los derechos reservados.

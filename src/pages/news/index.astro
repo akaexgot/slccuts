@@ -1,0 +1,109 @@
+---
+export const prerender = false;
+import Layout from "../../layouts/Layout.astro";
+import { supabase } from "../../lib/supabase";
+import { Image } from "astro:assets";
+
+const { data: news } = await supabase
+    .from("news")
+    .select("*")
+    .eq("is_published", true)
+    .order("created_at", { ascending: false });
+
+const formatDate = (dateStr: string) => {
+    return new Date(dateStr).toLocaleDateString("es-ES", {
+        day: "2-digit",
+        month: "long",
+        year: "numeric",
+    });
+};
+---
+
+<Layout title="Noticias | SLC CUTS">
+    <main class="min-h-screen bg-white">
+        <!-- Header -->
+        <section class="py-24 bg-black text-white relative overflow-hidden">
+            <div
+                class="absolute inset-0 opacity-10 pointer-events-none"
+                style="background-image: url('/logoblancotransparente.png'); background-size: 100px; background-repeat: repeat;"
+            >
+            </div>
+            <div class="container mx-auto px-4 relative z-10 text-center">
+                <h1
+                    class="text-6xl md:text-8xl font-black uppercase tracking-tighter italic mb-4"
+                >
+                    El Blog
+                </h1>
+                <p class="text-gray-400 font-bold uppercase tracking-[0.2em]">
+                    Noticias, estilo y novedades SLC
+                </p>
+            </div>
+        </section>
+
+        <!-- News Grid -->
+        <section class="py-24">
+            <div class="container mx-auto px-4">
+                <div
+                    class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-12"
+                >
+                    {
+                        news && news.length > 0 ? (
+                            news.map((item: any) => (
+                                <article class="group animate-on-scroll">
+                                    <a
+                                        href={`/news/${item.slug}`}
+                                        class="block mb-6 rounded-[2rem] overflow-hidden bg-gray-100 aspect-video border border-black/5 shadow-xl relative"
+                                    >
+                                        {item.image_url ? (
+                                            <Image
+                                                src={item.image_url}
+                                                alt={item.title}
+                                                width={600}
+                                                height={337}
+                                                class="w-full h-full object-cover transform group-hover:scale-105 transition-transform duration-1000"
+                                                loading="lazy"
+                                            />
+                                        ) : (
+                                            <div class="w-full h-full flex items-center justify-center text-gray-200 text-4xl italic font-black uppercase">
+                                                SLC
+                                            </div>
+                                        )}
+                                        <div class="absolute inset-0 bg-black/10 group-hover:bg-transparent transition-colors duration-500" />
+                                    </a>
+
+                                    <div class="space-y-4 px-2">
+                                        <div class="flex items-center gap-3">
+                                            <span class="w-6 h-[1px] bg-pink-500" />
+                                            <span class="text-[10px] font-black uppercase tracking-widest text-pink-500">
+                                                {formatDate(item.created_at)}
+                                            </span>
+                                        </div>
+                                        <h2 class="text-2xl font-black uppercase tracking-tight italic leading-tight group-hover:text-pink-600 transition-colors line-clamp-2">
+                                            <a href={`/news/${item.slug}`}>
+                                                {item.title}
+                                            </a>
+                                        </h2>
+                                        <p class="text-gray-600 line-clamp-3 text-sm leading-relaxed">
+                                            {item.content}
+                                        </p>
+                                        <a
+                                            href={`/news/${item.slug}`}
+                                            class="inline-flex items-center gap-3 text-[10px] font-black uppercase tracking-widest text-black group-hover:gap-5 transition-all"
+                                        >
+                                            Leer Mas{" "}
+                                            <span class="text-lg">→</span>
+                                        </a>
+                                    </div>
+                                </article>
+                            ))
+                        ) : (
+                            <div class="col-span-full text-center py-20 text-gray-400 uppercase font-black tracking-widest">
+                                No hay publicaciones todavía
+                            </div>
+                        )
+                    }
+                </div>
+            </div>
+        </section>
+    </main>
+</Layout>

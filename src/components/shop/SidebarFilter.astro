@@ -1,0 +1,267 @@
+---
+import { supabase } from "../../lib/supabase";
+
+const { data: categories } = await supabase
+    .from("categories")
+    .select("*")
+    .order("name");
+
+const url = new URL(Astro.request.url);
+const currentCategory = url.searchParams.get("category");
+const currentPriceRange = url.searchParams.get("price_range");
+const currentSort = url.searchParams.get("sort") || "newest";
+
+const priceRanges = [
+    { label: "0€ - 20€", value: "0-20" },
+    { label: "20€ - 50€", value: "20-50" },
+    { label: "50€ - 100€", value: "50-100" },
+    { label: "+100€", value: "100-999999" },
+];
+---
+
+<aside class="w-full lg:w-64 flex-shrink-0">
+    <div class="sticky top-24 space-y-10">
+        <div>
+            <h3
+                class="text-sm font-black uppercase tracking-[0.2em] text-black mb-8 pb-4 border-b-2 border-black/5"
+            >
+                Filtrar por
+            </h3>
+
+            <!-- Categories -->
+            <div class="mb-10">
+                <h4
+                    class="text-[10px] font-bold text-gray-400 mb-5 uppercase tracking-[0.15em]"
+                >
+                    Categorías
+                </h4>
+                <div class="space-y-3">
+                    <a
+                        href="/shop/new"
+                        class={`group flex items-center gap-2 text-sm transition-all duration-300 ${!currentCategory && url.pathname.endsWith("new") ? "text-black font-bold" : "text-gray-500 hover:text-black"}`}
+                    >
+                        {
+                            !currentCategory &&
+                                url.pathname.endsWith("new") && (
+                                    <span class="w-1.5 h-1.5 bg-black rounded-full" />
+                                )
+                        }
+                        <span>Todos los productos</span>
+                    </a>
+                    {
+                        categories?.map((cat: any) => (
+                            <a
+                                href={`/shop/${cat.slug}`}
+                                class={`group flex items-center gap-2 text-sm transition-all duration-300 ${currentCategory === cat.slug || url.pathname === `/shop/${cat.slug}` ? "text-black font-bold" : "text-gray-500 hover:text-black"}`}
+                            >
+                                {(currentCategory === cat.slug ||
+                                    url.pathname === `/shop/${cat.slug}`) && (
+                                    <span class="w-1.5 h-1.5 bg-black rounded-full" />
+                                )}
+                                <span class="group-hover:translate-x-1 transition-transform">
+                                    {cat.name}
+                                </span>
+                            </a>
+                        ))
+                    }
+                </div>
+            </div>
+
+            <!-- Price Range -->
+            <div class="mb-10">
+                <h4
+                    class="text-[10px] font-bold text-gray-400 mb-5 uppercase tracking-[0.15em]"
+                >
+                    Rango de Precio
+                </h4>
+                <div class="space-y-4">
+                    {
+                        priceRanges.map((range) => (
+                            <label class="flex items-center gap-3 text-sm text-gray-500 cursor-pointer hover:text-black group transition-colors">
+                                <div class="relative flex items-center justify-center">
+                                    <input
+                                        type="radio"
+                                        name="price_range"
+                                        value={range.value}
+                                        checked={
+                                            currentPriceRange === range.value
+                                        }
+                                        class="price-filter appearance-none w-5 h-5 border-2 border-gray-200 rounded-full checked:border-black transition-all cursor-pointer"
+                                    />
+                                    <div
+                                        class={`absolute w-2.5 h-2.5 bg-black rounded-full transition-transform scale-0 ${currentPriceRange === range.value ? "scale-100" : ""}`}
+                                    />
+                                </div>
+                                <span
+                                    class={
+                                        currentPriceRange === range.value
+                                            ? "text-black font-bold"
+                                            : "group-hover:translate-x-1 transition-transform"
+                                    }
+                                >
+                                    {range.label}
+                                </span>
+                            </label>
+                        ))
+                    }
+                    {
+                        currentPriceRange && (
+                            <button
+                                id="clearPrice"
+                                class="flex items-center gap-2 text-[10px] text-red-500 hover:text-red-700 transition-colors uppercase font-black tracking-widest mt-2"
+                            >
+                                <svg
+                                    xmlns="http://www.w3.org/2000/svg"
+                                    width="12"
+                                    height="12"
+                                    viewBox="0 0 24 24"
+                                    fill="none"
+                                    stroke="currentColor"
+                                    stroke-width="3"
+                                    stroke-linecap="round"
+                                    stroke-linejoin="round"
+                                >
+                                    <>
+                                        <path d="M18 6 6 18" />
+                                        <path d="m6 6 12 12" />
+                                    </>
+                                </svg>
+                                Limpiar filtro
+                            </button>
+                        )
+                    }
+                </div>
+            </div>
+
+            <!-- Sort -->
+            <div>
+                <h4
+                    class="text-[10px] font-bold text-gray-400 mb-5 uppercase tracking-[0.15em]"
+                >
+                    Ordenar por
+                </h4>
+                <div class="relative">
+                    <select
+                        id="sortSelect"
+                        class="w-full appearance-none bg-gray-50 border border-gray-200 rounded-xl px-4 py-3 text-sm text-black font-medium focus:border-black focus:ring-1 focus:ring-black outline-none transition-all cursor-pointer"
+                    >
+                        <option
+                            value="newest"
+                            selected={currentSort === "newest"}
+                            >Últimas novedades</option
+                        >
+                        <option
+                            value="price_asc"
+                            selected={currentSort === "price_asc"}
+                            >Precio más bajo</option
+                        >
+                        <option
+                            value="price_desc"
+                            selected={currentSort === "price_desc"}
+                            >Precio más alto</option
+                        >
+                    </select>
+                    <div
+                        class="absolute right-4 top-1/2 -translate-y-1/2 pointer-events-none text-gray-400"
+                    >
+                        <svg
+                            xmlns="http://www.w3.org/2000/svg"
+                            width="16"
+                            height="16"
+                            viewBox="0 0 24 24"
+                            fill="none"
+                            stroke="currentColor"
+                            stroke-width="2"
+                            stroke-linecap="round"
+                            stroke-linejoin="round"
+                            ><path d="m6 9 6 6 6-6"></path></svg
+                        >
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</aside>
+
+<script>
+    const shopContainer = document.getElementById("shop-layout-inner");
+
+    async function updateShopContent(url: string, pushState = true) {
+        if (!shopContainer) return;
+
+        // Start loading state
+        shopContainer.style.opacity = "0.5";
+        shopContainer.style.pointerEvents = "none";
+
+        try {
+            const response = await fetch(url);
+            const html = await response.text();
+            const parser = new DOMParser();
+            const doc = parser.parseFromString(html, "text/html");
+            const newContent = doc.getElementById("shop-layout-inner");
+
+            if (newContent) {
+                shopContainer.innerHTML = newContent.innerHTML;
+                if (pushState) {
+                    window.history.pushState({}, "", url);
+                }
+                // Re-initialize listeners since we replaced the innerHTML
+                initListeners();
+            }
+        } catch (error) {
+            console.error("Error fetching shop content:", error);
+        } finally {
+            // End loading state
+            shopContainer.style.opacity = "1";
+            shopContainer.style.pointerEvents = "auto";
+            window.scrollTo({ top: 0, behavior: "smooth" });
+        }
+    }
+
+    function initListeners() {
+        // Handle price filter changes
+        document.querySelectorAll(".price-filter").forEach((input) => {
+            input.addEventListener("change", (e) => {
+                const val = (e.target as HTMLInputElement).value;
+                const url = new URL(window.location.href);
+                url.searchParams.set("price_range", val);
+                updateShopContent(url.toString());
+            });
+        });
+
+        // Handle clearing price filter
+        document.getElementById("clearPrice")?.addEventListener("click", () => {
+            const url = new URL(window.location.href);
+            url.searchParams.delete("price_range");
+            updateShopContent(url.toString());
+        });
+
+        // Handle sorting
+        document
+            .getElementById("sortSelect")
+            ?.addEventListener("change", (e) => {
+                const val = (e.target as HTMLSelectElement).value;
+                const url = new URL(window.location.href);
+                url.searchParams.set("sort", val);
+                updateShopContent(url.toString());
+            });
+
+        // Intercept category links
+        const sidebar = document.querySelector("aside");
+        sidebar?.querySelectorAll("a").forEach((link) => {
+            link.addEventListener("click", (e) => {
+                e.preventDefault();
+                const targetUrl = (e.currentTarget as HTMLAnchorElement).href;
+                updateShopContent(targetUrl);
+            });
+        });
+    }
+
+    // Initialize on first load
+    initListeners();
+
+    // Handle back/forward browser buttons
+    window.addEventListener("popstate", () => {
+        updateShopContent(window.location.href, false);
+    });
+</script>

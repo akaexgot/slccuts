@@ -1,0 +1,608 @@
+---
+export const prerender = false;
+
+import AdminLayout from "../../layouts/AdminLayout.astro";
+import { supabase } from "../../lib/supabase";
+
+// Fetch gallery images
+const { data: images } = await supabase
+    .from("gallery_images")
+    .select("*")
+    .order("created_at", { ascending: false });
+
+// Handle POST actions (delete only now - upload is via API)
+if (Astro.request.method === "POST") {
+    const formData = await Astro.request.formData();
+    const action = formData.get("action");
+
+    if (action === "add") {
+        const imageUrl = formData.get("image_url") as string;
+        if (imageUrl) {
+            await supabase
+                .from("gallery_images")
+                .insert({ image_url: imageUrl, active: true });
+        }
+    }
+
+    if (action === "delete") {
+        const imageId = formData.get("imageId") as string;
+        await supabase.from("gallery_images").delete().eq("id", imageId);
+    }
+
+    return Astro.redirect("/admin/gallery");
+}
+---
+
+<AdminLayout title="Galería" activeSection="gallery">
+    <div class="mb-8">
+        <p class="text-gray-400 mb-6">
+            Sube fotos de tus cortes para mostrar en la galería principal
+        </p>
+
+        <!-- Drag & Drop Upload Zone -->
+        <div
+            id="dropZone"
+            class="border-2 border-dashed border-gray-600 rounded-xl p-8 mb-8 text-center transition-all duration-300 cursor-pointer hover:border-gray-400"
+        >
+            <input
+                type="file"
+                id="fileInput"
+                accept="image/*"
+                multiple
+                class="hidden"
+            />
+
+            <div id="uploadContent" class="pointer-events-none">
+                <div
+                    class="w-16 h-16 bg-gray-700 rounded-full flex items-center justify-center mx-auto mb-4"
+                >
+                    <svg
+                        xmlns="http://www.w3.org/2000/svg"
+                        width="32"
+                        height="32"
+                        viewBox="0 0 24 24"
+                        fill="none"
+                        stroke="currentColor"
+                        stroke-width="2"
+                        class="text-gray-400"
+                    >
+                        <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"
+                        ></path>
+                        <polyline points="17 8 12 3 7 8"></polyline>
+                        <line x1="12" x2="12" y1="3" y2="15"></line>
+                    </svg>
+                </div>
+                <h3 class="text-xl font-bold text-white mb-2">
+                    Arrastra tus fotos aquí
+                </h3>
+                <p class="text-gray-400 mb-4">o haz clic para seleccionar</p>
+                <span
+                    class="inline-block bg-white text-black px-6 py-2 rounded-lg font-bold text-sm uppercase tracking-wider"
+                >
+                    Seleccionar Archivos
+                </span>
+            </div>
+
+            <!-- Upload Progress -->
+            <div id="uploadProgress" class="hidden">
+                <div class="w-16 h-16 mx-auto mb-4">
+                    <svg
+                        class="animate-spin"
+                        xmlns="http://www.w3.org/2000/svg"
+                        fill="none"
+                        viewBox="0 0 24 24"
+                    >
+                        <circle
+                            class="opacity-25"
+                            cx="12"
+                            cy="12"
+                            r="10"
+                            stroke="currentColor"
+                            stroke-width="4"></circle>
+                        <path
+                            class="opacity-75"
+                            fill="currentColor"
+                            d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
+                        ></path>
+                    </svg>
+                </div>
+                <p class="text-white text-lg font-bold">Subiendo...</p>
+                <p id="uploadStatus" class="text-gray-400 text-sm mt-2"></p>
+            </div>
+        </div>
+
+        <!-- Preview Section -->
+        <div
+            id="previewSection"
+            class="hidden mb-12 animate-in fade-in slide-in-from-top-4 duration-300"
+        >
+            <div class="bg-gray-800 rounded-xl p-6 border border-gray-700">
+                <h3
+                    class="text-lg font-bold text-white mb-4 flex items-center gap-2"
+                >
+                    <svg
+                        xmlns="http://www.w3.org/2000/svg"
+                        width="20"
+                        height="20"
+                        viewBox="0 0 24 24"
+                        fill="none"
+                        stroke="currentColor"
+                        stroke-width="2"
+                        stroke-linecap="round"
+                        stroke-linejoin="round"
+                        class="text-yellow-400"
+                        ><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"
+                        ></path><polyline points="22 4 12 14.01 9 11.01"
+                        ></polyline></svg
+                    >
+                    Confirmar subida
+                </h3>
+                <div
+                    id="previewGrid"
+                    class="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-4 mb-6"
+                >
+                    <!-- Previews injected here -->
+                </div>
+                <div class="flex gap-4 justify-end">
+                    <button
+                        id="cancelUploadBtn"
+                        class="px-6 py-2 bg-gray-700 hover:bg-gray-600 text-white rounded-lg font-bold text-sm transition-colors"
+                    >
+                        Cancelar todo
+                    </button>
+                    <button
+                        id="confirmUploadBtn"
+                        class="px-6 py-2 bg-green-600 hover:bg-green-500 text-white rounded-lg font-bold text-sm transition-colors flex items-center gap-2"
+                    >
+                        <svg
+                            xmlns="http://www.w3.org/2000/svg"
+                            width="16"
+                            height="16"
+                            viewBox="0 0 24 24"
+                            fill="none"
+                            stroke="currentColor"
+                            stroke-width="2"
+                            stroke-linecap="round"
+                            stroke-linejoin="round"
+                            ><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"
+                            ></path><polyline points="17 8 12 3 7 8"
+                            ></polyline><line x1="12" x2="12" y1="3" y2="15"
+                            ></line></svg
+                        >
+                        Subir imágenes
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- URL Upload (Alternative) -->
+        <details class="bg-gray-800 rounded-xl mb-8">
+            <summary
+                class="cursor-pointer px-6 py-4 text-gray-400 hover:text-white transition-colors"
+            >
+                📎 ¿Prefieres pegar una URL de imagen?
+            </summary>
+            <div class="px-6 pb-6">
+                <form method="POST" class="flex gap-4">
+                    <input type="hidden" name="action" value="add" />
+                    <input
+                        type="url"
+                        name="image_url"
+                        required
+                        placeholder="https://..."
+                        class="flex-1 bg-gray-900 border border-gray-700 rounded-lg px-4 py-3 text-white focus:border-white focus:outline-none transition-colors"
+                    />
+                    <button
+                        type="submit"
+                        class="bg-white text-black px-6 py-3 font-bold uppercase tracking-wider hover:bg-gray-200 transition-colors rounded-lg whitespace-nowrap"
+                    >
+                        Añadir
+                    </button>
+                </form>
+            </div>
+        </details>
+    </div>
+
+    <!-- Gallery Grid -->
+    <div
+        id="galleryGrid"
+        class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4"
+    >
+        {
+            images?.map((image: any) => (
+                <div class="group relative aspect-square bg-gray-800 rounded-xl overflow-hidden">
+                    <img
+                        src={image.image_url}
+                        alt="Galería"
+                        class="w-full h-full object-cover"
+                    />
+                    <div class="absolute inset-0 bg-black/60 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
+                        <button
+                            type="button"
+                            class="delete-btn bg-red-600 hover:bg-red-700 text-white px-4 py-2 rounded-lg font-bold text-sm transition-colors"
+                            data-image-id={image.id}
+                        >
+                            Eliminar
+                        </button>
+                    </div>
+                </div>
+            ))
+        }
+
+        {
+            (!images || images.length === 0) && (
+                <div
+                    id="emptyState"
+                    class="col-span-full text-center py-12 text-gray-400"
+                >
+                    <svg
+                        xmlns="http://www.w3.org/2000/svg"
+                        width="48"
+                        height="48"
+                        viewBox="0 0 24 24"
+                        fill="none"
+                        stroke="currentColor"
+                        stroke-width="1"
+                        class="mx-auto mb-4 opacity-50"
+                    >
+                        <rect
+                            width="18"
+                            height="18"
+                            x="3"
+                            y="3"
+                            rx="2"
+                            ry="2"
+                        />
+                        <circle cx="9" cy="9" r="2" />
+                        <path d="m21 15-3.086-3.086a2 2 0 0 0-2.828 0L6 21" />
+                    </svg>
+                    <p class="text-lg">No hay fotos en la galería</p>
+                    <p class="text-sm mt-2">¡Arrastra tu primera foto!</p>
+                </div>
+            )
+        }
+    </div>
+
+    <!-- Delete Confirmation Modal -->
+    <div
+        id="deleteModal"
+        class="fixed inset-0 z-50 hidden items-center justify-center"
+    >
+        <div
+            class="absolute inset-0 bg-black/70 backdrop-blur-sm"
+            id="modalBackdrop"
+        >
+        </div>
+        <div
+            class="relative bg-gray-800 rounded-2xl p-8 max-w-md w-full mx-4 shadow-2xl border border-gray-700"
+        >
+            <div class="text-center">
+                <div
+                    class="w-16 h-16 bg-red-500/20 rounded-full flex items-center justify-center mx-auto mb-4"
+                >
+                    <svg
+                        xmlns="http://www.w3.org/2000/svg"
+                        width="32"
+                        height="32"
+                        viewBox="0 0 24 24"
+                        fill="none"
+                        stroke="currentColor"
+                        stroke-width="2"
+                        class="text-red-500"
+                    >
+                        <path d="M3 6h18"></path>
+                        <path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6"></path>
+                        <path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2"></path>
+                    </svg>
+                </div>
+                <h3 class="text-xl font-bold text-white mb-2">
+                    ¿Eliminar imagen?
+                </h3>
+                <p class="text-gray-400 mb-6">
+                    Esta acción no se puede deshacer.
+                </p>
+                <div class="flex gap-3">
+                    <button
+                        type="button"
+                        id="cancelBtn"
+                        class="flex-1 bg-gray-700 hover:bg-gray-600 text-white px-2 py-3 rounded-lg font-bold uppercase tracking-wider transition-colors"
+                    >
+                        Cancelar
+                    </button>
+                    <form method="POST" id="deleteForm" class="flex-1">
+                        <input type="hidden" name="action" value="delete" />
+                        <input
+                            type="hidden"
+                            name="imageId"
+                            id="deleteImageId"
+                            value=""
+                        />
+                        <button
+                            type="submit"
+                            class="w-full bg-red-600 hover:bg-red-700 text-white px-2 py-3 rounded-lg font-bold uppercase tracking-wider transition-colors"
+                        >
+                            Sí
+                        </button>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Success Toast -->
+    <div
+        id="toast"
+        class="fixed bottom-6 right-6 bg-green-600 text-white px-6 py-4 rounded-xl shadow-2xl transform translate-y-24 opacity-0 transition-all duration-300 z-50"
+    >
+        <div class="flex items-center gap-3">
+            <svg
+                xmlns="http://www.w3.org/2000/svg"
+                width="24"
+                height="24"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="2"
+            >
+                <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"></path>
+                <polyline points="22 4 12 14.01 9 11.01"></polyline>
+            </svg>
+            <span id="toastMessage">¡Imagen subida correctamente!</span>
+        </div>
+    </div>
+</AdminLayout>
+
+<script>
+    const dropZone = document.getElementById("dropZone") as HTMLDivElement;
+    const fileInput = document.getElementById("fileInput") as HTMLInputElement;
+    const uploadContent = document.getElementById(
+        "uploadContent",
+    ) as HTMLDivElement;
+    const uploadProgress = document.getElementById(
+        "uploadProgress",
+    ) as HTMLDivElement;
+    const uploadStatus = document.getElementById(
+        "uploadStatus",
+    ) as HTMLParagraphElement;
+    const galleryGrid = document.getElementById(
+        "galleryGrid",
+    ) as HTMLDivElement;
+    const emptyState = document.getElementById("emptyState");
+    const toast = document.getElementById("toast") as HTMLDivElement;
+    const toastMessage = document.getElementById(
+        "toastMessage",
+    ) as HTMLSpanElement;
+
+    // Preview Elements
+    const previewSection = document.getElementById(
+        "previewSection",
+    ) as HTMLDivElement;
+    const previewGrid = document.getElementById(
+        "previewGrid",
+    ) as HTMLDivElement;
+    const confirmUploadBtn = document.getElementById(
+        "confirmUploadBtn",
+    ) as HTMLButtonElement;
+    const cancelUploadBtn = document.getElementById(
+        "cancelUploadBtn",
+    ) as HTMLButtonElement;
+
+    let pendingFiles: { file: File; description: string }[] = [];
+
+    // Drag & Drop handlers
+    dropZone.addEventListener("click", () => fileInput.click());
+
+    dropZone.addEventListener("dragover", (e) => {
+        e.preventDefault();
+        dropZone.classList.add("border-white", "bg-gray-700/50");
+        dropZone.classList.remove("border-gray-600");
+    });
+
+    dropZone.addEventListener("dragleave", (e) => {
+        e.preventDefault();
+        dropZone.classList.remove("border-white", "bg-gray-700/50");
+        dropZone.classList.add("border-gray-600");
+    });
+
+    dropZone.addEventListener("drop", (e) => {
+        e.preventDefault();
+        dropZone.classList.remove("border-white", "bg-gray-700/50");
+        dropZone.classList.add("border-gray-600");
+
+        const files = e.dataTransfer?.files;
+        if (files && files.length > 0) {
+            handleFiles(Array.from(files));
+        }
+    });
+
+    fileInput.addEventListener("change", () => {
+        if (fileInput.files && fileInput.files.length > 0) {
+            handleFiles(Array.from(fileInput.files));
+        }
+    });
+
+    // Handle initial file selection (don't upload yet)
+    function handleFiles(files: File[]) {
+        const imageFiles = files.filter((f) => f.type.startsWith("image/"));
+        if (imageFiles.length === 0) {
+            showToast("Solo se permiten imágenes", true);
+            return;
+        }
+
+        // Add to pending with empty description
+        const newFiles = imageFiles.map((f) => ({ file: f, description: "" }));
+        pendingFiles = [...pendingFiles, ...newFiles];
+        renderPreviews();
+
+        // Reset input so same files can be selected again if needed
+        fileInput.value = "";
+    }
+
+    function renderPreviews() {
+        if (pendingFiles.length > 0) {
+            previewSection.classList.remove("hidden");
+            // dropZone.classList.add("hidden"); // Keep visible to allow adding more
+        } else {
+            previewSection.classList.add("hidden");
+            dropZone.classList.remove("hidden");
+            return;
+        }
+
+        previewGrid.innerHTML = "";
+        pendingFiles.forEach((item, index) => {
+            const url = URL.createObjectURL(item.file);
+            const div = document.createElement("div");
+            div.className =
+                "relative bg-gray-700 rounded-lg overflow-hidden group border border-gray-600 flex flex-col";
+            div.innerHTML = `
+                <div class="relative aspect-square w-full bg-gray-900 flex items-center justify-center">
+                    <img src="${url}" class="max-w-full max-h-full object-contain" />
+                    <button 
+                        onclick="removePendingFile(${index})"
+                        class="absolute top-1 right-1 bg-red-600 text-white p-1 rounded-md opacity-0 group-hover:opacity-100 transition-opacity hover:bg-red-700 z-10"
+                        title="Eliminar"
+                    >
+                        <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
+                    </button>
+                </div>
+                <div class="p-2">
+                    <input 
+                        type="text" 
+                        value="${item.description}" 
+                        placeholder="Descripción (SEO)" 
+                        class="w-full bg-gray-800 border border-gray-600 rounded px-2 py-1 text-xs text-white placeholder-gray-400 focus:border-white focus:outline-none transition-colors"
+                        oninput="updateDescription(${index}, this.value)"
+                    />
+                </div>
+            `;
+            previewGrid.appendChild(div);
+        });
+    }
+
+    // Expose functions to window
+    (window as any).removePendingFile = (index: number) => {
+        pendingFiles = pendingFiles.filter((_, i) => i !== index);
+        renderPreviews();
+    };
+
+    (window as any).updateDescription = (index: number, value: string) => {
+        if (pendingFiles[index]) {
+            pendingFiles[index].description = value;
+        }
+    };
+
+    cancelUploadBtn.addEventListener("click", () => {
+        pendingFiles = [];
+        renderPreviews();
+    });
+
+    confirmUploadBtn.addEventListener("click", async () => {
+        if (pendingFiles.length === 0) return;
+
+        previewSection.classList.add("hidden");
+        dropZone.classList.remove("hidden");
+        uploadContent.classList.add("hidden");
+        uploadProgress.classList.remove("hidden");
+
+        const totalFiles = pendingFiles.length;
+        let uploaded = 0;
+
+        for (const item of pendingFiles) {
+            uploadStatus.textContent = `Subiendo ${uploaded + 1} de ${totalFiles}...`;
+
+            try {
+                const formData = new FormData();
+                formData.append("file", item.file);
+                formData.append("description", item.description);
+                formData.append("alt_text", item.description); // Use desc as alt text explicitly
+
+                const response = await fetch("/api/gallery/upload", {
+                    method: "POST",
+                    body: formData,
+                });
+
+                const result = await response.json();
+
+                if (result.success) {
+                    uploaded++;
+                    addImageToGrid(result.url);
+                } else {
+                    console.error("Upload failed:", result.error);
+                }
+            } catch (error) {
+                console.error("Upload error:", error);
+            }
+        }
+
+        uploadProgress.classList.add("hidden");
+        uploadContent.classList.remove("hidden");
+        pendingFiles = [];
+
+        if (uploaded > 0) {
+            showToast(
+                `${uploaded} imagen${uploaded > 1 ? "es" : ""} subida${uploaded > 1 ? "s" : ""} correctamente`,
+            );
+            emptyState?.remove();
+        }
+    });
+
+    function addImageToGrid(url: string) {
+        const div = document.createElement("div");
+        div.className =
+            "group relative aspect-square bg-gray-800 rounded-xl overflow-hidden";
+        div.innerHTML = `
+            <img src="${url}" alt="Galería" class="w-full h-full object-cover" />
+            <div class="absolute inset-0 bg-black/60 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
+                 <button
+                    type="button"
+                    class="delete-btn bg-red-600 hover:bg-red-700 text-white px-4 py-2 rounded-lg font-bold text-sm transition-colors"
+                    data-image-id="new" 
+                    onclick="window.location.reload()" 
+                >
+                    Recargar para gestión
+                </button>
+            </div>
+        `;
+        galleryGrid.insertBefore(div, galleryGrid.firstChild);
+    }
+
+    function showToast(message: string, isError = false) {
+        toastMessage.textContent = message;
+        toast.classList.toggle("bg-green-600", !isError);
+        toast.classList.toggle("bg-red-600", isError);
+        toast.classList.remove("translate-y-24", "opacity-0");
+
+        setTimeout(() => {
+            toast.classList.add("translate-y-24", "opacity-0");
+        }, 3000);
+    }
+
+    // Delete modal
+    const modal = document.getElementById("deleteModal");
+    const modalBackdrop = document.getElementById("modalBackdrop");
+    const cancelBtn = document.getElementById("cancelBtn");
+    const deleteImageIdInput = document.getElementById(
+        "deleteImageId",
+    ) as HTMLInputElement;
+
+    document.querySelectorAll(".delete-btn").forEach((btn) => {
+        btn.addEventListener("click", (e) => {
+            const target = e.currentTarget as HTMLElement;
+            const imageId = target.dataset.imageId;
+            if (deleteImageIdInput) deleteImageIdInput.value = imageId || "";
+            modal?.classList.remove("hidden");
+            modal?.classList.add("flex");
+        });
+    });
+
+    function closeModal() {
+        modal?.classList.add("hidden");
+        modal?.classList.remove("flex");
+    }
+
+    cancelBtn?.addEventListener("click", closeModal);
+    modalBackdrop?.addEventListener("click", closeModal);
+    document.addEventListener("keydown", (e) => {
+        if (e.key === "Escape") closeModal();
+    });
+</script>

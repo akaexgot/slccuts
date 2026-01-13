@@ -1,0 +1,1306 @@
+---
+export const prerender = false;
+
+import AdminLayout from "../../../layouts/AdminLayout.astro";
+import { supabase } from "../../../lib/supabase";
+
+// Fetch all products with their images and stock
+const { data: products } = await supabase
+    .from("products")
+    .select(
+        "*, product_images(image_url), category:categories(name), stock(quantity)",
+    )
+    .order("created_at", { ascending: false });
+
+// Fetch categories for dropdowns
+const { data: categories } = await supabase
+    .from("categories")
+    .select("*")
+    .order("name");
+
+// Handle POST actions (toggle offer, delete)
+if (Astro.request.method === "POST") {
+    const formData = await Astro.request.formData();
+    const action = formData.get("action");
+    const productId = formData.get("productId");
+
+    if (action === "toggleOffer" && productId) {
+        const currentProduct = products?.find(
+            (p: any) => p.id.toString() === productId,
+        );
+        if (currentProduct) {
+            await supabase
+                .from("products")
+                .update({ is_offer: !currentProduct.is_offer })
+                .eq("id", productId);
+        }
+    }
+
+    if (action === "toggleFeatured" && productId) {
+        const currentProduct = products?.find(
+            (p: any) => p.id.toString() === productId,
+        );
+        if (currentProduct) {
+            // If enabling, check limit
+            if (!currentProduct.is_featured) {
+                const featuredCount = products.filter(
+                    (p: any) => p.is_featured,
+                ).length;
+                if (featuredCount >= 5) {
+                    return Astro.redirect(
+                        "/admin/products?error=featured_limit",
+                    );
+                }
+            }
+            await supabase
+                .from("products")
+                .update({ is_featured: !currentProduct.is_featured })
+                .eq("id", productId);
+        }
+    }
+
+    if (action === "delete" && productId) {
+        await supabase.from("products").delete().eq("id", productId);
+    }
+
+    return Astro.redirect("/admin/products");
+}
+
+const formatPrice = (price: number) => {
+    return new Intl.NumberFormat("es-ES", {
+        style: "currency",
+        currency: "EUR",
+    }).format(price / 100);
+};
+---
+
+<AdminLayout title="Productos" activeSection="products">
+    <!-- Header -->
+    <div class="flex justify-between items-center mb-8">
+        <p class="text-gray-400">Gestiona tu catálogo de productos</p>
+        <button
+            type="button"
+            id="openCreateModal"
+            class="bg-white text-black px-6 py-3 font-bold uppercase tracking-wider hover:bg-gray-200 transition-colors rounded-lg"
+        >
+            + Nuevo Producto
+        </button>
+    </div>
+
+    <!-- Products Table -->
+    <div class="bg-gray-800 rounded-xl overflow-hidden">
+        <table class="w-full">
+            <thead class="bg-gray-900">
+                <tr>
+                    <th
+                        class="text-left px-6 py-4 text-sm uppercase tracking-wider text-gray-400"
+                        >Producto</th
+                    >
+                    <th
+                        class="text-left px-6 py-4 text-sm uppercase tracking-wider text-gray-400"
+                        >Categoría</th
+                    >
+                    <th
+                        class="text-left px-6 py-4 text-sm uppercase tracking-wider text-gray-400"
+                        >Precio</th
+                    >
+                    <th
+                        class="text-center px-6 py-4 text-sm uppercase tracking-wider text-gray-400"
+                        >Stock</th
+                    >
+                    <th
+                        class="text-center px-6 py-4 text-sm uppercase tracking-wider text-gray-400"
+                        >Oferta</th
+                    >
+                    <th
+                        class="text-center px-6 py-4 text-sm uppercase tracking-wider text-gray-400"
+                        >Destacado</th
+                    >
+                    <th
+                        class="text-center px-6 py-4 text-sm uppercase tracking-wider text-gray-400"
+                        >Estado</th
+                    >
+                    <th
+                        class="text-right px-6 py-4 text-sm uppercase tracking-wider text-gray-400"
+                        >Acciones</th
+                    >
+                </tr>
+            </thead>
+            <tbody class="divide-y divide-gray-700">
+                {
+                    products?.map((product: any) => (
+                        <tr class="hover:bg-gray-700/50 transition-colors">
+                            <td class="px-6 py-4">
+                                <div class="flex items-center gap-4">
+                                    <img
+                                        src={
+                                            product.product_images?.[0]
+                                                ?.image_url ||
+                                            "https://via.placeholder.com/50"
+                                        }
+                                        alt={product.name}
+                                        class="w-12 h-12 rounded-lg object-cover bg-gray-600"
+                                    />
+                                    <div>
+                                        <p class="font-bold">{product.name}</p>
+                                        <p class="text-sm text-gray-400">
+                                            {product.slug}
+                                        </p>
+                                    </div>
+                                </div>
+                            </td>
+                            <td class="px-6 py-4 text-gray-300">
+                                {product.category?.name || "Sin categoría"}
+                            </td>
+                            <td class="px-6 py-4 font-bold">
+                                {formatPrice(product.price)}
+                            </td>
+                            <td class="px-6 py-4 text-center">
+                                {(() => {
+                                    const stockQty = Array.isArray(
+                                        product.stock,
+                                    )
+                                        ? (product.stock[0]?.quantity ?? 0)
+                                        : (product.stock?.quantity ?? 0);
+                                    let badgeClass = "";
+                                    let stockText = "";
+
+                                    if (stockQty === 0) {
+                                        badgeClass =
+                                            "bg-red-500/20 text-red-400";
+                                        stockText = "Agotado";
+                                    } else if (stockQty < 10) {
+                                        badgeClass =
+                                            "bg-yellow-500/20 text-yellow-400";
+                                        stockText = `${stockQty} uds`;
+                                    } else {
+                                        badgeClass =
+                                            "bg-green-500/20 text-green-400";
+                                        stockText = `${stockQty} uds`;
+                                    }
+
+                                    return (
+                                        <span
+                                            class={`px-3 py-1 rounded-full text-xs font-bold ${badgeClass}`}
+                                        >
+                                            {stockText}
+                                        </span>
+                                    );
+                                })()}
+                            </td>
+                            <td class="px-6 py-4 text-center">
+                                <form method="POST" class="inline">
+                                    <input
+                                        type="hidden"
+                                        name="action"
+                                        value="toggleOffer"
+                                    />
+                                    <input
+                                        type="hidden"
+                                        name="productId"
+                                        value={product.id}
+                                    />
+                                    <button
+                                        type="submit"
+                                        class={`px-3 py-1 rounded-full text-xs font-bold uppercase tracking-wider transition-colors ${
+                                            product.is_offer
+                                                ? "bg-red-500/20 text-red-400 hover:bg-red-500/40"
+                                                : "bg-gray-600 text-gray-400 hover:bg-gray-500"
+                                        }`}
+                                    >
+                                        {product.is_offer
+                                            ? "🔥 Oferta"
+                                            : "Normal"}
+                                    </button>
+                                </form>
+                            </td>
+                            <td class="px-6 py-4 text-center">
+                                <form method="POST" class="inline">
+                                    <input
+                                        type="hidden"
+                                        name="action"
+                                        value="toggleFeatured"
+                                    />
+                                    <input
+                                        type="hidden"
+                                        name="productId"
+                                        value={product.id}
+                                    />
+                                    <button
+                                        type="submit"
+                                        class={`group relative transition-transform hover:scale-110`}
+                                        title={
+                                            product.is_featured
+                                                ? "Quitar destacado"
+                                                : "Destacar (Max 5)"
+                                        }
+                                    >
+                                        <svg
+                                            xmlns="http://www.w3.org/2000/svg"
+                                            width="24"
+                                            height="24"
+                                            viewBox="0 0 24 24"
+                                            fill={
+                                                product.is_featured
+                                                    ? "#EAB308"
+                                                    : "none"
+                                            }
+                                            stroke={
+                                                product.is_featured
+                                                    ? "#EAB308"
+                                                    : "currentColor"
+                                            }
+                                            stroke-width="2"
+                                            class={
+                                                product.is_featured
+                                                    ? "text-yellow-500"
+                                                    : "text-gray-500 hover:text-yellow-500"
+                                            }
+                                        >
+                                            <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2" />
+                                        </svg>
+                                    </button>
+                                </form>
+                            </td>
+                            <td class="px-6 py-4 text-center">
+                                <span
+                                    class={`px-3 py-1 rounded-full text-xs font-bold ${
+                                        product.active
+                                            ? "bg-green-500/20 text-green-400"
+                                            : "bg-gray-600 text-gray-400"
+                                    }`}
+                                >
+                                    {product.active ? "Activo" : "Inactivo"}
+                                </span>
+                            </td>
+                            <td class="px-6 py-4">
+                                <div class="flex justify-end gap-2">
+                                    <button
+                                        type="button"
+                                        class="edit-btn bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg text-sm font-bold transition-colors"
+                                        data-product={JSON.stringify(product)}
+                                    >
+                                        Editar
+                                    </button>
+                                    <button
+                                        type="button"
+                                        class="delete-btn bg-red-600 hover:bg-red-700 text-white px-4 py-2 rounded-lg text-sm font-bold transition-colors"
+                                        data-product-id={product.id}
+                                        data-product-name={product.name}
+                                    >
+                                        Eliminar
+                                    </button>
+                                </div>
+                            </td>
+                        </tr>
+                    ))
+                }
+            </tbody>
+        </table>
+
+        {
+            (!products || products.length === 0) && (
+                <div class="text-center py-12 text-gray-400">
+                    <p class="text-lg mb-4">No hay productos aún</p>
+                    <a
+                        href="/admin/products/new"
+                        class="text-blue-400 hover:text-blue-300"
+                    >
+                        Crear el primero →
+                    </a>
+                </div>
+            )
+        }
+    </div>
+
+    <!-- Delete Confirmation Modal -->
+    <div
+        id="deleteModal"
+        class="fixed inset-0 z-50 hidden items-center justify-center"
+    >
+        <!-- Backdrop -->
+        <div
+            class="absolute inset-0 bg-black/80 backdrop-blur-sm"
+            id="modalBackdrop"
+        >
+        </div>
+
+        <!-- Modal Content -->
+        <div
+            class="relative bg-gray-900 border border-gray-700 rounded-2xl p-8 max-w-md w-full mx-4 shadow-2xl"
+        >
+            <button
+                type="button"
+                class="absolute top-4 right-4 text-gray-400 hover:text-white text-2xl"
+                id="closeDeleteModal">×</button
+            >
+            <div class="text-center">
+                <!-- Warning Icon -->
+                <div
+                    class="w-16 h-16 bg-red-500/20 rounded-full flex items-center justify-center mx-auto mb-4"
+                >
+                    <svg
+                        xmlns="http://www.w3.org/2000/svg"
+                        width="32"
+                        height="32"
+                        viewBox="0 0 24 24"
+                        fill="none"
+                        stroke="currentColor"
+                        stroke-width="2"
+                        class="text-red-500"
+                    >
+                        <path d="M3 6h18"></path>
+                        <path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6"></path>
+                        <path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2"></path>
+                        <line x1="10" x2="10" y1="11" y2="17"></line>
+                        <line x1="14" x2="14" y1="11" y2="17"></line>
+                    </svg>
+                </div>
+
+                <h3 class="text-xl font-bold text-white mb-2">
+                    ¿Eliminar producto?
+                </h3>
+                <p class="text-gray-400 mb-6">
+                    Vas a eliminar <span
+                        id="productName"
+                        class="text-white font-bold"></span>. Esta acción no se
+                    puede deshacer.
+                </p>
+
+                <!-- Actions -->
+                <div class="flex gap-3">
+                    <button
+                        type="button"
+                        id="cancelBtn"
+                        class="flex-1 bg-gray-700 hover:bg-gray-600 text-white px-6 py-3 rounded-lg font-bold uppercase tracking-wider transition-colors"
+                    >
+                        Cancelar
+                    </button>
+                    <form method="POST" id="deleteForm" class="flex-1">
+                        <input type="hidden" name="action" value="delete" />
+                        <input
+                            type="hidden"
+                            name="productId"
+                            id="deleteProductId"
+                            value=""
+                        />
+                        <button
+                            type="submit"
+                            class="w-full bg-red-600 hover:bg-red-700 text-white px-6 py-3 rounded-lg font-bold uppercase tracking-wider transition-colors"
+                        >
+                            Sí, eliminar
+                        </button>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Edit Product Modal -->
+    <div
+        id="editModal"
+        class="fixed inset-0 z-50 hidden items-center justify-center"
+    >
+        <div
+            class="absolute inset-0 bg-black/80 backdrop-blur-sm"
+            data-close-edit
+        >
+        </div>
+        <div
+            class="relative bg-gray-900 border border-gray-700 rounded-2xl p-8 max-w-lg w-full mx-4 shadow-2xl max-h-[90vh] overflow-y-auto"
+        >
+            <button
+                type="button"
+                class="absolute top-4 right-4 text-gray-400 hover:text-white text-2xl"
+                data-close-edit>×</button
+            >
+            <h3 class="text-xl font-bold uppercase tracking-wider mb-6">
+                Editar Producto
+            </h3>
+
+            <form id="editProductForm" class="space-y-6">
+                <input type="hidden" name="id" id="editId" />
+
+                <!-- Image Upload Section -->
+                <div>
+                    <label
+                        class="block text-sm font-bold uppercase tracking-wider mb-2"
+                        >Imagen del Producto</label
+                    >
+                    <input type="hidden" id="editImageUrl" name="image_url" />
+
+                    <!-- Current/New Image Preview -->
+                    <div
+                        id="editImagePreviewContainer"
+                        class="hidden mb-4 relative inline-block"
+                    >
+                        <img
+                            id="editImagePreview"
+                            src=""
+                            alt="Preview"
+                            class="w-32 h-32 object-cover rounded-lg"
+                        />
+                        <button
+                            type="button"
+                            id="removeEditImage"
+                            class="absolute -top-2 -right-2 bg-red-600 hover:bg-red-700 text-white rounded-full w-6 h-6 flex items-center justify-center text-sm font-bold"
+                            >×</button
+                        >
+                    </div>
+
+                    <!-- Drop Zone -->
+                    <div
+                        id="editDropZone"
+                        class="border-2 border-dashed border-gray-600 rounded-xl p-6 text-center cursor-pointer hover:border-gray-400 transition-colors"
+                    >
+                        <input
+                            type="file"
+                            id="editFileInput"
+                            accept="image/*"
+                            class="hidden"
+                        />
+                        <div id="editUploadContent">
+                            <div
+                                class="w-12 h-12 bg-gray-700 rounded-full flex items-center justify-center mx-auto mb-2"
+                            >
+                                <svg
+                                    xmlns="http://www.w3.org/2000/svg"
+                                    width="24"
+                                    height="24"
+                                    viewBox="0 0 24 24"
+                                    fill="none"
+                                    stroke="currentColor"
+                                    stroke-width="2"
+                                    class="text-gray-400"
+                                    ><path
+                                        d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"
+                                    ></path><polyline points="17 8 12 3 7 8"
+                                    ></polyline><line
+                                        x1="12"
+                                        x2="12"
+                                        y1="3"
+                                        y2="15"></line></svg
+                                >
+                            </div>
+                            <p class="text-sm text-gray-400">
+                                Arrastra o haz clic para subir nueva imagen
+                            </p>
+                        </div>
+                        <div id="editUploadProgress" class="hidden">
+                            <svg
+                                class="animate-spin h-8 w-8 text-white mx-auto"
+                                xmlns="http://www.w3.org/2000/svg"
+                                fill="none"
+                                viewBox="0 0 24 24"
+                                ><circle
+                                    class="opacity-25"
+                                    cx="12"
+                                    cy="12"
+                                    r="10"
+                                    stroke="currentColor"
+                                    stroke-width="4"></circle><path
+                                    class="opacity-75"
+                                    fill="currentColor"
+                                    d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
+                                ></path></svg
+                            >
+                        </div>
+                    </div>
+                </div>
+
+                <div>
+                    <label
+                        class="block text-sm font-bold uppercase tracking-wider mb-2"
+                        >Nombre *</label
+                    >
+                    <input
+                        type="text"
+                        name="name"
+                        id="editName"
+                        required
+                        class="w-full bg-gray-800 border border-gray-700 rounded-lg px-4 py-3 text-white focus:border-white focus:outline-none"
+                    />
+                </div>
+                <div>
+                    <label
+                        class="block text-sm font-bold uppercase tracking-wider mb-2"
+                        >Slug (URL) *</label
+                    >
+                    <input
+                        type="text"
+                        name="slug"
+                        id="editSlug"
+                        required
+                        class="w-full bg-gray-800 border border-gray-700 rounded-lg px-4 py-3 text-white focus:border-white focus:outline-none"
+                    />
+                </div>
+                <div>
+                    <label
+                        class="block text-sm font-bold uppercase tracking-wider mb-2"
+                        >Descripción</label
+                    >
+                    <textarea
+                        name="description"
+                        id="editDescription"
+                        rows="2"
+                        class="w-full bg-gray-800 border border-gray-700 rounded-lg px-4 py-3 text-white focus:border-white focus:outline-none resize-none"
+                    ></textarea>
+                </div>
+                <div class="grid grid-cols-2 gap-4">
+                    <div>
+                        <label
+                            class="block text-sm font-bold uppercase tracking-wider mb-2"
+                            >Precio (€) *</label
+                        >
+                        <input
+                            type="number"
+                            name="price"
+                            id="editPrice"
+                            step="0.01"
+                            min="0"
+                            required
+                            class="w-full bg-gray-800 border border-gray-700 rounded-lg px-4 py-3 text-white focus:border-white focus:outline-none"
+                        />
+                    </div>
+                    <div>
+                        <label
+                            class="block text-sm font-bold uppercase tracking-wider mb-2"
+                            >Stock *</label
+                        >
+                        <input
+                            type="number"
+                            name="stock"
+                            id="editStock"
+                            min="0"
+                            required
+                            class="w-full bg-gray-800 border border-gray-700 rounded-lg px-4 py-3 text-white focus:border-white focus:outline-none"
+                        />
+                    </div>
+                </div>
+                <div>
+                    <label
+                        class="block text-sm font-bold uppercase tracking-wider mb-2"
+                        >Categoría</label
+                    >
+                    <select
+                        name="category_id"
+                        id="editCategoryId"
+                        class="w-full bg-gray-800 border border-gray-700 rounded-lg px-4 py-3 text-white focus:border-white focus:outline-none"
+                    >
+                        <option value="">Sin categoría</option>
+                    </select>
+                </div>
+                <div class="flex gap-4">
+                    <label class="flex items-center gap-2 cursor-pointer">
+                        <input
+                            type="checkbox"
+                            name="active"
+                            id="editActive"
+                            class="w-4 h-4"
+                        />
+                        <span class="text-sm">Activo</span>
+                    </label>
+                    <label class="flex items-center gap-2 cursor-pointer">
+                        <input
+                            type="checkbox"
+                            name="is_offer"
+                            id="editIsOffer"
+                            class="w-4 h-4"
+                        />
+                        <span class="text-sm">🔥 Oferta</span>
+                    </label>
+                </div>
+                <button
+                    type="submit"
+                    class="w-full bg-blue-600 text-white font-bold uppercase tracking-wider py-3 rounded-lg hover:bg-blue-700 transition-colors"
+                >
+                    Guardar Cambios
+                </button>
+            </form>
+        </div>
+    </div>
+
+    <!-- Create Product Modal -->
+    <div
+        id="createModal"
+        class="fixed inset-0 z-50 hidden items-center justify-center"
+    >
+        <div
+            class="absolute inset-0 bg-black/80 backdrop-blur-sm"
+            data-close-create
+        >
+        </div>
+        <div
+            class="relative bg-gray-900 border border-gray-700 rounded-2xl p-8 max-w-lg w-full mx-4 shadow-2xl max-h-[90vh] overflow-y-auto"
+        >
+            <button
+                type="button"
+                class="absolute top-4 right-4 text-gray-400 hover:text-white text-2xl"
+                data-close-create>×</button
+            >
+            <h3 class="text-xl font-bold uppercase tracking-wider mb-6">
+                Nuevo Producto
+            </h3>
+            <form id="createProductForm" class="space-y-4">
+                <!-- Image Upload Section -->
+                <div>
+                    <label
+                        class="block text-sm font-bold uppercase tracking-wider mb-2"
+                        >Imagen del Producto</label
+                    >
+                    <input type="hidden" id="createImageUrl" name="image_url" />
+
+                    <!-- Preview -->
+                    <div
+                        id="createImagePreviewContainer"
+                        class="hidden mb-4 relative inline-block"
+                    >
+                        <img
+                            id="createImagePreview"
+                            src=""
+                            alt="Preview"
+                            class="w-32 h-32 object-cover rounded-lg"
+                        />
+                        <button
+                            type="button"
+                            id="removeCreateImage"
+                            class="absolute -top-2 -right-2 bg-red-600 hover:bg-red-700 text-white rounded-full w-6 h-6 flex items-center justify-center text-sm font-bold"
+                            >×</button
+                        >
+                    </div>
+
+                    <!-- Drop Zone -->
+                    <div
+                        id="createDropZone"
+                        class="border-2 border-dashed border-gray-600 rounded-xl p-6 text-center cursor-pointer hover:border-gray-400 transition-colors"
+                    >
+                        <input
+                            type="file"
+                            id="createFileInput"
+                            accept="image/*"
+                            class="hidden"
+                        />
+                        <div id="createUploadContent">
+                            <div
+                                class="w-12 h-12 bg-gray-700 rounded-full flex items-center justify-center mx-auto mb-2"
+                            >
+                                <svg
+                                    xmlns="http://www.w3.org/2000/svg"
+                                    width="24"
+                                    height="24"
+                                    viewBox="0 0 24 24"
+                                    fill="none"
+                                    stroke="currentColor"
+                                    stroke-width="2"
+                                    class="text-gray-400"
+                                    ><path
+                                        d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"
+                                    ></path><polyline points="17 8 12 3 7 8"
+                                    ></polyline><line
+                                        x1="12"
+                                        x2="12"
+                                        y1="3"
+                                        y2="15"></line></svg
+                                >
+                            </div>
+                            <p class="text-sm text-gray-400">
+                                Arrastra o haz clic para subir imagen
+                            </p>
+                        </div>
+                        <div id="createUploadProgress" class="hidden">
+                            <svg
+                                class="animate-spin h-8 w-8 text-white mx-auto"
+                                xmlns="http://www.w3.org/2000/svg"
+                                fill="none"
+                                viewBox="0 0 24 24"
+                                ><circle
+                                    class="opacity-25"
+                                    cx="12"
+                                    cy="12"
+                                    r="10"
+                                    stroke="currentColor"
+                                    stroke-width="4"></circle><path
+                                    class="opacity-75"
+                                    fill="currentColor"
+                                    d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
+                                ></path></svg
+                            >
+                        </div>
+                    </div>
+                </div>
+
+                <div>
+                    <label
+                        class="block text-sm font-bold uppercase tracking-wider mb-2"
+                        >Nombre *</label
+                    >
+                    <input
+                        type="text"
+                        name="name"
+                        required
+                        class="w-full bg-gray-800 border border-gray-700 rounded-lg px-4 py-3 text-white focus:border-white focus:outline-none"
+                        placeholder="Ej: Cera Mate Premium"
+                    />
+                </div>
+                <div>
+                    <label
+                        class="block text-sm font-bold uppercase tracking-wider mb-2"
+                        >Slug (URL) *</label
+                    >
+                    <input
+                        type="text"
+                        name="slug"
+                        required
+                        class="w-full bg-gray-800 border border-gray-700 rounded-lg px-4 py-3 text-white focus:border-white focus:outline-none"
+                        placeholder="cera-mate-premium"
+                    />
+                </div>
+                <div>
+                    <label
+                        class="block text-sm font-bold uppercase tracking-wider mb-2"
+                        >Descripción</label
+                    >
+                    <textarea
+                        name="description"
+                        rows="2"
+                        class="w-full bg-gray-800 border border-gray-700 rounded-lg px-4 py-3 text-white focus:border-white focus:outline-none resize-none"
+                    ></textarea>
+                </div>
+                <div class="grid grid-cols-3 gap-4">
+                    <div>
+                        <label
+                            class="block text-sm font-bold uppercase tracking-wider mb-2"
+                            >Precio (€) *</label
+                        >
+                        <input
+                            type="number"
+                            name="price"
+                            step="0.01"
+                            min="0"
+                            required
+                            class="w-full bg-gray-800 border border-gray-700 rounded-lg px-4 py-3 text-white focus:border-white focus:outline-none"
+                            placeholder="12.00"
+                        />
+                    </div>
+                    <div>
+                        <label
+                            class="block text-sm font-bold uppercase tracking-wider mb-2"
+                            >Stock *</label
+                        >
+                        <input
+                            type="number"
+                            name="stock"
+                            min="0"
+                            required
+                            class="w-full bg-gray-800 border border-gray-700 rounded-lg px-4 py-3 text-white focus:border-white focus:outline-none"
+                            placeholder="50"
+                        />
+                    </div>
+                    <div>
+                        <label
+                            class="block text-sm font-bold uppercase tracking-wider mb-2"
+                            >Categoría</label
+                        >
+                        <select
+                            name="category_id"
+                            class="w-full bg-gray-800 border border-gray-700 rounded-lg px-4 py-3 text-white focus:border-white focus:outline-none"
+                        >
+                            <option value="">Sin categoría</option>
+                            {
+                                categories?.map(
+                                    (cat: { id: number; name: string }) => (
+                                        <option value={cat.id}>
+                                            {cat.name}
+                                        </option>
+                                    ),
+                                )
+                            }
+                        </select>
+                    </div>
+                </div>
+                <div class="flex gap-4">
+                    <label class="flex items-center gap-2 cursor-pointer">
+                        <input
+                            type="checkbox"
+                            name="active"
+                            checked
+                            class="w-4 h-4"
+                        />
+                        <span class="text-sm">Activo</span>
+                    </label>
+                    <label class="flex items-center gap-2 cursor-pointer">
+                        <input
+                            type="checkbox"
+                            name="is_offer"
+                            class="w-4 h-4"
+                        />
+                        <span class="text-sm">🔥 Oferta</span>
+                    </label>
+                </div>
+                <button
+                    type="submit"
+                    class="w-full bg-white text-black font-bold uppercase tracking-wider py-3 rounded-lg hover:bg-gray-200 transition-colors"
+                >
+                    Crear Producto
+                </button>
+            </form>
+        </div>
+    </div>
+
+    <!-- Toast Notification -->
+    <div
+        id="toast"
+        class="fixed bottom-6 right-6 bg-green-600 text-white px-6 py-4 rounded-xl shadow-2xl transform translate-y-24 opacity-0 transition-all duration-300 z-50"
+    >
+        <div class="flex items-center gap-3">
+            <svg
+                xmlns="http://www.w3.org/2000/svg"
+                width="24"
+                height="24"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="2"
+            >
+                <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"></path>
+                <polyline points="22 4 12 14.01 9 11.01"></polyline>
+            </svg>
+            <span id="toastMessage">¡Creado correctamente!</span>
+        </div>
+    </div>
+</AdminLayout>
+
+<script>
+    // Modal elements
+    const deleteModal = document.getElementById("deleteModal");
+    const createModal = document.getElementById("createModal");
+    const modalBackdrop = document.getElementById("modalBackdrop");
+    const cancelBtn = document.getElementById("cancelBtn");
+    const closeDeleteBtn = document.getElementById("closeDeleteModal");
+    const productNameSpan = document.getElementById("productName");
+    const deleteProductIdInput = document.getElementById(
+        "deleteProductId",
+    ) as HTMLInputElement;
+    const toast = document.getElementById("toast");
+    const toastMessage = document.getElementById("toastMessage");
+
+    function showToast(message: string, isError = false) {
+        if (toastMessage) toastMessage.textContent = message;
+        toast?.classList.toggle("bg-green-600", !isError);
+        toast?.classList.toggle("bg-red-600", isError);
+        toast?.classList.remove("translate-y-24", "opacity-0");
+        setTimeout(() => {
+            toast?.classList.add("translate-y-24", "opacity-0");
+        }, 3000);
+    }
+
+    // Check for URL errors
+    const urlParams = new URLSearchParams(window.location.search);
+    if (urlParams.get("error") === "featured_limit") {
+        showToast("¡Máximo 5 destacados alcanzado!", true);
+        // Clean URL
+        window.history.replaceState(
+            {},
+            document.title,
+            window.location.pathname,
+        );
+    }
+
+    // Open delete modal
+    document.querySelectorAll(".delete-btn").forEach((btn) => {
+        btn.addEventListener("click", (e) => {
+            const target = e.currentTarget as HTMLElement;
+            const productId = target.dataset.productId;
+            const productName = target.dataset.productName;
+
+            if (productNameSpan)
+                productNameSpan.textContent = productName || "";
+            if (deleteProductIdInput)
+                deleteProductIdInput.value = productId || "";
+
+            deleteModal?.classList.remove("hidden");
+            deleteModal?.classList.add("flex");
+        });
+    });
+
+    // Open create modal
+    document
+        .getElementById("openCreateModal")
+        ?.addEventListener("click", () => {
+            createModal?.classList.remove("hidden");
+            createModal?.classList.add("flex");
+        });
+
+    // Close modals
+    function closeDeleteModal() {
+        deleteModal?.classList.add("hidden");
+        deleteModal?.classList.remove("flex");
+    }
+
+    function closeCreateModal() {
+        createModal?.classList.add("hidden");
+        createModal?.classList.remove("flex");
+    }
+
+    function closeEditModal() {
+        const editModal = document.getElementById("editModal");
+        editModal?.classList.add("hidden");
+        editModal?.classList.remove("flex");
+    }
+
+    cancelBtn?.addEventListener("click", closeDeleteModal);
+    closeDeleteBtn?.addEventListener("click", closeDeleteModal);
+    modalBackdrop?.addEventListener("click", closeDeleteModal);
+
+    document.querySelectorAll("[data-close-create]").forEach((el) => {
+        el.addEventListener("click", closeCreateModal);
+    });
+
+    // Close on escape
+    document.addEventListener("keydown", (e) => {
+        if (e.key === "Escape") {
+            closeDeleteModal();
+            closeCreateModal();
+            closeEditModal();
+        }
+    });
+
+    // Create product form
+    const createForm = document.getElementById("createProductForm");
+    const nameInput = createForm?.querySelector('input[name="name"]');
+    const slugInput = createForm?.querySelector(
+        'input[name="slug"]',
+    ) as HTMLInputElement;
+
+    // Create Image Logic
+    const createDropZone = document.getElementById("createDropZone");
+    const createFileInput = document.getElementById(
+        "createFileInput",
+    ) as HTMLInputElement;
+    const createImageUrlInput = document.getElementById(
+        "createImageUrl",
+    ) as HTMLInputElement;
+    const createImagePreviewContainer = document.getElementById(
+        "createImagePreviewContainer",
+    );
+    const createImagePreview = document.getElementById(
+        "createImagePreview",
+    ) as HTMLImageElement;
+    const removeCreateImageBtn = document.getElementById("removeCreateImage");
+    const createUploadContent = document.getElementById("createUploadContent");
+    const createUploadProgress = document.getElementById(
+        "createUploadProgress",
+    );
+
+    // Create Image Upload Handlers
+    createDropZone?.addEventListener("click", () => createFileInput?.click());
+
+    createDropZone?.addEventListener("dragover", (e) => {
+        e.preventDefault();
+        createDropZone.classList.add("border-white", "bg-gray-700/50");
+    });
+    createDropZone?.addEventListener("dragleave", (e) => {
+        e.preventDefault();
+        createDropZone.classList.remove("border-white", "bg-gray-700/50");
+    });
+    createDropZone?.addEventListener("drop", async (e) => {
+        e.preventDefault();
+        createDropZone.classList.remove("border-white", "bg-gray-700/50");
+        const files = e.dataTransfer?.files;
+        if (files && files.length > 0) await handleCreateUpload(files[0]);
+    });
+    createFileInput?.addEventListener("change", async () => {
+        if (createFileInput.files && createFileInput.files.length > 0)
+            await handleCreateUpload(createFileInput.files[0]);
+    });
+
+    async function handleCreateUpload(file: File) {
+        if (!file.type.startsWith("image/")) {
+            showToast("Solo imágenes", true);
+            return;
+        }
+        createUploadContent?.classList.add("hidden");
+        createUploadProgress?.classList.remove("hidden");
+
+        try {
+            const formData = new FormData();
+            formData.append("file", file);
+            const res = await fetch("/api/products/upload", {
+                method: "POST",
+                body: formData,
+            });
+            const data = await res.json();
+
+            if (data.success) {
+                createImageUrlInput.value = data.url;
+                createImagePreview.src = data.url;
+                createImagePreviewContainer?.classList.remove("hidden");
+                createDropZone?.classList.add("hidden");
+                showToast("Imagen subida");
+            } else {
+                showToast(data.error || "Error al subir imagen", true);
+            }
+        } catch (e) {
+            showToast("Error de red", true);
+        }
+        createUploadProgress?.classList.add("hidden");
+        createUploadContent?.classList.remove("hidden");
+        createFileInput.value = "";
+    }
+
+    removeCreateImageBtn?.addEventListener("click", () => {
+        createImageUrlInput.value = "";
+        createImagePreview.src = "";
+        createImagePreviewContainer?.classList.add("hidden");
+        createDropZone?.classList.remove("hidden");
+    });
+
+    // --- EDIT MODAL LOGIC ---
+    const editModal = document.getElementById("editModal");
+    const editForm = document.getElementById(
+        "editProductForm",
+    ) as HTMLFormElement;
+
+    // Edit Image Logic
+    const editDropZone = document.getElementById("editDropZone");
+    const editFileInput = document.getElementById(
+        "editFileInput",
+    ) as HTMLInputElement;
+    const editImageUrlInput = document.getElementById(
+        "editImageUrl",
+    ) as HTMLInputElement;
+    const editImagePreviewContainer = document.getElementById(
+        "editImagePreviewContainer",
+    );
+    const editImagePreview = document.getElementById(
+        "editImagePreview",
+    ) as HTMLImageElement;
+    const removeEditImageBtn = document.getElementById("removeEditImage");
+    const editUploadContent = document.getElementById("editUploadContent");
+    const editUploadProgress = document.getElementById("editUploadProgress");
+
+    // Open Edit Modal
+    document.querySelectorAll(".edit-btn").forEach((btn) => {
+        btn.addEventListener("click", (e) => {
+            const target = e.currentTarget as HTMLElement;
+            const product = JSON.parse(target.dataset.product || "{}");
+
+            // Populate fields
+            (document.getElementById("editId") as HTMLInputElement).value =
+                product.id;
+            (document.getElementById("editName") as HTMLInputElement).value =
+                product.name;
+            (document.getElementById("editSlug") as HTMLInputElement).value =
+                product.slug;
+            (
+                document.getElementById("editDescription") as HTMLSelectElement
+            ).value = product.description || "";
+            (document.getElementById("editPrice") as HTMLInputElement).value = (
+                product.price / 100
+            ).toFixed(2);
+            (document.getElementById("editStock") as HTMLInputElement).value =
+                (Array.isArray(product.stock)
+                    ? product.stock[0]?.quantity
+                    : product.stock?.quantity) ?? 0;
+
+            // Categories
+            // Clone options from create modal if not present
+            const createSelect = createForm?.querySelector(
+                'select[name="category_id"]',
+            ) as HTMLSelectElement;
+            const editSelect = document.getElementById(
+                "editCategoryId",
+            ) as HTMLSelectElement;
+            if (editSelect && createSelect && editSelect.options.length <= 1) {
+                Array.from(createSelect.options).forEach((opt, i) => {
+                    if (i > 0)
+                        editSelect.add(
+                            opt.cloneNode(true) as HTMLOptionElement,
+                        );
+                });
+            }
+            editSelect.value = product.category_id || "";
+
+            (
+                document.getElementById("editActive") as HTMLInputElement
+            ).checked = product.active;
+            (
+                document.getElementById("editIsOffer") as HTMLInputElement
+            ).checked = product.is_offer;
+
+            // Handle Image
+            const imageUrl =
+                product.product_images && product.product_images.length > 0
+                    ? product.product_images[0].image_url
+                    : null;
+            if (imageUrl) {
+                editImageUrlInput.value = imageUrl;
+                editImagePreview.src = imageUrl;
+                editImagePreviewContainer?.classList.remove("hidden");
+                editDropZone?.classList.add("hidden");
+            } else {
+                editImageUrlInput.value = "";
+                editImagePreview.src = "";
+                editImagePreviewContainer?.classList.add("hidden");
+                editDropZone?.classList.remove("hidden");
+            }
+
+            editModal?.classList.remove("hidden");
+            editModal?.classList.add("flex");
+        });
+    });
+
+    document
+        .querySelectorAll("[data-close-edit]")
+        .forEach((el) => el.addEventListener("click", closeEditModal));
+
+    // Edit Image Upload Handlers
+    editDropZone?.addEventListener("click", () => editFileInput?.click());
+
+    editDropZone?.addEventListener("dragover", (e) => {
+        e.preventDefault();
+        editDropZone.classList.add("border-white", "bg-gray-700/50");
+    });
+    editDropZone?.addEventListener("dragleave", (e) => {
+        e.preventDefault();
+        editDropZone.classList.remove("border-white", "bg-gray-700/50");
+    });
+    editDropZone?.addEventListener("drop", async (e) => {
+        e.preventDefault();
+        editDropZone.classList.remove("border-white", "bg-gray-700/50");
+        const files = e.dataTransfer?.files;
+        if (files && files.length > 0) await handleEditUpload(files[0]);
+    });
+    editFileInput?.addEventListener("change", async () => {
+        if (editFileInput.files && editFileInput.files.length > 0)
+            await handleEditUpload(editFileInput.files[0]);
+    });
+
+    async function handleEditUpload(file: File) {
+        if (!file.type.startsWith("image/")) {
+            showToast("Solo imágenes", true);
+            return;
+        }
+        editUploadContent?.classList.add("hidden");
+        editUploadProgress?.classList.remove("hidden");
+
+        try {
+            const formData = new FormData();
+            formData.append("file", file);
+            const res = await fetch("/api/products/upload", {
+                method: "POST",
+                body: formData,
+            });
+            const data = await res.json();
+
+            if (data.success) {
+                editImageUrlInput.value = data.url;
+                editImagePreview.src = data.url;
+                editImagePreviewContainer?.classList.remove("hidden");
+                editDropZone?.classList.add("hidden");
+                showToast("Imagen subida");
+            } else {
+                showToast(data.error || "Error al subir imagen", true);
+            }
+        } catch (e) {
+            showToast("Error de red", true);
+        }
+        editUploadProgress?.classList.add("hidden");
+        editUploadContent?.classList.remove("hidden");
+        editFileInput.value = "";
+    }
+
+    removeEditImageBtn?.addEventListener("click", () => {
+        editImageUrlInput.value = "";
+        editImagePreview.src = "";
+        editImagePreviewContainer?.classList.add("hidden");
+        editDropZone?.classList.remove("hidden");
+    });
+
+    // Submit Edit Form
+    editForm?.addEventListener("submit", async (e) => {
+        e.preventDefault();
+        const formData = new FormData(editForm);
+
+        const data = {
+            id: formData.get("id"),
+            name: formData.get("name"),
+            slug: formData.get("slug"),
+            description: formData.get("description"),
+            price: parseFloat(formData.get("price") as string) * 100,
+            category_id: formData.get("category_id") || null,
+            active: formData.get("active") === "on",
+            is_offer: formData.get("is_offer") === "on",
+            image_url: formData.get("image_url"),
+            stock: formData.get("stock"),
+        };
+
+        try {
+            const res = await fetch("/api/products/update", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify(data),
+            });
+
+            if (res.ok) {
+                closeEditModal();
+                showToast("Producto actualizado");
+                setTimeout(() => location.reload(), 1000);
+            } else {
+                const err = await res.json();
+                showToast(err.error || "Error al actualizar", true);
+            }
+        } catch (e) {
+            showToast("Error de conexión", true);
+        }
+    });
+
+    // Auto-generate slug (Create)
+    nameInput?.addEventListener("input", (e) => {
+        const value = (e.target as HTMLInputElement).value;
+        const slug = value
+            .toLowerCase()
+            .normalize("NFD")
+            .replace(/[\u0300-\u036f]/g, "")
+            .replace(/[^a-z0-9]+/g, "-")
+            .replace(/(^-|-$)/g, "");
+        if (slugInput) slugInput.value = slug;
+    });
+
+    createForm?.addEventListener("submit", async (e) => {
+        e.preventDefault();
+        const form = e.target as HTMLFormElement;
+        const formData = new FormData(form);
+
+        const data = {
+            name: formData.get("name"),
+            slug: formData.get("slug"),
+            description: formData.get("description") || null,
+            price: parseFloat(formData.get("price") as string) * 100,
+            category_id: formData.get("category_id") || null,
+            active: formData.get("active") === "on",
+            is_offer: formData.get("is_offer") === "on",
+            image_url: formData.get("image_url"),
+            stock: formData.get("stock"),
+        };
+
+        try {
+            const response = await fetch("/api/products/create", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify(data),
+            });
+
+            if (response.ok) {
+                closeCreateModal();
+                showToast("Producto creado correctamente");
+                form.reset();
+                setTimeout(() => location.reload(), 1500);
+            } else {
+                showToast("Error al crear producto", true);
+            }
+        } catch (err) {
+            showToast("Error de conexión", true);
+        }
+    });
+</script>

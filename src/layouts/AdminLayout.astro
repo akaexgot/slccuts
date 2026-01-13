@@ -1,0 +1,375 @@
+---
+import "../styles/global.css";
+
+interface Props {
+    title: string;
+    activeSection?: string;
+}
+
+const { title, activeSection = "dashboard" } = Astro.props;
+
+const navItems = [
+    { id: "dashboard", label: "Dashboard", href: "/admin", icon: "home" },
+    {
+        id: "products",
+        label: "Productos",
+        href: "/admin/products",
+        icon: "package",
+    },
+    {
+        id: "orders",
+        label: "Pedidos",
+        href: "/admin/orders",
+        icon: "shopping-bag",
+    },
+    {
+        id: "categories",
+        label: "Categorías",
+        href: "/admin/categories",
+        icon: "tag",
+    },
+    { id: "gallery", label: "Galería", href: "/admin/gallery", icon: "image" },
+    {
+        id: "news",
+        label: "Noticias",
+        href: "/admin/news",
+        icon: "newspaper",
+    },
+];
+---
+
+<!doctype html>
+<html lang="es">
+    <head>
+        <meta charset="UTF-8" />
+        <meta name="viewport" content="width=device-width" />
+        <link rel="icon" type="image/png" href="/logo.png" />
+        <link href="https://fonts.cdnfonts.com/css/chomsky" rel="stylesheet" />
+        <style is:global>
+            @import url("https://fonts.cdnfonts.com/css/chomsky");
+            .font-chomsky {
+                font-family: "Chomsky", sans-serif !important;
+            }
+        </style>
+        <title>{title} | Admin SLC CUTS</title>
+    </head>
+    <body
+        class="bg-gray-900 text-white min-h-screen flex relative opacity-0 transition-opacity duration-300"
+        id="adminBody"
+    >
+        <!-- Loading Overlay -->
+        <div
+            id="loadingOverlay"
+            class="fixed inset-0 z-[100] bg-gray-900 flex items-center justify-center transition-opacity duration-300"
+        >
+            <div class="flex flex-col items-center gap-4">
+                <div
+                    class="w-12 h-12 border-4 border-white/20 border-t-white rounded-full animate-spin"
+                >
+                </div>
+                <p
+                    class="text-xs font-bold uppercase tracking-[0.2em] text-gray-500"
+                >
+                    Verificando Credenciales
+                </p>
+            </div>
+        </div>
+        <!-- Mosaic Background -->
+        <div
+            class="fixed inset-0 opacity-[0.03] pointer-events-none z-0"
+            style="background-image: url('/logoblancotransparente.png'); background-size: 80px; background-repeat: repeat;"
+        >
+        </div>
+
+        <!-- Sidebar -->
+        <aside
+            class="w-64 bg-black/90 backdrop-blur-sm min-h-screen flex flex-col border-r border-gray-800 fixed left-0 top-0 bottom-0 z-20"
+        >
+            <!-- Brand -->
+            <div class="p-6 border-b border-gray-800">
+                <a href="/admin" class="block text-center">
+                    <span
+                        class="text-4xl font-chomsky text-white hover:opacity-80 transition-opacity"
+                        >@slc.cuts</span
+                    >
+                    <span
+                        class="block text-xs text-gray-500 uppercase tracking-widest mt-2"
+                        >Panel Admin</span
+                    >
+                </a>
+            </div>
+
+            <!-- Navigation -->
+            <nav class="flex-1 py-6">
+                <ul class="space-y-1 px-3">
+                    {
+                        navItems.map((item) => (
+                            <li>
+                                <a
+                                    href={item.href}
+                                    class={`flex items-center gap-3 px-4 py-3 rounded-lg transition-all ${
+                                        activeSection === item.id
+                                            ? "bg-white text-black font-bold"
+                                            : "text-gray-400 hover:text-white hover:bg-gray-800"
+                                    }`}
+                                >
+                                    {item.icon === "home" && (
+                                        <svg
+                                            xmlns="http://www.w3.org/2000/svg"
+                                            width="20"
+                                            height="20"
+                                            viewBox="0 0 24 24"
+                                            fill="none"
+                                            stroke="currentColor"
+                                            stroke-width="2"
+                                            stroke-linecap="round"
+                                            stroke-linejoin="round"
+                                        >
+                                            <path d="m3 9 9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z" />
+                                            <polyline points="9 22 9 12 15 12 15 22" />
+                                        </svg>
+                                    )}
+                                    {item.icon === "package" && (
+                                        <svg
+                                            xmlns="http://www.w3.org/2000/svg"
+                                            width="20"
+                                            height="20"
+                                            viewBox="0 0 24 24"
+                                            fill="none"
+                                            stroke="currentColor"
+                                            stroke-width="2"
+                                            stroke-linecap="round"
+                                            stroke-linejoin="round"
+                                        >
+                                            <path d="m7.5 4.27 9 5.15" />
+                                            <path d="M21 8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16Z" />
+                                            <path d="m3.3 7 8.7 5 8.7-5" />
+                                            <path d="M12 22V12" />
+                                        </svg>
+                                    )}
+                                    {item.icon === "shopping-bag" && (
+                                        <svg
+                                            xmlns="http://www.w3.org/2000/svg"
+                                            width="20"
+                                            height="20"
+                                            viewBox="0 0 24 24"
+                                            fill="none"
+                                            stroke="currentColor"
+                                            stroke-width="2"
+                                            stroke-linecap="round"
+                                            stroke-linejoin="round"
+                                        >
+                                            <path d="M6 2 3 6v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6l-3-4Z" />
+                                            <path d="M3 6h18" />
+                                            <path d="M16 10a4 4 0 0 1-8 0" />
+                                        </svg>
+                                    )}
+                                    {item.icon === "image" && (
+                                        <svg
+                                            xmlns="http://www.w3.org/2000/svg"
+                                            width="20"
+                                            height="20"
+                                            viewBox="0 0 24 24"
+                                            fill="none"
+                                            stroke="currentColor"
+                                            stroke-width="2"
+                                            stroke-linecap="round"
+                                            stroke-linejoin="round"
+                                        >
+                                            <rect
+                                                width="18"
+                                                height="18"
+                                                x="3"
+                                                y="3"
+                                                rx="2"
+                                                ry="2"
+                                            />
+                                            <circle cx="9" cy="9" r="2" />
+                                            <path d="m21 15-3.086-3.086a2 2 0 0 0-2.828 0L6 21" />
+                                        </svg>
+                                    )}
+                                    {item.icon === "scissors" && (
+                                        <svg
+                                            xmlns="http://www.w3.org/2000/svg"
+                                            width="20"
+                                            height="20"
+                                            viewBox="0 0 24 24"
+                                            fill="none"
+                                            stroke="currentColor"
+                                            stroke-width="2"
+                                            stroke-linecap="round"
+                                            stroke-linejoin="round"
+                                        >
+                                            <circle cx="6" cy="6" r="3" />
+                                            <path d="M8.12 8.12 12 12" />
+                                            <path d="M20 4 8.12 15.88" />
+                                            <circle cx="6" cy="18" r="3" />
+                                            <path d="M14.8 14.8 20 20" />
+                                        </svg>
+                                    )}
+                                    {item.icon === "tag" && (
+                                        <svg
+                                            xmlns="http://www.w3.org/2000/svg"
+                                            width="20"
+                                            height="20"
+                                            viewBox="0 0 24 24"
+                                            fill="none"
+                                            stroke="currentColor"
+                                            stroke-width="2"
+                                            stroke-linecap="round"
+                                            stroke-linejoin="round"
+                                        >
+                                            <path d="M12 2H2v10l9.29 9.29c.94.94 2.48.94 3.42 0l6.58-6.58c.94-.94.94-2.48 0-3.42L12 2Z" />
+                                            <path d="M7 7h.01" />
+                                        </svg>
+                                    )}
+                                    {item.icon === "newspaper" && (
+                                        <svg
+                                            xmlns="http://www.w3.org/2000/svg"
+                                            width="20"
+                                            height="20"
+                                            viewBox="0 0 24 24"
+                                            fill="none"
+                                            stroke="currentColor"
+                                            stroke-width="2"
+                                            stroke-linecap="round"
+                                            stroke-linejoin="round"
+                                        >
+                                            <path d="M4 22h16a2 2 0 0 0 2-2V4a2 2 0 0 0-2-2H8a2 2 0 0 0-2 2v16a2 2 0 0 1-2 2Zm0 0a2 2 0 0 1-2-2v-9c0-1.1.9-2 2-2h2" />
+                                            <path d="M18 14h-8" />
+                                            <path d="M15 18h-5" />
+                                            <path d="M10 6h8v4h-8V6Z" />
+                                        </svg>
+                                    )}
+                                    <span class="uppercase text-sm tracking-wider">
+                                        {item.label}
+                                    </span>
+                                </a>
+                            </li>
+                        ))
+                    }
+                </ul>
+            </nav>
+
+            <!-- Footer -->
+            <div class="p-4 border-t border-gray-800 space-y-2">
+                <button
+                    id="logoutBtn"
+                    class="w-full flex items-center gap-2 text-gray-500 hover:text-red-400 text-sm transition-colors group"
+                >
+                    <svg
+                        xmlns="http://www.w3.org/2000/svg"
+                        width="16"
+                        height="16"
+                        viewBox="0 0 24 24"
+                        fill="none"
+                        stroke="currentColor"
+                        stroke-width="2"
+                        stroke-linecap="round"
+                        stroke-linejoin="round"
+                        class="group-hover:translate-x-1 transition-transform"
+                        ><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"
+                        ></path><polyline points="16 17 21 12 16 7"
+                        ></polyline><line x1="21" x2="9" y1="12" y2="12"
+                        ></line></svg
+                    >
+                    Cerrar Sesión
+                </button>
+                <a
+                    href="/"
+                    class="flex items-center gap-2 text-gray-500 hover:text-white text-sm transition-colors"
+                >
+                    <svg
+                        xmlns="http://www.w3.org/2000/svg"
+                        width="16"
+                        height="16"
+                        viewBox="0 0 24 24"
+                        fill="none"
+                        stroke="currentColor"
+                        stroke-width="2"
+                        stroke-linecap="round"
+                        stroke-linejoin="round"
+                        ><path d="m12 19-7-7 7-7"></path><path d="M19 12H5"
+                        ></path></svg
+                    >
+                    Volver a la tienda
+                </a>
+            </div>
+        </aside>
+
+        <script>
+            import { supabase } from "../lib/supabase";
+
+            const adminBody = document.getElementById("adminBody");
+            const loadingOverlay = document.getElementById("loadingOverlay");
+
+            // Protection Logic
+            const checkSession = async () => {
+                const {
+                    data: { session },
+                } = await supabase.auth.getSession();
+
+                if (!session) {
+                    window.location.href = "/login";
+                    return;
+                }
+
+                // Double check role
+                const { data: profile, error } = await supabase
+                    .from("users")
+                    .select("role")
+                    .eq("id", session.user.id)
+                    .single();
+
+                if (
+                    error ||
+                    !profile ||
+                    profile.role.toLowerCase().trim() !== "admin"
+                ) {
+                    console.error(
+                        "Acceso denegado: No eres administrador",
+                        error,
+                    );
+                    await supabase.auth.signOut();
+                    window.location.href = "/login";
+                    return;
+                }
+
+                // If everything is OK, show the content
+                if (loadingOverlay) loadingOverlay.classList.add("opacity-0");
+                if (adminBody) adminBody.classList.remove("opacity-0");
+
+                setTimeout(() => {
+                    if (loadingOverlay) loadingOverlay.style.display = "none";
+                }, 300);
+            };
+
+            checkSession();
+
+            // Logout Logic
+            document
+                .getElementById("logoutBtn")
+                ?.addEventListener("click", async () => {
+                    await supabase.auth.signOut();
+                    window.location.href = "/login";
+                });
+        </script>
+
+        <!-- Main Content -->
+        <main class="flex-1 ml-64 min-h-screen relative z-10">
+            <!-- Top Bar -->
+            <header
+                class="bg-gray-900/80 backdrop-blur-sm border-b border-gray-700 px-8 py-4 sticky top-0 z-10"
+            >
+                <h1 class="text-2xl font-bold uppercase tracking-wider">
+                    {title}
+                </h1>
+            </header>
+
+            <!-- Page Content -->
+            <div class="p-8">
+                <slot />
+            </div>
+        </main>
+    </body>
+</html>

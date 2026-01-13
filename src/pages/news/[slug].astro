@@ -1,0 +1,184 @@
+---
+export const prerender = false;
+import Layout from "../../layouts/Layout.astro";
+import { supabase } from "../../lib/supabase";
+import { Image } from "astro:assets";
+
+const { slug } = Astro.params;
+
+const { data: item } = await supabase
+    .from("news")
+    .select("*")
+    .eq("slug", slug)
+    .single();
+
+if (!item) {
+    return Astro.redirect("/404");
+}
+
+const formatDate = (dateStr: string) => {
+    return new Date(dateStr).toLocaleDateString("es-ES", {
+        day: "2-digit",
+        month: "long",
+        year: "numeric",
+    });
+};
+
+// Fetch other news for "related" section
+const { data: otherNews } = await supabase
+    .from("news")
+    .select("*")
+    .eq("is_published", true)
+    .neq("id", item.id)
+    .limit(3);
+---
+
+<Layout title={`${item.title} | SLC CUTS`}>
+    <main class="bg-white min-h-screen">
+        {/* Article Header */}
+        <header class="relative pt-32 pb-20 bg-black overflow-hidden">
+            <div
+                class="absolute inset-0 opacity-10 pointer-events-none"
+                style="background-image: url('/logoblancotransparente.png'); background-size: 100px; background-repeat: repeat;"
+            >
+            </div>
+
+            <div class="container mx-auto px-4 relative z-10">
+                <div class="max-w-4xl mx-auto text-center space-y-8">
+                    <div
+                        class="flex items-center justify-center gap-4 text-pink-500"
+                    >
+                        <span class="w-12 h-[1px] bg-pink-500"></span>
+                        <span
+                            class="text-xs font-black uppercase tracking-[0.3em]"
+                            >{formatDate(item.created_at)}</span
+                        >
+                        <span class="w-12 h-[1px] bg-pink-500"></span>
+                    </div>
+
+                    <h1
+                        class="text-5xl md:text-7xl font-black text-white uppercase tracking-tighter italic leading-none"
+                    >
+                        {item.title}
+                    </h1>
+                </div>
+            </div>
+        </header>
+
+        {/* Featured Image */}
+        {
+            item.image_url && (
+                <section class="relative -mt-16 mb-20 px-4 group">
+                    <div class="container mx-auto">
+                        <div class="aspect-video md:aspect-[21/9] rounded-[3rem] overflow-hidden bg-gray-100 shadow-2xl border-4 border-white relative">
+                            <Image
+                                src={item.image_url}
+                                alt={item.title}
+                                width={1200}
+                                height={630}
+                                class="w-full h-full object-cover"
+                                loading="eager"
+                            />
+                        </div>
+                    </div>
+                </section>
+            )
+        }
+
+        {/* Article Content */}
+        <section class="py-20">
+            <div class="container mx-auto px-4">
+                <div class="max-w-3xl mx-auto">
+                    <div class="prose prose-xl prose-pink max-w-none">
+                        {
+                            /* Splitting paragraphs by newlines for basic rendering */
+                        }
+                        {
+                            item.content
+                                .split("\n")
+                                .filter((p: string) => p.trim() !== "")
+                                .map((para: string) => (
+                                    <p class="text-gray-700 text-xl leading-relaxed mb-8 font-medium italic">
+                                        {para}
+                                    </p>
+                                ))
+                        }
+                    </div>
+
+                    <div
+                        class="mt-20 pt-10 border-t border-gray-100 flex items-center justify-between"
+                    >
+                        <div class="flex items-center gap-4">
+                            <Image
+                                src="/logoblancotransparente.png"
+                                width={48}
+                                height={48}
+                                class="w-12 h-12 bg-black rounded-full p-2"
+                                alt="SLC"
+                                loading="lazy"
+                            />
+                            <div>
+                                <p
+                                    class="text-[10px] font-black uppercase tracking-widest text-gray-400"
+                                >
+                                    Publicado por
+                                </p>
+                                <p
+                                    class="text-sm font-bold uppercase tracking-wider text-black"
+                                >
+                                    Equipo SLC CUTS
+                                </p>
+                            </div>
+                        </div>
+                        <a
+                            href="/news"
+                            class="text-xs font-black uppercase tracking-widest text-black border-b-2 border-black/10 hover:border-black transition-all pb-1"
+                            >Volver al blog</a
+                        >
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        {/* Related News */}
+        {
+            otherNews && otherNews.length > 0 && (
+                <section class="py-24 bg-gray-50">
+                    <div class="container mx-auto px-4">
+                        <h3 class="text-2xl font-black uppercase tracking-tight italic mb-12 text-center">
+                            Más publicaciones
+                        </h3>
+                        <div class="grid grid-cols-1 md:grid-cols-3 gap-8">
+                            {otherNews.map((news: any) => (
+                                <a
+                                    href={`/news/${news.slug}`}
+                                    class="group space-y-4"
+                                >
+                                    <div class="aspect-video rounded-2xl overflow-hidden bg-gray-200 border border-black/5 shadow-lg">
+                                        {news.image_url ? (
+                                            <Image
+                                                src={news.image_url}
+                                                width={400}
+                                                height={225}
+                                                class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
+                                                alt={news.title}
+                                                loading="lazy"
+                                            />
+                                        ) : (
+                                            <div class="w-full h-full flex items-center justify-center text-gray-300 font-black italic">
+                                                SLC
+                                            </div>
+                                        )}
+                                    </div>
+                                    <h4 class="font-black uppercase tracking-tight italic leading-tight group-hover:text-pink-600 transition-colors line-clamp-2">
+                                        {news.title}
+                                    </h4>
+                                </a>
+                            ))}
+                        </div>
+                    </div>
+                </section>
+            )
+        }
+    </main>
+</Layout>

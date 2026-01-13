@@ -1,0 +1,78 @@
+---
+import Layout from "../layouts/Layout.astro";
+import { Image } from "astro:assets";
+---
+
+<Layout title="404 - Página no encontrada | SLC CUTS">
+    <main
+        class="min-h-[70vh] flex items-center justify-center relative overflow-hidden bg-black text-white"
+    >
+        <!-- Mosaic Background -->
+        <div
+            class="absolute inset-0 opacity-5 pointer-events-none z-0"
+            style="background-image: url('/logoblancotransparente.png'); background-size: 100px; background-repeat: repeat;"
+        >
+        </div>
+
+        <div class="relative z-10 text-center px-4 max-w-2xl mx-auto">
+            <h1
+                class="text-9xl font-bebas tracking-tighter italic mb-4 animate-on-scroll"
+            >
+                404
+            </h1>
+            <div class="w-24 h-1 bg-white mx-auto mb-8"></div>
+
+            <h2 class="text-4xl font-chomsky mb-6">Página No Encontrada</h2>
+
+            <p
+                class="text-gray-400 text-lg mb-12 font-outfit tracking-widest leading-relaxed"
+            >
+                Parece que te has desviado del estilo. El contenido que buscas
+                no existe o ha sido movido.
+            </p>
+
+            <div class="flex flex-col md:flex-row gap-6 justify-center">
+                <a
+                    href="/"
+                    class="bg-white text-black px-10 py-4 font-black uppercase tracking-[0.2em] hover:bg-gray-200 transition-all active:scale-95"
+                >
+                    Volver al Inicio
+                </a>
+                <a
+                    href="/shop/new"
+                    class="border border-white/20 text-white px-10 py-4 font-black uppercase tracking-[0.2em] hover:bg-white/5 transition-all active:scale-95"
+                >
+                    Ir a la Tienda
+                </a>
+            </div>
+        </div>
+
+        <!-- Decorative Elements -->
+        <div class="absolute bottom-10 left-1/2 -translate-x-1/2 opacity-20">
+            <Image
+                src="/logoblancotransparente.png"
+                alt="SLC CUTS"
+                width={200}
+                height={200}
+                class="h-32 w-auto mix-blend-screen grayscale"
+                loading="lazy"
+            />
+        </div>
+    </main>
+</Layout>
+
+<style>
+    @keyframes fadeIn {
+        from {
+            opacity: 0;
+            transform: translateY(20px);
+        }
+        to {
+            opacity: 1;
+            transform: translateY(0);
+        }
+    }
+    .animate-on-scroll {
+        animation: fadeIn 1s ease-out forwards;
+    }
+</style>
