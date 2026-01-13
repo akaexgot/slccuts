@@ -2,6 +2,7 @@
 
 Proyecto de e-commerce y panel de administración para **SLC CUTS**, barbería especializada en estilo, maestría y vanguardia.
 
+LOGIN PARA EL PANEL ADMIN: slccuts1998@gmail.com / CUTSSLC;26
 ## 🚀 Tecnologías
 
 - **Framework**: [Astro](https://astro.build/)
