@@ -129,12 +129,11 @@ export default function CheckoutPage() {
 
             if (itemsError) throw itemsError;
 
-            // 3. Clear cart
-            const { clearCart } = await import('../../store/cartStore');
-            clearCart();
-
-            // 4. Handle Payment Flow
+            // 3. Handle Payment Flow
             const isOnlinePayment = (method === 'pickup' && pickupPayment === 'online') || method === 'delivery';
+
+            // Clear cart logic moved inside payment flow or after redirect start
+            const { clearCart } = await import('../../store/cartStore');
 
             if (isOnlinePayment) {
                 // Redirect to Stripe
@@ -174,12 +173,15 @@ export default function CheckoutPage() {
                 const session = JSON.parse(resultText);
                 if (session.error) throw new Error(session.error);
                 if (session.url) {
+                    clearCart(); // Clear just before leaving
                     window.location.href = session.url;
-                    return; // Stop execution to allow redirect
+                    return;
                 }
             } else {
                 // Cash on Pickup -> Direct Success
+                clearCart();
                 window.location.href = `/success?method=${method}&orderId=${order.id}`;
+                return;
             }
 
         } catch (error: any) {
@@ -189,17 +191,27 @@ export default function CheckoutPage() {
         }
     };
 
-    if (items.length === 0) {
+    if (items.length === 0 && !isProcessing) {
         return (
             <div className="container mx-auto px-4 py-20 text-center">
-                <h1 className="text-3xl font-bold mb-4">Tu carrito está vacío</h1>
-                <a href="/shop/new" className="text-blue-600 hover:underline">Volver a la tienda</a>
+                <h1 className="text-3xl font-bold mb-4 italic uppercase tracking-widest">Tu carrito está vacío</h1>
+                <p className="text-gray-500 mb-8">Parece que aún no has añadido nada a tu selección.</p>
+                <a href="/shop/new" className="inline-block bg-black text-white px-8 py-4 rounded-lg font-bold uppercase tracking-widest hover:bg-gray-800 transition-colors">Volver a la tienda</a>
             </div>
         );
     }
 
     return (
-        <div className="container mx-auto px-4 py-12 max-w-6xl">
+        <div className="container mx-auto px-4 py-12 max-w-6xl relative">
+            {isProcessing && (
+                <div className="fixed inset-0 z-50 bg-white/80 backdrop-blur-sm flex flex-col items-center justify-center animate-in fade-in duration-300">
+                    <div className="w-16 h-16 border-4 border-black border-t-transparent rounded-full animate-spin mb-6"></div>
+                    <h2 className="text-2xl font-black uppercase tracking-tighter italic animate-pulse">
+                        {method === 'delivery' || pickupPayment === 'online' ? 'Redirigiendo a Stripe...' : 'Procesando pedido...'}
+                    </h2>
+                    <p className="text-sm text-gray-500 mt-2">Por favor, no cierres esta ventana</p>
+                </div>
+            )}
             <h1 className="text-3xl font-bold mb-8 uppercase tracking-widest">Finalizar Compra</h1>
 
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-12">
