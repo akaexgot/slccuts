@@ -5,4 +5,8 @@ nixPkgs = ["nodejs"]
 cmds = ["npm ci", "npm run build"]
 
 [start]
-cmd = "npm run start"
+cmd = "node ./dist/server/entry.mjs"
+
+[variables]
+HOST = "0.0.0.0"
+PORT = "3000"

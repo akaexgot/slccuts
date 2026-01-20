@@ -110,7 +110,7 @@ if (popupsEnabled) {
         <title>{title}</title>
     </head>
     <body
-        class="bg-[#050505] text-white font-sans antialiased min-h-screen flex flex-col relative"
+        class="bg-gray-50 text-gray-900 font-sans antialiased min-h-screen flex flex-col relative"
     >
         <!-- Noise Texture Overlay (Using a lighter CSS approach) -->
         <div
@@ -119,12 +119,12 @@ if (popupsEnabled) {
         >
         </div>
 
-        <!-- Header -->
+        <!-- Header will go here -->
         <header
-            class="bg-black/60 backdrop-blur-xl sticky top-0 z-50 border-b border-white/5"
+            class="bg-white sticky top-0 z-50 shadow-md border-b border-gray-100"
         >
             <nav
-                class="container mx-auto px-4 md:px-8 h-24 flex items-center justify-between"
+                class="container mx-auto px-4 md:px-6 h-20 flex items-center justify-between"
             >
                 <!-- Hamburger Menu (Mobile) -->
                 <button
@@ -153,64 +153,47 @@ if (popupsEnabled) {
                 </button>
 
                 <!-- Logo -->
-                <a href="/" class="flex-shrink-0 group relative">
+                <a href="/" class="flex-shrink-0">
                     <span
-                        class="text-4xl md:text-5xl hover:opacity-80 transition-all text-white tracking-[0.2em] font-chomsky relative z-10"
+                        class="text-5xl hover:opacity-80 transition-opacity text-black tracking-widest lowercase font-chomsky"
                         >@slc.cuts</span
                     >
-                    <div
-                        class="absolute -inset-2 bg-white/5 rounded-xl scale-0 group-hover:scale-100 transition-transform duration-500 blur-xl"
-                    >
-                    </div>
                 </a>
 
                 <!-- Desktop Menu -->
                 <div
-                    class="hidden md:flex items-center gap-10 text-[10px] font-black tracking-[0.3em] uppercase text-white/70"
+                    class="hidden md:flex items-center gap-8 text-sm font-bold tracking-widest uppercase text-gray-900"
                 >
                     <a
                         href="/shop/new"
-                        class="hover:text-white transition-colors relative group"
+                        class="hover:text-gray-600 transition-colors"
+                        >Productos</a
                     >
-                        Productos
-                        <span
-                            class="absolute -bottom-1 left-0 w-0 h-[1px] bg-white transition-all group-hover:w-full"
-                        ></span>
-                    </a>
                     <a
                         href="/gallery"
-                        class="hover:text-white transition-colors relative group"
+                        class="hover:text-gray-600 transition-colors">Galería</a
                     >
-                        Galería
-                        <span
-                            class="absolute -bottom-1 left-0 w-0 h-[1px] bg-white transition-all group-hover:w-full"
-                        ></span>
-                    </a>
                     <a
                         href="/news"
-                        class="hover:text-white transition-colors relative group"
+                        class="hover:text-gray-600 transition-colors"
+                        >Noticias</a
                     >
-                        Noticias
-                        <span
-                            class="absolute -bottom-1 left-0 w-0 h-[1px] bg-white transition-all group-hover:w-full"
-                        ></span>
-                    </a>
                     <a
                         href="/services"
-                        class="bg-white text-black px-8 py-4 rounded-full text-[10px] font-black uppercase tracking-[0.2em] hover:bg-white/90 transition-all hover:scale-105 active:scale-95 shadow-2xl shadow-white/10"
+                        class="bg-black text-white px-6 py-3 rounded-lg text-xs md:text-sm font-bold uppercase tracking-widest hover:bg-gray-800 transition-colors"
                     >
                         Reservar Cita
                     </a>
                     <a
                         href="/shop/offers"
-                        class="text-red-500 hover:text-red-400 transition-colors animate-pulse px-2"
+                        class="text-red-600 hover:text-red-700 transition-colors animate-pulse"
                         style={showFlashOffers ? "" : "display: none"}
                         >Ofertas</a
                     >
                 </div>
 
                 <!-- Icons -->
-                <div class="flex items-center gap-6 text-white">
+                <div class="flex items-center gap-6 text-gray-900">
                     <a
                         href="/contact"
                         class="p-2 hover:text-gray-600 transition-colors"
@@ -621,11 +604,11 @@ if (popupsEnabled) {
     </main>
 
     <footer
-        class="bg-[#050505] text-white py-24 mt-auto relative overflow-hidden border-t border-white/5"
+        class="bg-gray-950 text-white py-12 mt-auto relative overflow-hidden"
     >
-        <MosaicBackground mode="dark" opacity="opacity-[0.02]" />
+        <MosaicBackground mode="dark" opacity="opacity-5" />
         <div
-            class="container mx-auto px-4 grid md:grid-cols-4 gap-12 lg:gap-20 relative z-10"
+            class="container mx-auto px-4 grid md:grid-cols-4 gap-8 relative z-10"
         >
             <div>
                 <h3
@@ -873,8 +856,8 @@ if (popupsEnabled) {
                     splash.style.opacity = "0";
                     setTimeout(() => {
                         splash.style.display = "none";
-                    }, 800); // Faster exit
-                }, 300); // Shorter min display
+                    }, 1000); // Wait for transition to finish
+                }, 500); // Min display time
             }
         });
 

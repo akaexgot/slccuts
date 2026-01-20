@@ -4,8 +4,6 @@ export const prerender = false;
 import AdminLayout from "../../layouts/AdminLayout.astro";
 import { supabase } from "../../lib/supabase";
 
-// --- AUTH PROTECTION HANDLED IN AdminLayout.astro (Client Side) ---
-
 // Fetch counts for dashboard
 const { count: productCount } = await supabase
     .from("products")
@@ -1792,11 +1790,11 @@ const visitsValues = Object.values(visitsByDay);
                 const { error } = await supabase.from("news").insert([data]);
                 if (error) throw error;
 
-                window.showToast("¡Noticia publicada correctamente!");
+                (window as any).showToast("¡Noticia publicada correctamente!");
                 setTimeout(() => window.location.reload(), 1500);
             } catch (error) {
                 console.error("Database Error:", error);
-                window.showToast(
+                (window as any).showToast(
                     "Error",
                     "Error al guardar la noticia",
                     "error",

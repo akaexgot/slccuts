@@ -11,22 +11,6 @@ interface Props {
 const { title, activeSection = "dashboard" } = Astro.props;
 
 // Server-side Auth Check
-// note: Centralized in src/middleware.ts for reliability and performance
-const {
-    data: { session },
-} = await supabase.auth.getSession();
-
-const isAdmin =
-    session &&
-    (
-        await supabase
-            .from("users")
-            .select("role")
-            .eq("id", session.user.id)
-            .single()
-    )?.data?.role
-        ?.toLowerCase()
-        .trim() === "admin";
 
 const navItems = [
     { id: "dashboard", label: "Dashboard", href: "/admin", icon: "home" },

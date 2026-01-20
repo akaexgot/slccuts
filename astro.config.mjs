@@ -8,6 +8,7 @@ import node from '@astrojs/node';
 import react from '@astrojs/react';
 
 // https://astro.build/config
+// Trigger reload
 export default defineConfig({
   vite: {
     plugins: [tailwindcss()]

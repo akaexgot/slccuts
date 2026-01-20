@@ -23,7 +23,7 @@ const priceRanges = [
     <div class="sticky top-24 space-y-10">
         <div>
             <h3
-                class="text-[10px] font-black uppercase tracking-[0.4em] text-white/40 mb-10 pb-4 border-b border-white/5"
+                class="text-sm font-black uppercase tracking-[0.2em] text-black mb-8 pb-4 border-b-2 border-black/5"
             >
                 Filtrar por
             </h3>
@@ -38,30 +38,27 @@ const priceRanges = [
                 <div class="space-y-4 md:space-y-3">
                     <a
                         href="/shop/new"
-                        class={`group flex items-center gap-3 text-base md:text-xs py-1 transition-all duration-300 ${!currentCategory && url.pathname.endsWith("new") ? "text-white font-black" : "text-white/40 hover:text-white"}`}
+                        class={`group flex items-center gap-2 text-base md:text-sm py-1 transition-all duration-300 ${!currentCategory && url.pathname.endsWith("new") ? "text-black font-bold" : "text-gray-500 hover:text-black"}`}
                     >
                         {
                             !currentCategory &&
                                 url.pathname.endsWith("new") && (
-                                    <span class="w-1 h-1 bg-white rounded-full shadow-[0_0_8px_white]" />
+                                    <span class="w-1.5 h-1.5 bg-black rounded-full" />
                                 )
                         }
-                        <span class="tracking-widest uppercase"
-                            >Todos los productos</span
-                        >
+                        <span>Todos los productos</span>
                     </a>
                     {
                         categories?.map((cat: any) => (
                             <a
-                                chunk-index="category-link"
                                 href={`/shop/${cat.slug}`}
-                                class={`group flex items-center gap-3 text-base md:text-xs py-1 transition-all duration-300 ${currentCategory === cat.slug || url.pathname === `/shop/${cat.slug}` ? "text-white font-black" : "text-white/40 hover:text-white"}`}
+                                class={`group flex items-center gap-2 text-base md:text-sm py-1 transition-all duration-300 ${currentCategory === cat.slug || url.pathname === `/shop/${cat.slug}` ? "text-black font-bold" : "text-gray-500 hover:text-black"}`}
                             >
                                 {(currentCategory === cat.slug ||
                                     url.pathname === `/shop/${cat.slug}`) && (
-                                    <span class="w-1 h-1 bg-white rounded-full shadow-[0_0_8px_white]" />
+                                    <span class="w-1.5 h-1.5 bg-black rounded-full" />
                                 )}
-                                <span class="group-hover:translate-x-1 transition-transform tracking-widest uppercase">
+                                <span class="group-hover:translate-x-1 transition-transform">
                                     {cat.name}
                                 </span>
                             </a>
@@ -77,10 +74,10 @@ const priceRanges = [
                 >
                     Rango de Precio
                 </h4>
-                <div class="space-y-5">
+                <div class="space-y-4">
                     {
                         priceRanges.map((range) => (
-                            <label class="flex items-center gap-4 text-base md:text-[10px] py-1 text-white/40 cursor-pointer hover:text-white group transition-colors">
+                            <label class="flex items-center gap-3 text-base md:text-sm py-1 text-gray-500 cursor-pointer hover:text-black group transition-colors">
                                 <div class="relative flex items-center justify-center">
                                     <input
                                         type="radio"
@@ -89,17 +86,17 @@ const priceRanges = [
                                         checked={
                                             currentPriceRange === range.value
                                         }
-                                        class="price-filter appearance-none w-5 h-5 border border-white/10 rounded-full checked:border-white transition-all cursor-pointer bg-white/5"
+                                        class="price-filter appearance-none w-6 h-6 md:w-5 md:h-5 border-2 border-gray-200 rounded-full checked:border-black transition-all cursor-pointer"
                                     />
                                     <div
-                                        class={`absolute w-2 h-2 bg-white rounded-full transition-transform scale-0 ${currentPriceRange === range.value ? "scale-100" : ""}`}
+                                        class={`absolute w-3 h-3 md:w-2.5 md:h-2.5 bg-black rounded-full transition-transform scale-0 ${currentPriceRange === range.value ? "scale-100" : ""}`}
                                     />
                                 </div>
                                 <span
                                     class={
                                         currentPriceRange === range.value
-                                            ? "text-white font-black tracking-widest uppercase"
-                                            : "group-hover:translate-x-1 transition-transform tracking-widest uppercase"
+                                            ? "text-black font-bold"
+                                            : "group-hover:translate-x-1 transition-transform"
                                     }
                                 >
                                     {range.label}
@@ -146,23 +143,20 @@ const priceRanges = [
                 <div class="relative">
                     <select
                         id="sortSelect"
-                        class="w-full appearance-none bg-white/5 border border-white/10 rounded-2xl px-5 py-4 text-xs text-white font-black tracking-widest uppercase focus:border-white focus:ring-1 focus:ring-white outline-none transition-all cursor-pointer"
+                        class="w-full appearance-none bg-gray-50 border border-gray-200 rounded-xl px-4 py-3 text-sm text-black font-medium focus:border-black focus:ring-1 focus:ring-black outline-none transition-all cursor-pointer"
                     >
                         <option
                             value="newest"
-                            class="bg-[#111]"
                             selected={currentSort === "newest"}
                             >Últimas novedades</option
                         >
                         <option
                             value="price_asc"
-                            class="bg-[#111]"
                             selected={currentSort === "price_asc"}
                             >Precio más bajo</option
                         >
                         <option
                             value="price_desc"
-                            class="bg-[#111]"
                             selected={currentSort === "price_desc"}
                             >Precio más alto</option
                         >
