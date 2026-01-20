@@ -13,14 +13,16 @@ if (!startDate || !endDate) {
 // Fetch paid orders within range
 const { data: orders, error } = await supabase
     .from("orders")
-    .select(`
+    .select(
+        `
         *,
         order_items (
             quantity,
             price,
             product:products (name)
         )
-    `)
+    `,
+    )
     .eq("status", "paid")
     .gte("created_at", `${startDate}T00:00:00Z`)
     .lte("created_at", `${endDate}T23:59:59Z`)
@@ -45,179 +47,336 @@ const formatPrice = (amount: number) => {
 ---
 
 <html lang="es">
-<head>
-    <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width" />
-    <title>Lote de Facturas {startDate} - {endDate}</title>
-    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;600;800&display=swap" rel="stylesheet" />
-    <style>
-        * { margin: 0; padding: 0; box-sizing: border-box; }
-        body { font-family: 'Outfit', sans-serif; background: #525659; padding: 40px 0; }
-        
-        .invoice-page {
-            background: white;
-            width: 210mm;
-            min-height: 297mm;
-            margin: 0 auto 40px;
-            padding: 20mm;
-            box-shadow: 0 0 20px rgba(0,0,0,0.2);
-            position: relative;
-        }
-
-        .header {
-            background: #000;
-            color: white;
-            padding: 30px;
-            margin: -20mm -20mm 30px;
-            display: flex;
-            justify-content: space-between;
-            align-items: flex-start;
-        }
-
-        .logo-section { display: flex; align-items: center; gap: 15px; }
-        .logo-box { width: 50px; height: 50px; background: white; border-radius: 8px; display: flex; items-center; justify-content: center; padding: 5px; }
-        .logo-box img { width: 100%; height: 100%; object-fit: contain; }
-        .company-name { font-size: 24px; font-weight: 800; letter-spacing: 0.05em; }
-        .invoice-meta { text-align: right; }
-        .invoice-title { font-size: 30px; font-weight: 800; text-transform: uppercase; margin-bottom: 5px; }
-
-        .parties-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 30px; margin-bottom: 30px; }
-        .party-box { background: #f9fafb; padding: 20px; border-radius: 8px; border-left: 4px solid #000; }
-        .party-title { font-weight: 800; text-transform: uppercase; font-size: 10px; color: #6b7280; margin-bottom: 10px; }
-        .party-name { font-weight: 600; font-size: 15px; margin-bottom: 5px; }
-        .party-details { font-size: 12px; color: #4b5563; line-height: 1.6; }
-
-        table { width: 100%; border-collapse: collapse; margin-bottom: 30px; }
-        th { text-align: left; padding: 12px; font-size: 10px; font-weight: 800; text-transform: uppercase; color: #6b7280; border-bottom: 2px solid #e5e7eb; }
-        td { padding: 12px; border-bottom: 1px solid #f3f4f6; font-size: 13px; }
-        .text-right { text-align: right; }
-
-        .totals-section { width: 250px; margin-left: auto; background: #f9fafb; padding: 20px; border-radius: 8px; }
-        .total-row { display: flex; justify-content: space-between; padding: 5px 0; font-size: 13px; }
-        .total-final { border-top: 2px solid #000; margin-top: 10px; padding-top: 12px; font-size: 18px; font-weight: 800; }
-
-        .footer { position: absolute; bottom: 20mm; left: 20mm; right: 20mm; text-align: center; font-size: 11px; color: #6b7280; border-top: 1px solid #eee; padding-top: 20px; }
-
-        @media print {
-            body { padding: 0; background: white; }
-            .invoice-page { margin: 0; box-shadow: none; page-break-after: always; }
-            .no-print { display: none !important; }
-        }
-    </style>
-</head>
-<body onload="window.print()">
-    <div class="no-print" style="position: fixed; top: 20px; right: 20px; z-index: 100; display: flex; gap: 10px;">
-        <button onclick="window.print()" style="padding: 12px 24px; background: #000; color: #fff; border: none; border-radius: 8px; cursor: pointer; font-weight: 600;">Imprimir todo el Lote</button>
-        <a href="/admin/invoices" style="padding: 12px 24px; background: #fff; color: #000; border: 1px solid #ddd; border-radius: 8px; cursor: pointer; font-weight: 600; text-decoration: none;">Volver</a>
-    </div>
-
-    {orders?.map((order: any) => {
-        const totalAmount = order.total_amount || order.total_price || 0;
-        const subtotal = totalAmount / 1.21;
-        const tax = totalAmount - subtotal;
-        const contact = order.contact_info || {};
-        
-        let address = {};
-        try {
-            address = typeof order.shipping_address === 'string' 
-                ? JSON.parse(order.shipping_address) 
-                : (order.shipping_address || {});
-        } catch (e) {
-            console.error("Error parsing shipping address", e);
-            // If it's a string but not JSON, maybe it's the raw address
-            if (typeof order.shipping_address === 'string') {
-                address = { address: order.shipping_address };
+    <head>
+        <meta charset="UTF-8" />
+        <meta name="viewport" content="width=device-width" />
+        <title>Lote de Facturas {startDate} - {endDate}</title>
+        <link
+            href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;600;800&display=swap"
+            rel="stylesheet"
+        />
+        <style>
+            * {
+                margin: 0;
+                padding: 0;
+                box-sizing: border-box;
             }
+            body {
+                font-family: "Outfit", sans-serif;
+                background: #525659;
+                padding: 40px 0;
+            }
+
+            .invoice-page {
+                background: white;
+                width: 210mm;
+                min-height: 297mm;
+                margin: 0 auto 40px;
+                padding: 20mm;
+                box-shadow: 0 0 20px rgba(0, 0, 0, 0.2);
+                position: relative;
+            }
+
+            .header {
+                background: #000;
+                color: white;
+                padding: 30px;
+                margin: -20mm -20mm 30px;
+                display: flex;
+                justify-content: space-between;
+                align-items: flex-start;
+            }
+
+            .logo-section {
+                display: flex;
+                align-items: center;
+                gap: 15px;
+            }
+            .logo-box {
+                width: 50px;
+                height: 50px;
+                background: white;
+                border-radius: 8px;
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                padding: 5px;
+            }
+            .logo-box img {
+                width: 100%;
+                height: 100%;
+                object-fit: contain;
+            }
+            .company-name {
+                font-size: 24px;
+                font-weight: 800;
+                letter-spacing: 0.05em;
+            }
+            .invoice-meta {
+                text-align: right;
+            }
+            .invoice-title {
+                font-size: 30px;
+                font-weight: 800;
+                text-transform: uppercase;
+                margin-bottom: 5px;
+            }
+
+            .parties-grid {
+                display: grid;
+                grid-template-columns: 1fr 1fr;
+                gap: 30px;
+                margin-bottom: 30px;
+            }
+            .party-box {
+                background: #f9fafb;
+                padding: 20px;
+                border-radius: 8px;
+                border-left: 4px solid #000;
+            }
+            .party-title {
+                font-weight: 800;
+                text-transform: uppercase;
+                font-size: 10px;
+                color: #6b7280;
+                margin-bottom: 10px;
+            }
+            .party-name {
+                font-weight: 600;
+                font-size: 15px;
+                margin-bottom: 5px;
+            }
+            .party-details {
+                font-size: 12px;
+                color: #4b5563;
+                line-height: 1.6;
+            }
+
+            table {
+                width: 100%;
+                border-collapse: collapse;
+                margin-bottom: 30px;
+            }
+            th {
+                text-align: left;
+                padding: 12px;
+                font-size: 10px;
+                font-weight: 800;
+                text-transform: uppercase;
+                color: #6b7280;
+                border-bottom: 2px solid #e5e7eb;
+            }
+            td {
+                padding: 12px;
+                border-bottom: 1px solid #f3f4f6;
+                font-size: 13px;
+            }
+            .text-right {
+                text-align: right;
+            }
+
+            .totals-section {
+                width: 250px;
+                margin-left: auto;
+                background: #f9fafb;
+                padding: 20px;
+                border-radius: 8px;
+            }
+            .total-row {
+                display: flex;
+                justify-content: space-between;
+                padding: 5px 0;
+                font-size: 13px;
+            }
+            .total-final {
+                border-top: 2px solid #000;
+                margin-top: 10px;
+                padding-top: 12px;
+                font-size: 18px;
+                font-weight: 800;
+            }
+
+            .footer {
+                position: absolute;
+                bottom: 20mm;
+                left: 20mm;
+                right: 20mm;
+                text-align: center;
+                font-size: 11px;
+                color: #6b7280;
+                border-top: 1px solid #eee;
+                padding-top: 20px;
+            }
+
+            @media print {
+                body {
+                    padding: 0;
+                    background: white;
+                }
+                .invoice-page {
+                    margin: 0;
+                    box-shadow: none;
+                    page-break-after: always;
+                }
+                .no-print {
+                    display: none !important;
+                }
+            }
+        </style>
+    </head>
+    <body onload="window.print()">
+        <div
+            class="no-print"
+            style="position: fixed; top: 20px; right: 20px; z-index: 100; display: flex; gap: 10px;"
+        >
+            <button
+                onclick="window.print()"
+                style="padding: 12px 24px; background: #000; color: #fff; border: none; border-radius: 8px; cursor: pointer; font-weight: 600;"
+                >Imprimir todo el Lote</button
+            >
+            <a
+                href="/admin/invoices"
+                style="padding: 12px 24px; background: #fff; color: #000; border: 1px solid #ddd; border-radius: 8px; cursor: pointer; font-weight: 600; text-decoration: none;"
+                >Volver</a
+            >
+        </div>
+
+        {
+            orders?.map((order: any) => {
+                const totalAmount =
+                    order.total_amount || order.total_price || 0;
+                const subtotal = totalAmount / 1.21;
+                const tax = totalAmount - subtotal;
+                const contact = order.contact_info || {};
+
+                let address = {};
+                try {
+                    address =
+                        typeof order.shipping_address === "string"
+                            ? JSON.parse(order.shipping_address)
+                            : order.shipping_address || {};
+                } catch (e) {
+                    console.error("Error parsing shipping address", e);
+                    // If it's a string but not JSON, maybe it's the raw address
+                    if (typeof order.shipping_address === "string") {
+                        address = { address: order.shipping_address };
+                    }
+                }
+
+                const items = order.order_items || [];
+
+                return (
+                    <div class="invoice-page">
+                        <div class="header">
+                            <div class="logo-section">
+                                <div class="logo-box">
+                                    <img src="/logo.png" alt="Logo" />
+                                </div>
+                                <div>
+                                    <div class="company-name">SLC CUTS</div>
+                                    <div style="font-size: 12px; opacity: 0.8;">
+                                        Barbería & Productos
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="invoice-meta">
+                                <div class="invoice-title">Factura</div>
+                                <div style="font-weight: 600;">
+                                    Nº {order.id.slice(0, 8).toUpperCase()}
+                                </div>
+                                <div style="font-size: 12px; opacity: 0.8;">
+                                    {formatDate(order.created_at)}
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="parties-grid">
+                            <div class="party-box">
+                                <div class="party-title">Emisor</div>
+                                <div class="party-name">SLC CUTS Barbería</div>
+                                <div class="party-details">
+                                    Joaquin Rivera Tirado
+                                    <br />
+                                    NIF: 722108440
+                                    <br />
+                                    C. Miguel de Cervantes, 79
+                                    <br />
+                                    11550 Chipiona, Cádiz
+                                </div>
+                            </div>
+                            <div class="party-box">
+                                <div class="party-title">Cliente</div>
+                                <div class="party-name">
+                                    {contact.name || "Cliente General"}
+                                </div>
+                                <div class="party-details">
+                                    {contact.email || order.guest_email}
+                                    <br />
+                                    {contact.phone && `Tel: ${contact.phone}`}
+                                    <br />
+                                    {order.shipping_method !== "pickup" && (
+                                        <>
+                                            <strong>Envío:</strong>{" "}
+                                            {(address as any).address ||
+                                                order.shipping_address}
+                                            , {(address as any).city || ""}
+                                        </>
+                                    )}
+                                </div>
+                            </div>
+                        </div>
+
+                        <table>
+                            <thead>
+                                <tr>
+                                    <th>Concepto</th>
+                                    <th>Cant.</th>
+                                    <th class="text-right">Precio</th>
+                                    <th class="text-right">Total</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {items.map((item: any) => (
+                                    <tr>
+                                        <td>
+                                            {item.product?.name || "Producto"}
+                                        </td>
+                                        <td>{item.quantity}</td>
+                                        <td class="text-right">
+                                            {formatPrice(item.price)}
+                                        </td>
+                                        <td class="text-right">
+                                            {formatPrice(
+                                                item.price * item.quantity,
+                                            )}
+                                        </td>
+                                    </tr>
+                                ))}
+                            </tbody>
+                        </table>
+
+                        <div class="totals-section">
+                            <div class="total-row" style="color: #6b7280">
+                                <span>Base Imponible</span>
+                                <span>{formatPrice(subtotal)}</span>
+                            </div>
+                            <div class="total-row" style="color: #6b7280">
+                                <span>IVA (21%)</span>
+                                <span>{formatPrice(tax)}</span>
+                            </div>
+                            <div class="total-row total-final">
+                                <span>TOTAL</span>
+                                <span>{formatPrice(totalAmount)}</span>
+                            </div>
+                        </div>
+
+                        <div class="footer">
+                            Gracias por tu confianza. slccuts1998@gmail.com |
+                            SLC CUTS Barbería
+                        </div>
+                    </div>
+                );
+            })
         }
-
-        const items = order.order_items || [];
-
-        return (
-            <div class="invoice-page">
-                <div class="header">
-                    <div class="logo-section">
-                        <div class="logo-box">
-                            <img src="/logo.png" alt="Logo" />
-                        </div>
-                        <div>
-                            <div class="company-name">SLC CUTS</div>
-                            <div style="font-size: 12px; opacity: 0.8;">Barbería & Productos</div>
-                        </div>
-                    </div>
-                    <div class="invoice-meta">
-                        <div class="invoice-title">Factura</div>
-                        <div style="font-weight: 600;">Nº {order.id.slice(0, 8).toUpperCase()}</div>
-                        <div style="font-size: 12px; opacity: 0.8;">{formatDate(order.created_at)}</div>
-                    </div>
-                </div>
-
-                <div class="parties-grid">
-                    <div class="party-box">
-                        <div class="party-title">Emisor</div>
-                        <div class="party-name">SLC CUTS Barbería</div>
-                        <div class="party-details">
-                            Joaquin Rivera Tirado<br/>
-                            NIF: 722108440<br/>
-                            C. Miguel de Cervantes, 79<br/>
-                            11550 Chipiona, Cádiz
-                        </div>
-                    </div>
-                    <div class="party-box">
-                        <div class="party-title">Cliente</div>
-                        <div class="party-name">{contact.name || "Cliente General"}</div>
-                        <div class="party-details">
-                            {contact.email || order.guest_email}<br/>
-                            {contact.phone && `Tel: ${contact.phone}`}<br/>
-                            {order.shipping_method !== 'pickup' && (
-                                <>
-                                    <strong>Envío:</strong> {(address as any).address || order.shipping_address}, {(address as any).city || ''}
-                                </>
-                            )}
-                        </div>
-                    </div>
-                </div>
-
-                <table>
-                    <thead>
-                        <tr>
-                            <th>Concepto</th>
-                            <th>Cant.</th>
-                            <th class="text-right">Precio</th>
-                            <th class="text-right">Total</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        {items.map((item: any) => (
-                            <tr>
-                                <td>{item.product?.name || "Producto"}</td>
-                                <td>{item.quantity}</td>
-                                <td class="text-right">{formatPrice(item.price)}</td>
-                                <td class="text-right">{formatPrice(item.price * item.quantity)}</td>
-                            </tr>
-                        ))}
-                    </tbody>
-                </table>
-
-                <div class="totals-section">
-                    <div class="total-row" style="color: #6b7280">
-                        <span>Base Imponible</span>
-                        <span>{formatPrice(subtotal)}</span>
-                    </div>
-                    <div class="total-row" style="color: #6b7280">
-                        <span>IVA (21%)</span>
-                        <span>{formatPrice(tax)}</span>
-                    </div>
-                    <div class="total-row total-final">
-                        <span>TOTAL</span>
-                        <span>{formatPrice(totalAmount)}</span>
-                    </div>
-                </div>
-
-                <div class="footer">
-                    Gracias por tu confianza. slccuts1998@gmail.com | SLC CUTS Barbería
-                </div>
-            </div>
-        );
-    })}
-</body>
+    </body>
 </html>
