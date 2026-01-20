@@ -19,6 +19,6 @@ export default defineConfig({
 
   integrations: [react()],
   image: {
-    domains: ["images.unsplash.com", "yovclujnxntsqvttstqj.supabase.co"]
+    domains: ["images.unsplash.com", "fwecgvsfbxzzobjkklul.supabase.co"]
   }
 });

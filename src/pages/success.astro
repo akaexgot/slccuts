@@ -18,9 +18,7 @@ const orderId = Astro.url.searchParams.get("order_id");
 // Verify Payment if session_id is present
 if (sessionId && orderId) {
     try {
-        const stripe = new Stripe(
-            "sk_test_51SnnQbArgnVFsgkwBYDB9tRFbJESuEt2EOJRsTE10oASsZsnqMGTWDPcQ7HCN3ZBBleZiVq1s8wQ00atIiPnQI3900J2c1OrjB",
-        );
+        const stripe = new Stripe(import.meta.env.STRIPE_SECRET_KEY);
 
         const session = await stripe.checkout.sessions.retrieve(sessionId);
 
@@ -104,7 +102,20 @@ if (sessionId && orderId) {
         <div
             class="w-20 h-20 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-6"
         >
-            <span class="text-4xl">✓</span>
+            <svg
+                xmlns="http://www.w3.org/2000/svg"
+                width="48"
+                height="48"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="3"
+                stroke-linecap="round"
+                stroke-linejoin="round"
+                class="text-green-600"
+                ><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"></path><polyline
+                    points="22 4 12 14.01 9 11.01"></polyline></svg
+            >
         </div>
 
         <h1 class="text-4xl font-bold mb-4 uppercase tracking-wider">

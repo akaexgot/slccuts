@@ -16,7 +16,7 @@ export interface CartState {
     isCartOpen: boolean;
 }
 
-export const SHIPPING_THRESHOLD = 5000; // 50.00€
+export const SHIPPING_THRESHOLD = 10000; // 100.00€
 export const SHIPPING_COST = 399; // 3.99€
 
 // Store

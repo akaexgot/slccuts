@@ -411,7 +411,7 @@ if (Astro.request.method === "POST") {
 
     async function handleFile(file: File) {
         if (!file.type.startsWith("image/")) {
-            alert("Solo se permiten imágenes");
+            window.showToast("Error", "Solo se permiten imágenes", "error");
             return;
         }
 
@@ -438,13 +438,22 @@ if (Astro.request.method === "POST") {
                 previewImg.src = result.url;
                 imagePreview?.classList.remove("hidden");
                 dropZone?.classList.add("hidden");
+                window.showToast(
+                    "Éxito",
+                    "Imagen subida correctamente",
+                    "success",
+                );
             } else {
-                alert("Error al subir: " + result.error);
+                window.showToast(
+                    "Error",
+                    "Error al subir: " + result.error,
+                    "error",
+                );
                 uploadContent?.classList.remove("hidden");
             }
         } catch (error) {
             console.error("Upload error:", error);
-            alert("Error al subir la imagen");
+            window.showToast("Error", "Error al subir la imagen", "error");
             uploadContent?.classList.remove("hidden");
         }
 

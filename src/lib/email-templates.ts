@@ -68,41 +68,62 @@ export const orderConfirmationTemplate = (order: any) => {
             </tr>
         `).join('');
 
+    const subtotal = ((order.total_amount || order.total_price) / 100 / 1.21).toFixed(2);
+    const tax = ((order.total_amount || order.total_price) / 100 - parseFloat(subtotal)).toFixed(2);
     const total = ((order.total_amount || order.total_price) / 100).toFixed(2);
     const orderId = order.id.slice(0, 8).toUpperCase();
+    const date = new Date(order.created_at).toLocaleDateString("es-ES");
 
     const orderContent = `
-        <h2 style="margin: 0 0 20px; font-weight: 900; text-transform: uppercase; font-style: italic; letter-spacing: 1px; color: ${colors.black};">¡Gracias por tu compra!</h2>
+        <h2 style="margin: 0 0 20px; font-weight: 900; text-transform: uppercase; font-style: italic; letter-spacing: 1px; color: ${colors.black};">Factura Simplificada</h2>
         <p style="margin: 0 0 30px; font-size: 16px; line-height: 1.6; color: ${colors.grey};">
-            Hola, hemos recibido correctamente el pago de tu pedido <strong style="color: ${colors.black};">#${orderId}</strong>. Estamos preparando tus productos con el máximo cuidado.
+            Hola, gracias por tu compra. Adjuntamos los detalles de tu pedido <strong style="color: ${colors.black};">#${orderId}</strong> que sirve como justificante de pago.
         </p>
-        
-        <div style="background-color: #fafafa; padding: 20px; border-radius: 5px; border-left: 4px solid ${colors.gold}; margin-bottom: 30px;">
-            <h3 style="margin: 0 0 15px; font-size: 12px; text-transform: uppercase; letter-spacing: 2px; color: ${colors.black};">Resumen del Pedido</h3>
+
+        <div style="background-color: #fafafa; padding: 20px; border-radius: 5px; border: 1px solid #eeeeee; margin-bottom: 30px;">
+            <table width="100%" style="font-size: 12px; margin-bottom: 20px;">
+                <tr>
+                    <td valign="top" width="50%">
+                        <strong style="text-transform: uppercase;">SLC CUTS Barbería</strong><br>
+                        NIF: 722108440<br>
+                        C. Miguel de Cervantes, 79<br>
+                        11550 Chipiona, Cádiz
+                    </td>
+                    <td valign="top" width="50%" align="right">
+                        <strong>Factura Nº:</strong> ${orderId}<br>
+                        <strong>Fecha:</strong> ${date}
+                    </td>
+                </tr>
+            </table>
+            
+            <h3 style="margin: 0 0 15px; font-size: 12px; text-transform: uppercase; letter-spacing: 2px; color: ${colors.black}; border-bottom: 2px solid ${colors.gold}; padding-bottom: 5px;">Detalle</h3>
             <table width="100%" cellpadding="0" cellspacing="0">
                 ${itemsHtml}
                 <tr>
-                    <td style="padding: 20px 0 0; font-weight: bold; font-size: 16px; text-transform: uppercase;">Total</td>
-                    <td align="right" style="padding: 20px 0 0; font-weight: 900; font-size: 20px; color: ${colors.black}; italic">${total}€</td>
+                    <td style="padding: 20px 0 0; font-size: 14px;">Base Imponible</td>
+                    <td align="right" style="padding: 20px 0 0; font-size: 14px;">${subtotal}€</td>
+                </tr>
+                <tr>
+                    <td style="padding: 5px 0 0; font-size: 14px;">IVA (21%)</td>
+                    <td align="right" style="padding: 5px 0 0; font-size: 14px;">${tax}€</td>
+                </tr>
+                <tr>
+                    <td style="padding: 10px 0 0; font-weight: bold; font-size: 16px; text-transform: uppercase;">Total</td>
+                    <td align="right" style="padding: 10px 0 0; font-weight: 900; font-size: 20px; color: ${colors.black};">${total}€</td>
                 </tr>
             </table>
         </div>
         
         <div style="margin-bottom: 30px;">
-            <h3 style="margin: 0 0 10px; font-size: 12px; text-transform: uppercase; letter-spacing: 2px; color: ${colors.black};">Próximos Pasos</h3>
             <p style="margin: 0; font-size: 14px; line-height: 1.6; color: ${colors.grey};">
                 ${order.shipping_method === 'pickup'
             ? 'Tu pedido estará listo para recoger en nuestra tienda pronto. Te avisaremos cuando puedas pasar a por él.'
             : 'Estamos preparando tu envío. Recibirás otro email con el número de seguimiento en cuanto el paquete salga del almacén.'}
             </p>
         </div>
-        
-        <p style="margin: 0; font-size: 14px; line-height: 1.6; color: ${colors.grey};">
-            Si tienes alguna duda, no dudes en contactarnos directamente por WhatsApp o Instagram.
-        </p>
     `;
 
-    return baseTemplate(orderContent, `Confirmación de Pedido #${orderId}`);
+    return baseTemplate(orderContent, `Factura Simplificada - Pedido #${orderId}`);
 };
 
 export const manualMessageTemplate = (message: string) => {

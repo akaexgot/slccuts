@@ -487,11 +487,16 @@ const formatDate = (dateStr: string) => {
             hiddenUrlInput.value = publicUrl;
             previewImg.src = publicUrl;
             previewContainer?.classList.remove("hidden");
+            window.showToast("Éxito", "Imagen subida correctamente", "success");
         } catch (error) {
             console.error("Full upload error:", error);
             const errorMessage =
                 error instanceof Error ? error.message : "Error desconocido";
-            alert(`Error al subir la imagen: ${errorMessage}`);
+            window.showToast(
+                "Error",
+                `Error al subir la imagen: ${errorMessage}`,
+                "error",
+            );
             dropZone?.classList.remove("hidden");
         } finally {
             progress?.classList.add("hidden");
@@ -532,12 +537,21 @@ const formatDate = (dateStr: string) => {
                 const { error } = await supabase.from("news").insert([data]);
                 if (error) throw error;
             }
-            window.location.reload();
+            window.showToast(
+                "Éxito",
+                "Noticia guardada correctamente",
+                "success",
+            );
+            setTimeout(() => window.location.reload(), 1000);
         } catch (error) {
             console.error("Database Error:", error);
             const errorMessage =
                 error instanceof Error ? error.message : "Error desconocido";
-            alert(`Error al guardar: ${errorMessage}`);
+            window.showToast(
+                "Error",
+                `Error al guardar: ${errorMessage}`,
+                "error",
+            );
             submitBtn.disabled = false;
             submitBtn.innerText = id ? "Guardar Cambios" : "Publicar Ahora";
         }
@@ -586,10 +600,15 @@ const formatDate = (dateStr: string) => {
                 .delete()
                 .eq("id", itemToDeleteId);
             if (error) throw error;
-            window.location.reload();
+            window.showToast(
+                "Éxito",
+                "Noticia eliminada correctamente",
+                "success",
+            );
+            setTimeout(() => window.location.reload(), 1000);
         } catch (error) {
             console.error("Error deleting news:", error);
-            alert("Error al eliminar");
+            window.showToast("Error", "Error al eliminar la noticia", "error");
             (confirmDeleteBtn as HTMLButtonElement).disabled = false;
             confirmDeleteBtn.innerText = originalText;
         }

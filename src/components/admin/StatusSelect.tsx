@@ -56,7 +56,9 @@ export default function StatusSelect({ id, initialStatus }: StatusSelectProps) {
         } catch (error) {
             console.error('Error updating status:', error);
             setStatus(oldStatus); // Revert on error
-            alert('Error al actualizar estado');
+            if (typeof window !== 'undefined' && (window as any).showToast) {
+                (window as any).showToast('Error', 'Error al actualizar estado', 'error');
+            }
         }
     };
 

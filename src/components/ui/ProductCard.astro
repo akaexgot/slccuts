@@ -19,10 +19,18 @@ import { Image } from "astro:assets";
 
 const { product, loading = "lazy" } = Astro.props;
 
-// Use product image or fallback
-const image =
-    product.image_url ||
-    "https://images.unsplash.com/photo-1620916566398-39f1143ab7be?q=80&w=800&auto=format&fit=crop";
+const cleanUrl = (url?: string) => {
+    if (url && url.includes("?")) {
+        return url.split("?")[0];
+    }
+    return url;
+};
+
+const image: string =
+    cleanUrl(
+        product.image_url ||
+            "https://images.unsplash.com/photo-1620916566398-39f1143ab7be",
+    ) || "";
 
 const formatPrice = (price: number) => {
     return new Intl.NumberFormat("es-ES", {
@@ -34,20 +42,21 @@ const formatPrice = (price: number) => {
 
 <div
     data-product={JSON.stringify(product)}
-    class="product-card-trigger cursor-pointer group group-hover:shadow-lg transition-all duration-300 block bg-white rounded-xl overflow-hidden border border-gray-100 hover:border-gray-200"
+    class="product-card-trigger cursor-pointer group transition-all duration-700 block bg-white/[0.03] backdrop-blur-sm rounded-[2rem] overflow-hidden border border-white/5 hover:border-white/20 hover:bg-white/[0.07] hover:shadow-2xl hover:shadow-white/5"
 >
-    <div class="relative aspect-[3/4] overflow-hidden bg-gray-100">
+    <div class="relative aspect-[4/5] overflow-hidden bg-white/5">
         <Image
             src={image}
-            alt={product.name}
+            alt={`Imagen del producto: ${product.name}`}
             width={400}
-            height={533}
-            class="object-cover w-full h-full group-hover:scale-110 transition-transform duration-500"
+            height={500}
+            format="webp"
+            class="object-cover w-full h-full group-hover:scale-110 transition-transform duration-1000 grayscale group-hover:grayscale-0 opacity-80 group-hover:opacity-100"
             loading={loading}
         />
         {
             product.is_offer && (
-                <span class="absolute top-3 left-3 bg-red-600 text-white text-xs font-bold px-3 py-1 uppercase tracking-wider rounded-sm shadow-sm">
+                <span class="absolute top-4 left-4 bg-white text-black text-[10px] font-black px-3 py-1 uppercase tracking-[0.2em] rounded-full shadow-xl z-20">
                     Oferta
                 </span>
             )
@@ -59,100 +68,79 @@ const formatPrice = (price: number) => {
                     (Array.isArray(s) ? s[0]?.quantity : s?.quantity) ?? 0;
                 if (qty === 0) {
                     return (
-                        <span class="absolute top-3 right-3 bg-gray-900/80 text-white text-[10px] font-bold px-2 py-1 uppercase tracking-widest rounded-sm backdrop-blur-sm">
-                            Agotado
-                        </span>
+                        <div class="absolute inset-0 bg-black/60 backdrop-blur-[2px] flex items-center justify-center z-10">
+                            <span class="bg-white/10 border border-white/20 text-white text-[10px] font-black px-4 py-2 uppercase tracking-[0.3em] rounded-full">
+                                Agotado
+                            </span>
+                        </div>
                     );
                 }
                 return null;
             })()
         }
+
+        <!-- Add to Cart Floating Button -->
         <div
-            class={`absolute bottom-4 right-4 transition-transform duration-300 ${(() => {
-                const s = product.stock as any;
-                const qty =
-                    (Array.isArray(s) ? s[0]?.quantity : s?.quantity) ?? 0;
-                return qty === 0
-                    ? "translate-y-0"
-                    : "translate-y-12 group-hover:translate-y-0";
-            })()}`}
+            class="absolute bottom-6 right-6 translate-y-4 opacity-0 group-hover:translate-y-0 group-hover:opacity-100 transition-all duration-500 z-20"
         >
             <button
+                aria-label={`Añadir ${product.name} al carrito`}
                 disabled={(() => {
                     const s = product.stock as any;
                     const qty =
                         (Array.isArray(s) ? s[0]?.quantity : s?.quantity) ?? 0;
                     return qty === 0;
                 })()}
-                class={`p-3 rounded-full shadow-lg transition-colors ${(() => {
-                    const s = product.stock as any;
-                    const qty =
-                        (Array.isArray(s) ? s[0]?.quantity : s?.quantity) ?? 0;
-                    return qty === 0
-                        ? "bg-gray-200 text-gray-400 cursor-not-allowed"
-                        : "bg-white text-black hover:bg-black hover:text-white";
-                })()}`}
+                class="w-12 h-12 rounded-full bg-white text-black flex items-center justify-center shadow-2xl hover:scale-110 active:scale-95 transition-all"
             >
-                {
-                    (() => {
-                        const s = product.stock as any;
-                        const qty =
-                            (Array.isArray(s) ? s[0]?.quantity : s?.quantity) ??
-                            0;
-                        if (qty === 0) {
-                            return (
-                                <svg
-                                    xmlns="http://www.w3.org/2000/svg"
-                                    width="20"
-                                    height="20"
-                                    viewBox="0 0 24 24"
-                                    fill="none"
-                                    stroke="currentColor"
-                                    stroke-width="2"
-                                    stroke-linecap="round"
-                                    stroke-linejoin="round"
-                                >
-                                    <line x1="18" y1="6" x2="6" y2="18" />
-                                    <line x1="6" y1="6" x2="18" y2="18" />
-                                </svg>
-                            );
-                        }
-                        return (
-                            <svg
-                                xmlns="http://www.w3.org/2000/svg"
-                                width="20"
-                                height="20"
-                                viewBox="0 0 24 24"
-                                fill="none"
-                                stroke="currentColor"
-                                stroke-width="2"
-                                stroke-linecap="round"
-                                stroke-linejoin="round"
-                            >
-                                <path d="M6 2 3 6v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6l-3-4Z" />
-                                <path d="M3 6h18" />
-                                <path d="M16 10a4 4 0 0 1-8 0" />
-                            </svg>
-                        );
-                    })()
-                }
+                <svg
+                    xmlns="http://www.w3.org/2000/svg"
+                    width="20"
+                    height="20"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    stroke-width="2.5"
+                    stroke-linecap="round"
+                    stroke-linejoin="round"
+                >
+                    <path d="M6 2 3 6v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6l-3-4Z"
+                    ></path>
+                    <path d="M3 6h18"></path>
+                    <path d="M16 10a4 4 0 0 1-8 0"></path>
+                </svg>
             </button>
         </div>
     </div>
-    <div class="p-4">
-        {
-            product.category && (
-                <p class="text-xs text-gray-500 mb-1">
-                    {product.category.name}
-                </p>
-            )
-        }
-        <h3
-            class="font-medium text-gray-900 group-hover:text-indigo-600 transition-colors mb-2 line-clamp-1"
-        >
-            {product.name}
-        </h3>
-        <p class="font-bold text-gray-900">{formatPrice(product.price)}</p>
+
+    <div class="p-8 space-y-4">
+        <div class="space-y-1">
+            {
+                product.category && (
+                    <p class="text-[10px] font-black uppercase tracking-[0.3em] text-white/30 group-hover:text-white/50 transition-colors">
+                        {product.category.name}
+                    </p>
+                )
+            }
+            <h3
+                title={product.name}
+                class="text-lg font-bebas tracking-wide text-white/90 group-hover:text-white transition-colors line-clamp-1"
+            >
+                {product.name}
+            </h3>
+        </div>
+
+        <div class="flex items-center justify-between">
+            <p
+                class="text-xl font-outfit font-light tracking-tighter text-white"
+            >
+                {formatPrice(product.price)}
+            </p>
+            <div
+                class="w-8 h-[1px] bg-white/10 group-hover:w-12 group-hover:bg-white/30 transition-all"
+            >
+            </div>
+        </div>
     </div>
 </div>
 

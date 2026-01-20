@@ -51,7 +51,8 @@ const { data: products } = await query.limit(40);
 
 <ShopLayout
     title={category.name}
-    description={`Explora nuestra selección de ${category.name.toLowerCase()}.`}
+    description={category.description ||
+        `Explora nuestra selección de ${category.name.toLowerCase()}. Productos premium para el cuidado masculino.`}
 >
     <div
         class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-6"

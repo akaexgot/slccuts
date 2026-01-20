@@ -4,31 +4,48 @@ import { supabase } from "../lib/supabase";
 import MosaicBackground from "../components/ui/MosaicBackground.astro";
 import ProductModal from "../components/ui/ProductModal";
 import CartDrawer from "../components/cart/CartDrawer";
+import NewsletterPopup from "../components/shop/NewsletterPopup";
+import PromotionalPopup from "../components/shop/PromotionalPopup";
 
 interface Props {
     title: string;
+    description?: string;
 }
 
-const { title } = Astro.props;
+const {
+    title,
+    description = "SLC CUTS - Barbería de Autor & Tienda Online de Productos Premium. Estilo, maestría y vanguardia en Chipiona.",
+} = Astro.props;
 
-// Fetch global settings for menu visibility (Server Side)
-const { data: settings } = await supabase
-    .from("settings")
-    .select("value")
-    .eq("key", "flash_offers_enabled")
-    .single();
+const { data: settings } = await supabase.from("settings").select("key, value");
 
-const showFlashOffers = settings?.value ?? false;
+const showFlashOffers =
+    settings?.find((s: any) => s.key === "flash_offers_enabled")?.value ??
+    false;
+const newsletterEnabled =
+    settings?.find((s: any) => s.key === "newsletter_enabled")?.value ?? true;
+const popupsEnabled =
+    settings?.find((s: any) => s.key === "popups_enabled")?.value ?? true;
+
+// Fetch latest active popup if enabled
+let latestPopup = null;
+if (popupsEnabled) {
+    const { data: popup } = await supabase
+        .from("popups")
+        .select("*")
+        .eq("is_active", true)
+        .order("created_at", { ascending: false })
+        .limit(1)
+        .maybeSingle();
+    latestPopup = popup;
+}
 ---
 
 <!doctype html>
 <html lang="es">
     <head>
         <meta charset="UTF-8" />
-        <meta
-            name="description"
-            content="SLC CUTS - Barbería de Autor & Tienda Online de Productos Premium. Estilo, maestría y vanguardia en Chipiona."
-        />
+        <meta name="description" content={description} />
         <meta
             name="keywords"
             content="barberia, peluqueria, chipiona, slc cuts, productos capilares, nishman, cera pelo, barber shop cadiz"
@@ -39,42 +56,40 @@ const showFlashOffers = settings?.value ?? false;
         <meta property="og:type" content="website" />
         <meta property="og:url" content={Astro.url} />
         <meta property="og:title" content={`${title} | SLC CUTS`} />
-        <meta
-            property="og:description"
-            content="SLC CUTS - Barbería de Autor & Tienda Online de Productos Premium. Estilo, maestría y vanguardia."
-        />
+        <meta property="og:description" content={description} />
         <meta property="og:image" content={new URL("/logo.png", Astro.url)} />
 
         <!-- Twitter -->
         <meta property="twitter:card" content="summary_large_image" />
         <meta property="twitter:url" content={Astro.url} />
         <meta property="twitter:title" content={`${title} | SLC CUTS`} />
-        <meta
-            property="twitter:description"
-            content="SLC CUTS - Barbería de Autor & Tienda Online de Productos Premium."
-        />
+        <meta property="twitter:description" content={description} />
         <meta
             property="twitter:image"
             content={new URL("/logo.png", Astro.url)}
         />
 
         <link rel="icon" type="image/png" href="/logo.png" />
-        <link href="https://fonts.cdnfonts.com/css/chomsky" rel="stylesheet" />
         <link rel="preconnect" href="https://fonts.googleapis.com" />
         <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+        <link rel="preconnect" href="https://fonts.cdnfonts.com" crossorigin />
         <link
             href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Outfit:wght@100..900&display=swap"
             rel="stylesheet"
         />
+        <!-- Using a local-friendly approach for Chomsky if possible, moving to a better import -->
+        <link
+            href="https://fonts.cdnfonts.com/css/chomsky?display=swap"
+            rel="stylesheet"
+        />
         <style is:global>
-            @import url("https://fonts.cdnfonts.com/css/chomsky");
-
             @font-face {
                 font-family: "DarkCastleLocal";
                 src: url("/fonts/Darkcastle_PERSONAL_USE_ONLY.otf")
                     format("opentype");
                 font-weight: normal;
                 font-style: normal;
+                font-display: swap;
             }
 
             .font-chomsky {
@@ -95,68 +110,111 @@ const showFlashOffers = settings?.value ?? false;
         <title>{title}</title>
     </head>
     <body
-        class="bg-gray-50 text-gray-900 font-sans antialiased min-h-screen flex flex-col relative"
+        class="bg-[#050505] text-white font-sans antialiased min-h-screen flex flex-col relative"
     >
-        <!-- Noise Texture Overlay -->
+        <!-- Noise Texture Overlay (Using a lighter CSS approach) -->
         <div
             class="fixed inset-0 z-50 pointer-events-none opacity-[0.03] mix-blend-overlay"
-            style="background-image: url('https://grainy-gradients.vercel.app/noise.svg');"
+            style="background-image: url('data:image/svg+xml,%3Csvg viewBox=\'0 0 200 200\' xmlns=\'http://www.w3.org/2000/svg\'%3E%3Cfilter id=\'noiseFilter\'%3E%3CfeTurbulence type=\'fractalNoise\' baseFrequency=\'0.65\' numOctaves=\'3\' stitchTiles=\'stitch\'/%3E%3C/filter%3E%3Crect width=\'100%25\' height=\'100%25\' filter=\'url(%23noiseFilter)\'/%3E%3C/svg%3E');"
         >
         </div>
 
-        <!-- Header will go here -->
+        <!-- Header -->
         <header
-            class="bg-white sticky top-0 z-50 shadow-md border-b border-gray-100"
+            class="bg-black/60 backdrop-blur-xl sticky top-0 z-50 border-b border-white/5"
         >
             <nav
-                class="container mx-auto px-4 h-20 flex items-center justify-between"
+                class="container mx-auto px-4 md:px-8 h-24 flex items-center justify-between"
             >
+                <!-- Hamburger Menu (Mobile) -->
+                <button
+                    id="mobile-menu-btn"
+                    class="md:hidden p-4 -ml-4 text-gray-900 hover:text-gray-600 transition-colors"
+                    aria-label="Cerrar menú"
+                >
+                    <svg
+                        xmlns="http://www.w3.org/2000/svg"
+                        width="24"
+                        height="24"
+                        viewBox="0 0 24 24"
+                        fill="none"
+                        stroke="currentColor"
+                        stroke-width="2"
+                        stroke-linecap="round"
+                        stroke-linejoin="round"
+                        class="lucide lucide-menu"
+                        ><line x1="4" x2="20" y1="12" y2="12"></line><line
+                            x1="4"
+                            x2="20"
+                            y1="6"
+                            y2="6"></line><line x1="4" x2="20" y1="18" y2="18"
+                        ></line></svg
+                    >
+                </button>
+
                 <!-- Logo -->
-                <a href="/" class="flex-shrink-0">
+                <a href="/" class="flex-shrink-0 group relative">
                     <span
-                        class="text-5xl hover:opacity-80 transition-opacity text-black tracking-widest lowercase font-chomsky"
+                        class="text-4xl md:text-5xl hover:opacity-80 transition-all text-white tracking-[0.2em] font-chomsky relative z-10"
                         >@slc.cuts</span
                     >
+                    <div
+                        class="absolute -inset-2 bg-white/5 rounded-xl scale-0 group-hover:scale-100 transition-transform duration-500 blur-xl"
+                    >
+                    </div>
                 </a>
 
                 <!-- Desktop Menu -->
                 <div
-                    class="hidden md:flex items-center gap-8 text-sm font-bold tracking-widest uppercase text-gray-900"
+                    class="hidden md:flex items-center gap-10 text-[10px] font-black tracking-[0.3em] uppercase text-white/70"
                 >
                     <a
                         href="/shop/new"
-                        class="hover:text-gray-600 transition-colors"
-                        >Productos</a
+                        class="hover:text-white transition-colors relative group"
                     >
+                        Productos
+                        <span
+                            class="absolute -bottom-1 left-0 w-0 h-[1px] bg-white transition-all group-hover:w-full"
+                        ></span>
+                    </a>
                     <a
                         href="/gallery"
-                        class="hover:text-gray-600 transition-colors">Galería</a
+                        class="hover:text-white transition-colors relative group"
                     >
+                        Galería
+                        <span
+                            class="absolute -bottom-1 left-0 w-0 h-[1px] bg-white transition-all group-hover:w-full"
+                        ></span>
+                    </a>
                     <a
                         href="/news"
-                        class="hover:text-gray-600 transition-colors"
-                        >Noticias</a
+                        class="hover:text-white transition-colors relative group"
                     >
+                        Noticias
+                        <span
+                            class="absolute -bottom-1 left-0 w-0 h-[1px] bg-white transition-all group-hover:w-full"
+                        ></span>
+                    </a>
                     <a
                         href="/services"
-                        class="bg-black text-white px-6 py-3 rounded-lg text-xs md:text-sm font-bold uppercase tracking-widest hover:bg-gray-800 transition-colors"
+                        class="bg-white text-black px-8 py-4 rounded-full text-[10px] font-black uppercase tracking-[0.2em] hover:bg-white/90 transition-all hover:scale-105 active:scale-95 shadow-2xl shadow-white/10"
                     >
                         Reservar Cita
                     </a>
                     <a
                         href="/shop/offers"
-                        class="text-red-600 hover:text-red-700 transition-colors animate-pulse"
+                        class="text-red-500 hover:text-red-400 transition-colors animate-pulse px-2"
                         style={showFlashOffers ? "" : "display: none"}
                         >Ofertas</a
                     >
                 </div>
 
                 <!-- Icons -->
-                <div class="flex items-center gap-6 text-gray-900">
+                <div class="flex items-center gap-6 text-white">
                     <a
                         href="/contact"
-                        class="hover:text-gray-600 transition-colors"
-                        aria-label="Contacto"
+                        class="p-2 hover:text-gray-600 transition-colors"
+                        aria-label="Contactar por teléfono"
                     >
                         <svg
                             xmlns="http://www.w3.org/2000/svg"
@@ -174,9 +232,203 @@ const showFlashOffers = settings?.value ?? false;
                             ></path></svg
                         >
                     </a>
+                    <!-- User Icon -->
+                    <div class="relative">
+                        <button
+                            id="user-menu-btn"
+                            class="p-2 hover:text-gray-600 transition-colors focus:outline-none"
+                            aria-label="Menú de usuario"
+                        >
+                            <svg
+                                xmlns="http://www.w3.org/2000/svg"
+                                width="22"
+                                height="22"
+                                viewBox="0 0 24 24"
+                                fill="none"
+                                stroke="currentColor"
+                                stroke-width="2"
+                                stroke-linecap="round"
+                                stroke-linejoin="round"
+                                class="lucide lucide-user"
+                            >
+                                <path
+                                    d="M19 21v-2a4 4 0 0 0-4-4H9a4 4 0 0 0-4 4v2"
+                                ></path>
+                                <circle cx="12" cy="7" r="4"></circle>
+                            </svg>
+                        </button>
+
+                        <!-- Redesigned Dropdown Menu -->
+                        <div
+                            id="user-dropdown"
+                            class="absolute right-0 mt-4 w-72 bg-white rounded-2xl shadow-[0_20px_50px_rgba(0,0,0,0.15)] border border-gray-100 overflow-hidden opacity-0 scale-95 pointer-events-none transition-all duration-200 ease-out origin-top-right z-50 py-2"
+                        >
+                            <div
+                                class="px-6 py-4 bg-gray-50/50 border-b border-gray-100 mb-2"
+                            >
+                                <div class="flex items-center gap-3">
+                                    <div
+                                        class="w-10 h-10 rounded-full bg-black flex items-center justify-center text-white font-bold text-sm uppercase tracking-wider shadow-md"
+                                        id="user-initials"
+                                    >
+                                        S
+                                    </div>
+                                    <div class="flex-1 min-w-0">
+                                        <p
+                                            class="text-[10px] text-gray-500 uppercase tracking-[2px] font-bold mb-0.5"
+                                        >
+                                            Bienvenido
+                                        </p>
+                                        <p
+                                            class="text-sm font-bold truncate text-gray-900 leading-tight"
+                                            id="user-name-display"
+                                        >
+                                            Usuario
+                                        </p>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div class="px-2 space-y-1">
+                                <a
+                                    href="/orders"
+                                    class="group flex items-center gap-3 px-4 py-3 text-sm text-gray-600 hover:text-black hover:bg-gray-50 rounded-xl transition-all"
+                                >
+                                    <div
+                                        class="w-8 h-8 rounded-lg bg-gray-100 flex items-center justify-center group-hover:bg-white group-hover:shadow-sm transition-all text-gray-400 group-hover:text-black"
+                                    >
+                                        <svg
+                                            xmlns="http://www.w3.org/2000/svg"
+                                            width="16"
+                                            height="16"
+                                            viewBox="0 0 24 24"
+                                            fill="none"
+                                            stroke="currentColor"
+                                            stroke-width="2"
+                                            stroke-linecap="round"
+                                            stroke-linejoin="round"
+                                            ><path d="m20.9 18.3-5.1-5.1"
+                                            ></path><path
+                                                d="M11 5c-3.3 0-6 2.7-6 6s2.7 6 6 6 6-2.7 6-6-2.7-6-6-6Z"
+                                            ></path><path d="m11 9 1 1-1 1"
+                                            ></path><path d="M12 11h-2"
+                                            ></path></svg
+                                        >
+                                    </div>
+                                    <span class="font-medium tracking-wide"
+                                        >Mis Pedidos</span
+                                    >
+                                </a>
+
+                                <a
+                                    href="/profile"
+                                    class="group flex items-center gap-3 px-4 py-3 text-sm text-gray-600 hover:text-black hover:bg-gray-50 rounded-xl transition-all"
+                                >
+                                    <div
+                                        class="w-8 h-8 rounded-lg bg-gray-100 flex items-center justify-center group-hover:bg-white group-hover:shadow-sm transition-all text-gray-400 group-hover:text-black"
+                                    >
+                                        <svg
+                                            xmlns="http://www.w3.org/2000/svg"
+                                            width="16"
+                                            height="16"
+                                            viewBox="0 0 24 24"
+                                            fill="none"
+                                            stroke="currentColor"
+                                            stroke-width="2"
+                                            stroke-linecap="round"
+                                            stroke-linejoin="round"
+                                            ><circle cx="12" cy="12" r="3"
+                                            ></circle><path
+                                                d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"
+                                            ></path></svg
+                                        >
+                                    </div>
+                                    <span class="font-medium tracking-wide"
+                                        >Editar Perfil</span
+                                    >
+                                </a>
+
+                                <!-- Panel Admin (Solo para admins) -->
+                                <a
+                                    id="admin-link"
+                                    href="/admin"
+                                    class="group flex items-center gap-3 px-4 py-3 text-sm text-indigo-600 hover:text-indigo-900 border-t border-gray-50 transition-all hidden"
+                                >
+                                    <div
+                                        class="w-8 h-8 rounded-lg bg-indigo-50 flex items-center justify-center group-hover:bg-white group-hover:shadow-sm transition-all text-indigo-400 group-hover:text-indigo-600"
+                                    >
+                                        <svg
+                                            xmlns="http://www.w3.org/2000/svg"
+                                            width="16"
+                                            height="16"
+                                            viewBox="0 0 24 24"
+                                            fill="none"
+                                            stroke="currentColor"
+                                            stroke-width="2"
+                                            stroke-linecap="round"
+                                            stroke-linejoin="round"
+                                            ><rect
+                                                width="18"
+                                                height="11"
+                                                x="3"
+                                                y="11"
+                                                rx="2"
+                                                ry="2"></rect><path
+                                                d="M7 11V7a5 5 0 0 1 10 0v4"
+                                            ></path></svg
+                                        >
+                                    </div>
+                                    <span
+                                        class="font-black uppercase tracking-[0.2em] text-[10px]"
+                                        >Panel Admin</span
+                                    >
+                                </a>
+                            </div>
+
+                            <div
+                                class="mt-2 pt-2 border-t border-gray-100 px-2"
+                            >
+                                <button
+                                    id="logout-btn"
+                                    class="group flex items-center gap-3 w-full px-4 py-3 text-sm text-red-600 hover:bg-red-50 rounded-xl transition-all"
+                                >
+                                    <div
+                                        class="w-8 h-8 rounded-lg bg-red-100/50 flex items-center justify-center group-hover:bg-red-100 transition-all text-red-500"
+                                    >
+                                        <svg
+                                            xmlns="http://www.w3.org/2000/svg"
+                                            width="16"
+                                            height="16"
+                                            viewBox="0 0 24 24"
+                                            fill="none"
+                                            stroke="currentColor"
+                                            stroke-width="2"
+                                            stroke-linecap="round"
+                                            stroke-linejoin="round"
+                                            ><path
+                                                d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"
+                                            ></path><polyline
+                                                points="16 17 21 12 16 7"
+                                            ></polyline><line
+                                                x1="21"
+                                                x2="9"
+                                                y1="12"
+                                                y2="12"></line></svg
+                                        >
+                                    </div>
+                                    <span
+                                        class="font-bold uppercase tracking-widest text-xs"
+                                        >Cerrar Sesión</span
+                                    >
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+
                     <button
                         id="header-cart-btn"
-                        class="relative hover:text-gray-600 transition-colors"
+                        class="relative p-2 hover:text-gray-600 transition-colors"
+                        aria-label="Abrir carrito de compras"
                     >
                         <span class="sr-only">Carrito</span>
                         <svg
@@ -247,348 +499,576 @@ const showFlashOffers = settings?.value ?? false;
             </nav>
         </header>
 
-        <main class="flex-grow">
-            <slot />
-        </main>
+        {newsletterEnabled && <NewsletterPopup client:load />}
+        {popupsEnabled && <PromotionalPopup client:load popup={latestPopup} />}
+    </body>
 
-        <footer
-            class="bg-gray-950 text-white py-12 mt-auto relative overflow-hidden"
+    <script>
+        import { supabase } from "../lib/supabase";
+
+        const userMenuBtn = document.getElementById("user-menu-btn");
+        const userDropdown = document.getElementById("user-dropdown");
+        const logoutBtn = document.getElementById("logout-btn");
+        const userNameDisplay = document.getElementById("user-name-display");
+
+        let isDropdownOpen = false;
+
+        // Toggle Dropdown
+        function toggleDropdown(show: boolean) {
+            isDropdownOpen = show;
+            if (show) {
+                userDropdown?.classList.remove(
+                    "opacity-0",
+                    "scale-95",
+                    "pointer-events-none",
+                );
+                userDropdown?.classList.add("opacity-100", "scale-100");
+            } else {
+                userDropdown?.classList.add(
+                    "opacity-0",
+                    "scale-95",
+                    "pointer-events-none",
+                );
+                userDropdown?.classList.remove("opacity-100", "scale-100");
+            }
+        }
+
+        // Close when clicking outside
+        document.addEventListener("click", (e) => {
+            if (
+                isDropdownOpen &&
+                userMenuBtn &&
+                !userMenuBtn.contains(e.target as Node) &&
+                userDropdown &&
+                !userDropdown.contains(e.target as Node)
+            ) {
+                toggleDropdown(false);
+            }
+        });
+
+        // Auth Logic
+        async function initAuth() {
+            const {
+                data: { session },
+            } = await supabase.auth.getSession();
+
+            const userInitials = document.getElementById("user-initials");
+
+            if (session) {
+                // Update Name
+                const { user } = session;
+                const metadata = user.user_metadata;
+                let firstName = "Usuario";
+
+                if (metadata && (metadata.first_name || metadata.full_name)) {
+                    firstName = metadata.first_name || metadata.full_name;
+                } else {
+                    // Fallback to fetching from DB
+                    const { data: profile } = await supabase
+                        .from("users")
+                        .select("first_name")
+                        .eq("id", user.id)
+                        .single();
+                    if (profile && profile.first_name) {
+                        firstName = profile.first_name;
+                    }
+                }
+
+                if (userNameDisplay) userNameDisplay.textContent = firstName;
+                if (userInitials)
+                    userInitials.textContent = firstName
+                        .charAt(0)
+                        .toUpperCase();
+
+                // Check Admin Role
+                const { data: profile } = await supabase
+                    .from("users")
+                    .select("role")
+                    .eq("id", user.id)
+                    .single();
+
+                if (profile?.role?.toLowerCase().trim() === "admin") {
+                    document
+                        .getElementById("admin-link")
+                        ?.classList.remove("hidden");
+                }
+
+                // Logged In Behavior
+                userMenuBtn?.addEventListener("click", () => {
+                    toggleDropdown(!isDropdownOpen);
+                });
+
+                // Logout
+                logoutBtn?.addEventListener("click", async () => {
+                    await supabase.auth.signOut();
+                    window.location.href = "/";
+                });
+            } else {
+                // Not Logged In Behavior
+                userMenuBtn?.addEventListener("click", () => {
+                    window.location.href = "/login";
+                });
+                // Hide initials if not logged in (though button redirects anyway)
+                toggleDropdown(false);
+            }
+        }
+
+        initAuth();
+    </script>
+
+    <main class="flex-grow">
+        <slot />
+    </main>
+
+    <footer
+        class="bg-[#050505] text-white py-24 mt-auto relative overflow-hidden border-t border-white/5"
+    >
+        <MosaicBackground mode="dark" opacity="opacity-[0.02]" />
+        <div
+            class="container mx-auto px-4 grid md:grid-cols-4 gap-12 lg:gap-20 relative z-10"
         >
-            <MosaicBackground mode="dark" opacity="opacity-5" />
-            <div
-                class="container mx-auto px-4 grid md:grid-cols-4 gap-8 relative z-10"
-            >
-                <div>
-                    <h3
-                        class="text-xl font-bold mb-4 font-chomsky tracking-widest text-2xl"
-                    >
-                        @slc.cuts
-                    </h3>
-                    <p class="text-gray-400 text-sm">
-                        Estilo, precisión y tradición en cada corte.
-                    </p>
-                </div>
-                <div>
-                    <h4 class="font-bold mb-4">Explorar</h4>
-                    <ul class="text-sm text-gray-400 space-y-2">
-                        <li>
-                            <a
-                                href="/shop/new"
-                                class="hover:text-white transition-colors"
-                                >Novedades</a
-                            >
-                        </li>
-                        <li>
-                            <a
-                                href="/shop/offers"
-                                class="hover:text-white transition-colors"
-                                >Ofertas</a
-                            >
-                        </li>
-                        <li>
-                            <a
-                                href="/gallery"
-                                class="hover:text-white transition-colors"
-                                >Galería</a
-                            >
-                        </li>
-                        <li>
-                            <a
-                                href="/news"
-                                class="hover:text-white transition-colors"
-                                >Blog</a
-                            >
-                        </li>
-                    </ul>
-                </div>
-                <div>
-                    <h4 class="font-bold mb-4">Contacto</h4>
-                    <ul class="text-sm text-gray-400 space-y-2">
-                        <li>
-                            <a
-                                href="tel:+34722108440"
-                                class="hover:text-white transition-colors flex items-center gap-2"
-                            >
-                                <svg
-                                    xmlns="http://www.w3.org/2000/svg"
-                                    width="14"
-                                    height="14"
-                                    viewBox="0 0 24 24"
-                                    fill="none"
-                                    stroke="currentColor"
-                                    stroke-width="2"
-                                    stroke-linecap="round"
-                                    stroke-linejoin="round"
-                                    ><path
-                                        d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z"
-                                    ></path></svg
-                                >
-                                +34 722 10 84 40
-                            </a>
-                        </li>
-                        <li>
-                            <a
-                                href="mailto:slccuts1998@gmail.com"
-                                class="hover:text-white transition-colors flex items-center gap-2"
-                            >
-                                <svg
-                                    xmlns="http://www.w3.org/2000/svg"
-                                    width="14"
-                                    height="14"
-                                    viewBox="0 0 24 24"
-                                    fill="none"
-                                    stroke="currentColor"
-                                    stroke-width="2"
-                                    stroke-linecap="round"
-                                    stroke-linejoin="round"
-                                    ><rect
-                                        width="20"
-                                        height="16"
-                                        x="2"
-                                        y="4"
-                                        rx="2"></rect><path
-                                        d="m22 7-8.97 5.7a1.94 1.94 0 0 1-2.06 0L2 7"
-                                    ></path></svg
-                                >
-                                slccuts1998@gmail.com
-                            </a>
-                        </li>
-                        <li>
-                            <a
-                                href="https://wa.me/34722108440"
-                                target="_blank"
-                                rel="noopener noreferrer"
-                                class="hover:text-white transition-colors flex items-center gap-2"
-                            >
-                                <svg
-                                    xmlns="http://www.w3.org/2000/svg"
-                                    width="14"
-                                    height="14"
-                                    viewBox="0 0 24 24"
-                                    fill="none"
-                                    stroke="currentColor"
-                                    stroke-width="2"
-                                    stroke-linecap="round"
-                                    stroke-linejoin="round"
-                                    ><path
-                                        d="m3 21 1.9-5.7a8.5 8.5 0 1 1 3.8 3.8z"
-                                    ></path></svg
-                                >
-                                WhatsApp
-                            </a>
-                        </li>
-                        <li>
-                            <a
-                                href="https://instagram.com/slc.cuts"
-                                target="_blank"
-                                rel="noopener noreferrer"
-                                class="hover:text-white transition-colors flex items-center gap-2"
-                            >
-                                <svg
-                                    xmlns="http://www.w3.org/2000/svg"
-                                    width="14"
-                                    height="14"
-                                    viewBox="0 0 24 24"
-                                    fill="none"
-                                    stroke="currentColor"
-                                    stroke-width="2"
-                                    stroke-linecap="round"
-                                    stroke-linejoin="round"
-                                    ><rect
-                                        width="20"
-                                        height="20"
-                                        x="2"
-                                        y="2"
-                                        rx="5"
-                                        ry="5"></rect><path
-                                        d="M16 11.37A4 4 0 1 1 12.63 8 4 4 0 0 1 16 11.37z"
-                                    ></path><line
-                                        x1="17.5"
-                                        x2="17.51"
-                                        y1="6.5"
-                                        y2="6.5"></line></svg
-                                >
-                                Instagram
-                            </a>
-                        </li>
-                        <li class="pt-2">
-                            <p class="text-xs text-gray-500">
-                                C. Miguel de Cervantes, 79<br />11550 Chipiona
-                            </p>
-                        </li>
-                    </ul>
-                </div>
-                <div>
-                    <h4 class="font-bold mb-4">Legal</h4>
-                    <ul class="text-sm text-gray-400 space-y-2">
-                        <li>
-                            <a
-                                href="/privacy"
-                                class="hover:text-white transition-colors"
-                                >Política de Privacidad</a
-                            >
-                        </li>
-                        <li>
-                            <a
-                                href="/terms"
-                                class="hover:text-white transition-colors"
-                                >Términos y Condiciones</a
-                            >
-                        </li>
-                        <li>
-                            <a
-                                href="/faq"
-                                class="hover:text-white transition-colors"
-                                >Preguntas Frecuentes</a
-                            >
-                        </li>
-                        <li class="pt-2">
-                            <a
-                                href="/login"
-                                class="hover:text-white transition-colors flex items-center gap-2 group"
-                            >
-                                <svg
-                                    xmlns="http://www.w3.org/2000/svg"
-                                    width="14"
-                                    height="14"
-                                    viewBox="0 0 24 24"
-                                    fill="none"
-                                    stroke="currentColor"
-                                    stroke-width="2"
-                                    stroke-linecap="round"
-                                    stroke-linejoin="round"
-                                    class="group-hover:text-indigo-400 transition-colors"
-                                    ><rect
-                                        width="18"
-                                        height="11"
-                                        x="3"
-                                        y="11"
-                                        rx="2"
-                                        ry="2"></rect><path
-                                        d="M7 11V7a5 5 0 0 1 10 0v4"
-                                    ></path></svg
-                                >
-                                Acceso Admin
-                            </a>
-                        </li>
-                    </ul>
-                </div>
-            </div>
-
-            <div
-                class="container mx-auto px-4 mt-12 pt-8 border-t border-gray-900 relative z-10 text-center"
-            >
-                <p class="text-xs text-gray-600 mb-2">
-                    &copy; {new Date().getFullYear()} SLC CUTS. Todos los derechos
-                    reservados.
+            <div>
+                <h3
+                    class="text-xl font-bold mb-4 font-chomsky tracking-widest text-2xl"
+                >
+                    @slc.cuts
+                </h3>
+                <p class="text-gray-400 text-sm">
+                    Estilo, precisión y tradición en cada corte.
                 </p>
-                <div class="mt-4">
-                    <p
-                        class="text-xs font-medium tracking-wide text-transparent bg-clip-text bg-gradient-to-r from-gray-500 via-white to-gray-500 animate-shimmer bg-[length:200%_auto]"
-                    >
-                        Pagina web diseñada por <a
-                            href="https://wa.me/34722340487"
+            </div>
+            <div>
+                <h4 class="font-bold mb-4">Explorar</h4>
+                <ul class="text-sm text-gray-400 space-y-2">
+                    <li>
+                        <a
+                            href="/shop/new"
+                            class="hover:text-white transition-colors"
+                            >Novedades</a
+                        >
+                    </li>
+                    <li>
+                        <a
+                            href="/shop/offers"
+                            class="hover:text-white transition-colors"
+                            >Ofertas</a
+                        >
+                    </li>
+                    <li>
+                        <a
+                            href="/gallery"
+                            class="hover:text-white transition-colors"
+                            >Galería</a
+                        >
+                    </li>
+                    <li>
+                        <a
+                            href="/news"
+                            class="hover:text-white transition-colors">Blog</a
+                        >
+                    </li>
+                </ul>
+            </div>
+            <div>
+                <h4 class="font-bold mb-4">Contacto</h4>
+                <ul class="text-sm text-gray-400 space-y-2">
+                    <li>
+                        <a
+                            href="tel:+34722108440"
+                            class="hover:text-white transition-colors flex items-center gap-2"
+                        >
+                            <svg
+                                xmlns="http://www.w3.org/2000/svg"
+                                width="14"
+                                height="14"
+                                viewBox="0 0 24 24"
+                                fill="none"
+                                stroke="currentColor"
+                                stroke-width="2"
+                                stroke-linecap="round"
+                                stroke-linejoin="round"
+                                ><path
+                                    d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z"
+                                ></path></svg
+                            >
+                            +34 722 10 84 40
+                        </a>
+                    </li>
+                    <li>
+                        <a
+                            href="mailto:slccuts1998@gmail.com"
+                            class="hover:text-white transition-colors flex items-center gap-2"
+                        >
+                            <svg
+                                xmlns="http://www.w3.org/2000/svg"
+                                width="14"
+                                height="14"
+                                viewBox="0 0 24 24"
+                                fill="none"
+                                stroke="currentColor"
+                                stroke-width="2"
+                                stroke-linecap="round"
+                                stroke-linejoin="round"
+                                ><rect width="20" height="16" x="2" y="4" rx="2"
+                                ></rect><path
+                                    d="m22 7-8.97 5.7a1.94 1.94 0 0 1-2.06 0L2 7"
+                                ></path></svg
+                            >
+                            slccuts1998@gmail.com
+                        </a>
+                    </li>
+                    <li>
+                        <a
+                            href="https://wa.me/34722108440"
                             target="_blank"
                             rel="noopener noreferrer"
-                            class="hover:underline">Joaquin Rivera Tirado</a
+                            class="hover:text-white transition-colors flex items-center gap-2"
                         >
-                    </p>
-                </div>
+                            <svg
+                                xmlns="http://www.w3.org/2000/svg"
+                                width="14"
+                                height="14"
+                                viewBox="0 0 24 24"
+                                fill="none"
+                                stroke="currentColor"
+                                stroke-width="2"
+                                stroke-linecap="round"
+                                stroke-linejoin="round"
+                                ><path d="m3 21 1.9-5.7a8.5 8.5 0 1 1 3.8 3.8z"
+                                ></path></svg
+                            >
+                            WhatsApp
+                        </a>
+                    </li>
+                    <li>
+                        <a
+                            href="https://instagram.com/slc.cuts"
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            class="hover:text-white transition-colors flex items-center gap-2"
+                        >
+                            <svg
+                                xmlns="http://www.w3.org/2000/svg"
+                                width="14"
+                                height="14"
+                                viewBox="0 0 24 24"
+                                fill="none"
+                                stroke="currentColor"
+                                stroke-width="2"
+                                stroke-linecap="round"
+                                stroke-linejoin="round"
+                                ><rect
+                                    width="20"
+                                    height="20"
+                                    x="2"
+                                    y="2"
+                                    rx="5"
+                                    ry="5"></rect><path
+                                    d="M16 11.37A4 4 0 1 1 12.63 8 4 4 0 0 1 16 11.37z"
+                                ></path><line
+                                    x1="17.5"
+                                    x2="17.51"
+                                    y1="6.5"
+                                    y2="6.5"></line></svg
+                            >
+                            Instagram
+                        </a>
+                    </li>
+                    <li class="pt-2">
+                        <p class="text-xs text-gray-500">
+                            C. Miguel de Cervantes, 79<br />11550 Chipiona
+                        </p>
+                    </li>
+                </ul>
             </div>
-
-            <style>
-                @keyframes shimmer {
-                    0% {
-                        background-position: 0% 50%;
-                    }
-                    100% {
-                        background-position: 200% 50%;
-                    }
-                }
-                .animate-shimmer {
-                    animation: shimmer 5s linear infinite;
-                }
-            </style>
-        </footer>
-
-        <!-- Splash Screen -->
-        <div
-            id="splash-screen"
-            class="fixed inset-0 z-[100] bg-black flex items-center justify-center transition-opacity duration-1000"
-        >
-            <div
-                class="text-white text-6xl font-chomsky tracking-widest animate-pulse"
-            >
-                @slc.cuts
+            <div>
+                <h4 class="font-bold mb-4">Legal</h4>
+                <ul class="text-sm text-gray-400 space-y-2">
+                    <li>
+                        <a
+                            href="/privacy"
+                            class="hover:text-white transition-colors"
+                            >Política de Privacidad</a
+                        >
+                    </li>
+                    <li>
+                        <a
+                            href="/terms"
+                            class="hover:text-white transition-colors"
+                            >Términos y Condiciones</a
+                        >
+                    </li>
+                    <li>
+                        <a
+                            href="/devoluciones"
+                            class="hover:text-white transition-colors"
+                            >Política de Devoluciones</a
+                        >
+                    </li>
+                    <li>
+                        <a
+                            href="/faq"
+                            class="hover:text-white transition-colors"
+                            >Preguntas Frecuentes</a
+                        >
+                    </li>
+                </ul>
             </div>
         </div>
 
-        <!-- Scroll Reveal & Splash Screen Script -->
-        <script>
-            // Splash Screen Logic
-            window.addEventListener("load", () => {
-                const splash = document.getElementById("splash-screen");
-                if (splash) {
-                    setTimeout(() => {
-                        splash.style.opacity = "0";
-                        setTimeout(() => {
-                            splash.style.display = "none";
-                        }, 1000); // Wait for transition to finish
-                    }, 500); // Min display time
+        <div
+            class="container mx-auto px-4 mt-12 pt-8 border-t border-gray-900 relative z-10 text-center"
+        >
+            <p class="text-xs text-gray-600 mb-2">
+                &copy; {new Date().getFullYear()} SLC CUTS. Todos los derechos reservados.
+            </p>
+            <div class="mt-4">
+                <p
+                    class="text-xs font-medium tracking-wide text-transparent bg-clip-text bg-gradient-to-r from-gray-500 via-white to-gray-500 animate-shimmer bg-[length:200%_auto]"
+                >
+                    Pagina web diseñada por <a
+                        href="https://wa.me/34722340487"
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        class="hover:underline">Joaquin Rivera Tirado</a
+                    >
+                </p>
+            </div>
+        </div>
+
+        <style>
+            @keyframes shimmer {
+                0% {
+                    background-position: 0% 50%;
                 }
-            });
-
-            // Scroll Reveal Logic
-            const observerOptions = {
-                root: null,
-                rootMargin: "0px",
-                threshold: 0.1,
-            };
-
-            const observer = new IntersectionObserver((entries) => {
-                entries.forEach((entry) => {
-                    if (entry.isIntersecting) {
-                        entry.target.classList.add("visible");
-                        observer.unobserve(entry.target); // Only animate once
-                    }
-                });
-            }, observerOptions);
-
-            document.addEventListener("DOMContentLoaded", () => {
-                const hiddenElements =
-                    document.querySelectorAll(".animate-on-scroll");
-                hiddenElements.forEach((el) => observer.observe(el));
-            });
-        </script>
-
-        <!-- Analytics Tracking -->
-        <script>
-            // Track page visit
-            (function () {
-                const path = window.location.pathname;
-                fetch("/api/analytics/track", {
-                    method: "POST",
-                    headers: { "Content-Type": "application/json" },
-                    body: JSON.stringify({ path }),
-                }).catch(() => {});
-            })();
-        </script>
-
-        <ProductModal client:load />
-        <CartDrawer client:load />
-        <style is:global>
-            /* Custom Scroll Reveal Utilities */
-            .animate-on-scroll {
-                opacity: 0;
-                transform: translateY(20px);
-                transition:
-                    opacity 0.8s ease-out,
-                    transform 0.8s ease-out;
+                100% {
+                    background-position: 200% 50%;
+                }
             }
-            .animate-on-scroll.visible {
-                opacity: 1;
-                transform: translateY(0);
+            .animate-shimmer {
+                animation: shimmer 5s linear infinite;
             }
         </style>
-    </body>
+    </footer>
+
+    <!-- Splash Screen -->
+    <div
+        id="splash-screen"
+        class="fixed inset-0 z-[100] bg-black flex items-center justify-center transition-opacity duration-1000"
+    >
+        <div
+            class="text-white text-6xl font-chomsky tracking-widest animate-pulse"
+        >
+            @slc.cuts
+        </div>
+    </div>
+
+    <!-- Scroll Reveal & Splash Screen Script -->
+    <script>
+        // Splash Screen Logic
+        window.addEventListener("load", () => {
+            const splash = document.getElementById("splash-screen");
+            if (splash) {
+                setTimeout(() => {
+                    splash.style.opacity = "0";
+                    setTimeout(() => {
+                        splash.style.display = "none";
+                    }, 800); // Faster exit
+                }, 300); // Shorter min display
+            }
+        });
+
+        // Scroll Reveal Logic
+        const observerOptions = {
+            root: null,
+            rootMargin: "0px",
+            threshold: 0.1,
+        };
+
+        const observer = new IntersectionObserver((entries) => {
+            entries.forEach((entry) => {
+                if (entry.isIntersecting) {
+                    entry.target.classList.add("visible");
+                    observer.unobserve(entry.target); // Only animate once
+                }
+            });
+        }, observerOptions);
+
+        document.addEventListener("DOMContentLoaded", () => {
+            const hiddenElements =
+                document.querySelectorAll(".animate-on-scroll");
+            hiddenElements.forEach((el) => observer.observe(el));
+        });
+    </script>
+
+    <!-- Analytics Tracking -->
+    <script>
+        // Track page visit
+        (function () {
+            const path = window.location.pathname;
+            fetch("/api/analytics/track", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ path }),
+            }).catch(() => {});
+        })();
+    </script>
+
+    <ProductModal client:idle />
+    <CartDrawer client:idle />
+    <style is:global>
+        /* Custom Scroll Reveal Utilities */
+        .animate-on-scroll {
+            opacity: 0;
+            transform: translateY(20px);
+            transition:
+                opacity 0.8s ease-out,
+                transform 0.8s ease-out;
+        }
+        .animate-on-scroll.visible {
+            opacity: 1;
+            transform: translateY(0);
+        }
+    </style>
+
+    <!-- Mobile Menu Drawer -->
+    <div
+        id="mobile-menu-drawer"
+        class="fixed inset-0 z-[60] invisible md:hidden"
+    >
+        <!-- Backdrop -->
+        <div
+            id="mobile-menu-backdrop"
+            class="absolute inset-0 bg-black/50 opacity-0 transition-opacity duration-300"
+        >
+        </div>
+
+        <!-- Content -->
+        <div
+            id="mobile-menu-content"
+            class="absolute top-0 left-0 w-[280px] h-full bg-white shadow-2xl transform -translate-x-full transition-transform duration-300 ease-in-out flex flex-col"
+        >
+            <div class="p-6 border-b flex items-center justify-between">
+                <span class="text-3xl font-chomsky tracking-widest lowercase"
+                    >@slc.cuts</span
+                >
+                <button
+                    id="mobile-menu-close"
+                    class="p-4 -mr-4 text-gray-900 hover:text-gray-600 transition-colors"
+                    aria-label="Cerrar menú"
+                >
+                    <svg
+                        xmlns="http://www.w3.org/2000/svg"
+                        width="24"
+                        height="24"
+                        viewBox="0 0 24 24"
+                        fill="none"
+                        stroke="currentColor"
+                        stroke-width="2"
+                        stroke-linecap="round"
+                        stroke-linejoin="round"
+                        ><line x1="18" y1="6" x2="6" y2="18"></line><line
+                            x1="6"
+                            y1="6"
+                            x2="18"
+                            y2="18"></line></svg
+                    >
+                </button>
+            </div>
+
+            <nav
+                class="flex-1 p-6 flex flex-col gap-6 text-sm font-bold tracking-widest uppercase text-gray-900"
+            >
+                <a
+                    href="/shop/new"
+                    class="hover:text-gray-600 transition-colors">Productos</a
+                >
+                <a href="/gallery" class="hover:text-gray-600 transition-colors"
+                    >Galería</a
+                >
+                <a href="/news" class="hover:text-gray-600 transition-colors"
+                    >Noticias</a
+                >
+                <a
+                    href="/shop/offers"
+                    class="text-red-600 hover:text-red-700 transition-colors"
+                    style={showFlashOffers ? "" : "display: none"}>Ofertas</a
+                >
+                <div class="pt-6 border-t border-gray-100">
+                    <a
+                        href="/services"
+                        class="block w-full bg-black text-white text-center px-6 py-4 rounded-lg text-sm font-bold uppercase tracking-widest hover:bg-gray-800 transition-colors"
+                    >
+                        Reservar Cita
+                    </a>
+                </div>
+            </nav>
+
+            <div class="p-6 border-t border-gray-100 bg-gray-50">
+                <a
+                    href="/contact"
+                    class="flex items-center gap-3 text-sm font-bold tracking-widest uppercase hover:text-gray-600 transition-colors"
+                >
+                    <svg
+                        xmlns="http://www.w3.org/2000/svg"
+                        width="18"
+                        height="18"
+                        viewBox="0 0 24 24"
+                        fill="none"
+                        stroke="currentColor"
+                        stroke-width="2"
+                        stroke-linecap="round"
+                        stroke-linejoin="round"
+                        ><path
+                            d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z"
+                        ></path></svg
+                    >
+                    Contacto
+                </a>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const mobileMenuBtn = document.getElementById("mobile-menu-btn");
+        const mobileMenuClose = document.getElementById("mobile-menu-close");
+        const mobileMenuDrawer = document.getElementById("mobile-menu-drawer");
+        const mobileMenuBackdrop = document.getElementById(
+            "mobile-menu-backdrop",
+        );
+        const mobileMenuContent = document.getElementById(
+            "mobile-menu-content",
+        );
+
+        function openMobileMenu() {
+            if (!mobileMenuDrawer || !mobileMenuBackdrop || !mobileMenuContent)
+                return;
+            mobileMenuDrawer.classList.remove("invisible");
+            setTimeout(() => {
+                mobileMenuBackdrop.classList.add("opacity-100");
+                mobileMenuContent.classList.remove("-translate-x-full");
+            }, 10);
+            document.body.style.overflow = "hidden";
+        }
+
+        function closeMobileMenu() {
+            if (!mobileMenuDrawer || !mobileMenuBackdrop || !mobileMenuContent)
+                return;
+            mobileMenuBackdrop.classList.remove("opacity-100");
+            mobileMenuContent.classList.add("-translate-x-full");
+            setTimeout(() => {
+                mobileMenuDrawer.classList.add("invisible");
+            }, 300);
+            document.body.style.overflow = "";
+        }
+
+        mobileMenuBtn?.addEventListener("click", openMobileMenu);
+        mobileMenuClose?.addEventListener("click", closeMobileMenu);
+        mobileMenuBackdrop?.addEventListener("click", closeMobileMenu);
+
+        const mobileLinks = mobileMenuContent?.querySelectorAll("a");
+        mobileLinks?.forEach((link) => {
+            link.addEventListener("click", closeMobileMenu);
+        });
+    </script>
 </html>

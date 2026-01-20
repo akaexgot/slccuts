@@ -1,0 +1,311 @@
+---
+import { supabase } from "../../../lib/supabase";
+
+export const prerender = false;
+
+const startDate = Astro.url.searchParams.get("start_date");
+const endDate = Astro.url.searchParams.get("end_date");
+
+if (!startDate || !endDate) {
+    return Astro.redirect("/admin/invoices");
+}
+
+// Fetch paid orders within range
+const { data: orders, error } = await supabase
+    .from("orders")
+    .select(
+        `
+        *,
+        order_items (
+            quantity,
+            price,
+            product:products (name)
+        )
+    `,
+    )
+    .eq("status", "paid")
+    .gte("created_at", `${startDate}T00:00:00Z`)
+    .lte("created_at", `${endDate}T23:59:59Z`)
+    .order("created_at", { ascending: true });
+
+// Calculate totals
+const totalAmount =
+    orders?.reduce(
+        (acc: number, order: any) =>
+            acc + (order.total_amount || order.total_price || 0),
+        0,
+    ) || 0;
+const subtotal = totalAmount / 1.21;
+const tax = totalAmount - subtotal;
+
+const cardTotal =
+    orders
+        ?.filter((o: any) => o.payment_method === "card")
+        .reduce(
+            (acc: number, order: any) =>
+                acc + (order.total_amount || order.total_price || 0),
+            0,
+        ) || 0;
+const cashTotal =
+    orders
+        ?.filter((o: any) => o.payment_method === "cash")
+        .reduce(
+            (acc: number, order: any) =>
+                acc + (order.total_amount || order.total_price || 0),
+            0,
+        ) || 0;
+
+const formatPrice = (amount: number) => {
+    return new Intl.NumberFormat("es-ES", {
+        style: "currency",
+        currency: "EUR",
+    }).format(amount / 100);
+};
+
+const formatDate = (dateString: string) => {
+    return new Date(dateString).toLocaleDateString("es-ES", {
+        day: "2-digit",
+        month: "long",
+        year: "numeric",
+    });
+};
+---
+
+<html lang="es">
+    <head>
+        <meta charset="UTF-8" />
+        <meta name="viewport" content="width=device-width" />
+        <title>Resumen de Facturación {startDate} - {endDate}</title>
+        <link
+            href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;600;800&display=swap"
+            rel="stylesheet"
+        />
+        <style>
+            * {
+                margin: 0;
+                padding: 0;
+                box-sizing: border-box;
+            }
+            body {
+                font-family: "Outfit", sans-serif;
+                line-height: 1.6;
+                color: #1a1a1a;
+                max-width: 900px;
+                margin: 0 auto;
+                padding: 40px;
+                background: #fafafa;
+            }
+            .invoice-container {
+                background: white;
+                box-shadow: 0 4px 15px rgba(0, 0, 0, 0.05);
+                border-radius: 12px;
+                overflow: hidden;
+            }
+            .header {
+                background: #000;
+                color: white;
+                padding: 40px;
+                display: flex;
+                justify-content: space-between;
+                align-items: center;
+            }
+            .logo-text {
+                font-size: 28px;
+                font-weight: 800;
+                letter-spacing: 0.1em;
+            }
+            .summary-title {
+                text-transform: uppercase;
+                font-size: 14px;
+                opacity: 0.8;
+                letter-spacing: 0.2em;
+                font-weight: 600;
+            }
+            .body {
+                padding: 40px;
+            }
+            .stats-grid {
+                display: grid;
+                grid-template-columns: repeat(3, 1fr);
+                gap: 20px;
+                margin-bottom: 40px;
+            }
+            .stat-box {
+                background: #f9fafb;
+                padding: 20px;
+                border-radius: 8px;
+                border: 1px solid #e5e7eb;
+            }
+            .stat-label {
+                font-size: 10px;
+                font-weight: 800;
+                color: #6b7280;
+                text-transform: uppercase;
+                margin-bottom: 5px;
+            }
+            .stat-value {
+                font-size: 18px;
+                font-weight: 800;
+            }
+
+            .table-container {
+                margin-top: 40px;
+            }
+            table {
+                width: 100%;
+                border-collapse: collapse;
+            }
+            th {
+                text-align: left;
+                padding: 12px;
+                font-size: 11px;
+                font-weight: 800;
+                color: #6b7280;
+                border-bottom: 2px solid #e5e7eb;
+                text-transform: uppercase;
+            }
+            td {
+                padding: 12px;
+                border-bottom: 1px solid #f3f4f6;
+                font-size: 13px;
+            }
+            .text-right {
+                text-align: right;
+            }
+
+            .totals-box {
+                margin-left: auto;
+                width: 300px;
+                margin-top: 40px;
+                background: #f9fafb;
+                padding: 20px;
+                border-radius: 8px;
+            }
+            .total-row {
+                display: flex;
+                justify-content: space-between;
+                padding: 8px 0;
+                font-size: 14px;
+            }
+            .total-final {
+                border-top: 2px solid #000;
+                margin-top: 10px;
+                padding-top: 15px;
+                font-size: 20px;
+                font-weight: 800;
+            }
+
+            @media print {
+                body {
+                    padding: 0;
+                    background: white;
+                }
+                .no-print {
+                    display: none !important;
+                }
+                .invoice-container {
+                    box-shadow: none;
+                    border-radius: 0;
+                }
+            }
+        </style>
+    </head>
+    <body onload="window.print()">
+        <div class="invoice-container">
+            <div class="header">
+                <div>
+                    <div class="logo-text">SLC CUTS</div>
+                    <div class="summary-title">Factura Resumen General</div>
+                </div>
+                <div style="text-align: right">
+                    <div style="font-size: 12px; opacity: 0.7;">Período</div>
+                    <div style="font-weight: 800;">
+                        {formatDate(startDate)} - {formatDate(endDate)}
+                    </div>
+                </div>
+            </div>
+
+            <div class="body">
+                <div class="stats-grid">
+                    <div class="stat-box">
+                        <div class="stat-label">Total Pedidos</div>
+                        <div class="stat-value">{orders?.length || 0}</div>
+                    </div>
+                    <div class="stat-box">
+                        <div class="stat-label">Tarjeta (Online)</div>
+                        <div class="stat-value">{formatPrice(cardTotal)}</div>
+                    </div>
+                    <div class="stat-box">
+                        <div class="stat-label">Efectivo (Local)</div>
+                        <div class="stat-value">{formatPrice(cashTotal)}</div>
+                    </div>
+                </div>
+
+                <div class="table-container">
+                    <h3
+                        style="margin-bottom: 20px; text-transform: uppercase; letter-spacing: 0.1em; font-size: 14px;"
+                    >
+                        Desglose de Operaciones
+                    </h3>
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>Fecha</th>
+                                <th>ID Pedido</th>
+                                <th>Método</th>
+                                <th class="text-right">Total</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {
+                                orders?.map((order: any) => (
+                                    <tr>
+                                        <td>{formatDate(order.created_at)}</td>
+                                        <td>
+                                            #
+                                            {order.id.slice(0, 8).toUpperCase()}
+                                        </td>
+                                        <td>
+                                            {order.payment_method === "card"
+                                                ? "Tarjeta"
+                                                : "Efectivo"}
+                                        </td>
+                                        <td class="text-right">
+                                            {formatPrice(
+                                                order.total_amount ||
+                                                    order.total_price,
+                                            )}
+                                        </td>
+                                    </tr>
+                                ))
+                            }
+                        </tbody>
+                    </table>
+                </div>
+
+                <div class="totals-box">
+                    <div class="total-row">
+                        <span>Base Imponible</span>
+                        <span>{formatPrice(subtotal)}</span>
+                    </div>
+                    <div class="total-row">
+                        <span>IVA (21%)</span>
+                        <span>{formatPrice(tax)}</span>
+                    </div>
+                    <div class="total-row total-final">
+                        <span>TOTAL</span>
+                        <span>{formatPrice(totalAmount)}</span>
+                    </div>
+                </div>
+            </div>
+
+            <div
+                style="padding: 40px; text-align: center; border-top: 1px solid #f3f4f6; color: #6b7280; font-size: 12px;"
+            >
+                Este documento es un resumen informativo de las ventas
+                realizadas en el período indicado.<br />
+                SLC CUTS Barbería | Joaquin Rivera Tirado | NIF: 722108440
+            </div>
+        </div>
+    </body>
+</html>

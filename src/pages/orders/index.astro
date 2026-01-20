@@ -1,0 +1,517 @@
+---
+import Layout from "../../layouts/Layout.astro";
+import MosaicBackground from "../../components/ui/MosaicBackground.astro";
+---
+
+<Layout title="Mis Pedidos">
+    <div class="relative py-12 min-h-screen overflow-hidden bg-gray-50/30">
+        <MosaicBackground mode="light" opacity="opacity-[0.03]" />
+
+        <div class="container mx-auto px-4 max-w-4xl relative z-10 font-outfit">
+            <div class="mb-12">
+                <h1
+                    class="text-4xl md:text-5xl font-bold font-chomsky tracking-[0.2em] uppercase mb-2"
+                >
+                    Mis Pedidos
+                </h1>
+                <div class="h-1 w-20 bg-black"></div>
+            </div>
+
+            <div
+                id="loading"
+                class="text-center py-20 bg-white/50 backdrop-blur-sm rounded-3xl border border-gray-100 shadow-sm transition-all animate-pulse"
+            >
+                <div class="flex flex-col items-center">
+                    <div
+                        class="w-12 h-12 border-4 border-black border-t-transparent rounded-full animate-spin mb-4"
+                    >
+                    </div>
+                    <p
+                        class="text-gray-500 font-medium tracking-widest uppercase text-xs"
+                    >
+                        Sincronizando tus compras...
+                    </p>
+                </div>
+            </div>
+
+            <div id="orders-list" class="space-y-8 hidden">
+                <!-- Orders will be injected here -->
+            </div>
+
+            <div
+                id="no-orders"
+                class="hidden text-center py-24 bg-white rounded-3xl border border-gray-100 shadow-xl"
+            >
+                <div class="max-w-xs mx-auto">
+                    <div
+                        class="w-20 h-20 bg-gray-50 rounded-full flex items-center justify-center mx-auto mb-6"
+                    >
+                        <svg
+                            class="w-10 h-10 text-gray-300"
+                            fill="none"
+                            stroke="currentColor"
+                            viewBox="0 0 24 24"
+                        >
+                            <path
+                                stroke-linecap="round"
+                                stroke-linejoin="round"
+                                stroke-width="1.5"
+                                d="M16 11V7a4 4 0 00-8 0v4M5 9h14l1 12H4L5 9z"
+                            ></path>
+                        </svg>
+                    </div>
+                    <p class="text-gray-900 font-bold text-xl mb-2">
+                        Sin pedidos aún
+                    </p>
+                    <p class="text-gray-500 mb-8 text-sm">
+                        ¿Buscas algo nuevo? Explora nuestras últimas
+                        colecciones.
+                    </p>
+                    <a
+                        href="/shop/new"
+                        class="inline-block bg-black text-white px-10 py-4 rounded-xl font-bold uppercase tracking-widest hover:bg-gray-800 transition-all transform hover:-translate-y-1 active:scale-95 shadow-lg shadow-black/10"
+                    >
+                        Ver Novedades
+                    </a>
+                </div>
+            </div>
+
+            <div
+                id="auth-check-failed"
+                class="hidden text-center py-20 bg-white rounded-3xl border border-gray-100 shadow-xl"
+            >
+                <p class="text-gray-900 font-bold text-xl mb-6">
+                    Identifícate para continuar
+                </p>
+                <a
+                    href="/login"
+                    class="inline-block bg-black text-white px-10 py-4 rounded-xl font-bold uppercase tracking-widest hover:bg-gray-800 transition-all"
+                    >Iniciar Sesión</a
+                >
+            </div>
+        </div>
+
+        <!-- Template for an order item -->
+        <template id="order-template">
+            <div
+                class="bg-white border border-gray-100 rounded-2xl shadow-sm overflow-hidden hover:shadow-xl transition-all duration-500 group"
+            >
+                <div
+                    class="px-8 py-6 bg-gray-50/50 border-b border-gray-100 flex flex-wrap gap-6 items-center justify-between"
+                >
+                    <div class="flex gap-8">
+                        <div>
+                            <p
+                                class="text-[10px] text-gray-400 uppercase tracking-[0.2em] font-black mb-1"
+                            >
+                                Fecha
+                            </p>
+                            <p
+                                class="font-bold text-gray-900 date-field text-sm"
+                            >
+                                Loading...
+                            </p>
+                        </div>
+                        <div>
+                            <p
+                                class="text-[10px] text-gray-400 uppercase tracking-[0.2em] font-black mb-1"
+                            >
+                                Total
+                            </p>
+                            <p
+                                class="font-black text-gray-900 total-field text-sm"
+                            >
+                                Loading...
+                            </p>
+                        </div>
+                        <div class="hidden sm:block">
+                            <p
+                                class="text-[10px] text-gray-400 uppercase tracking-[0.2em] font-black mb-1"
+                            >
+                                Referencia
+                            </p>
+                            <p
+                                class="font-mono text-gray-600 id-field text-sm font-bold uppercase"
+                            >
+                                #Loading...
+                            </p>
+                        </div>
+                    </div>
+                    <div>
+                        <span
+                            class="inline-flex items-center px-4 py-1.5 rounded-full text-[10px] font-black uppercase tracking-widest status-badge shadow-sm"
+                        >
+                            Pendiente
+                        </span>
+                    </div>
+                </div>
+                <div class="p-8">
+                    <div class="items-container space-y-6 text-sm">
+                        <!-- Items -->
+                    </div>
+
+                    <!-- Action Buttons -->
+                    <div
+                        class="mt-10 pt-8 border-t border-gray-50 flex flex-wrap gap-4 justify-between items-center actions-container"
+                    >
+                        <p
+                            class="text-[10px] text-gray-400 uppercase tracking-[0.2em] font-bold hidden sm:block"
+                        >
+                            Gestión de pedido
+                        </p>
+                        <div class="flex gap-3 buttons-flex">
+                            <!-- Buttons injected here -->
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </template>
+
+        <!-- Modal for Order Actions -->
+        <div id="action-modal" class="fixed inset-0 z-[100] hidden">
+            <div
+                class="absolute inset-0 bg-black/80 backdrop-blur-md modal-overlay transition-opacity duration-300"
+            >
+            </div>
+            <div
+                class="absolute inset-x-4 top-1/2 -translate-y-1/2 md:inset-x-auto md:left-1/2 md:-translate-x-1/2 md:w-full md:max-w-lg transition-all duration-300 transform scale-95 opacity-0 modal-container"
+            >
+                <div
+                    class="bg-white rounded-[2.5rem] shadow-2xl overflow-hidden border border-gray-100"
+                >
+                    <div class="p-10">
+                        <div class="flex items-center justify-between mb-8">
+                            <h3
+                                id="modal-title"
+                                class="text-4xl font-bold italic uppercase tracking-tighter font-bebas"
+                            >
+                                Acción de Pedido
+                            </h3>
+                            <button
+                                class="text-gray-300 hover:text-black close-modal transition-colors"
+                            >
+                                <svg
+                                    class="w-8 h-8"
+                                    fill="none"
+                                    stroke="currentColor"
+                                    viewBox="0 0 24 24"
+                                >
+                                    <path
+                                        stroke-linecap="round"
+                                        stroke-linejoin="round"
+                                        stroke-width="1.5"
+                                        d="M6 18L18 6M6 6l12 12"></path>
+                                </svg>
+                            </button>
+                        </div>
+
+                        <div
+                            id="modal-content"
+                            class="text-gray-600 space-y-6 font-outfit"
+                        >
+                            <!-- Content injected here -->
+                        </div>
+
+                        <div class="mt-12 space-y-4">
+                            <a
+                                id="modal-primary-btn"
+                                target="_blank"
+                                href="#"
+                                class="w-full bg-black text-white text-center py-5 rounded-[1.25rem] font-black uppercase tracking-[0.2em] hover:bg-gray-800 transition-all transform hover:-translate-y-1 active:scale-95 shadow-xl shadow-black/10 flex items-center justify-center gap-3 text-xs"
+                            >
+                                <svg
+                                    class="w-5 h-5"
+                                    fill="currentColor"
+                                    viewBox="0 0 24 24"
+                                    ><path
+                                        d="M17.472 14.382c-.301-.15-1.767-.872-2.04-.971-.272-.099-.47-.15-.669.15-.199.3-.77 1.05-.945 1.251-.174.201-.35.226-.65.076-.299-.149-1.265-.466-2.41-1.488-.891-.795-1.492-1.777-1.666-2.076-.174-.299-.018-.461.13-.609.133-.133.3-.349.45-.523.15-.174.199-.299.299-.499.1-.199.05-.374-.025-.523-.075-.15-.669-1.611-.916-2.206-.241-.58-.485-.5-.669-.51-.174-.01-.374-.012-.573-.012-.199 0-.523.074-.796.374-.271.3-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.2 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.767-.721 2.016-1.418.247-.698.247-1.296.173-1.418-.074-.122-.271-.196-.572-.347zM12.191 3.844c-4.483 0-8.129 3.649-8.129 8.131 0 1.543.432 2.986 1.179 4.22L4.25 20.353l4.298-1.128c1.196.652 2.564 1.026 4.024 1.026 4.483 0 7.854-3.649 7.854-8.131.001-4.482-3.483-8.131-7.965-8.131zm0 14.896c-1.385 0-2.678-.382-3.784-1.043l-.271-.161-2.527.662.674-2.463-.178-.283A6.804 6.804 0 0 1 5.344 11.975c0-3.763 3.064-6.828 6.848-6.828s6.848 3.065 6.848 6.828-3.064 6.828-6.849 6.828z"
+                                    ></path></svg
+                                >
+                                Contactar soporte
+                            </a>
+                            <button
+                                class="w-full bg-gray-50 text-gray-400 py-5 rounded-[1.25rem] font-black uppercase tracking-[0.2em] hover:bg-gray-100 hover:text-black transition-all close-modal text-[10px]"
+                            >
+                                Cerrar Ventana
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <script>
+            import { supabase } from "../../lib/supabase";
+
+            const loading = document.getElementById("loading");
+            const ordersList = document.getElementById("orders-list");
+            const noOrders = document.getElementById("no-orders");
+            const authFailed = document.getElementById("auth-check-failed");
+            const template = document.getElementById(
+                "order-template",
+            ) as HTMLTemplateElement;
+
+            const statusColors: any = {
+                pending: "bg-amber-50 text-amber-600 border border-amber-100",
+                processing: "bg-blue-50 text-blue-600 border border-blue-100",
+                shipped:
+                    "bg-indigo-50 text-indigo-600 border border-indigo-100",
+                delivered:
+                    "bg-emerald-50 text-emerald-600 border border-emerald-100",
+                cancelled: "bg-rose-50 text-rose-600 border border-rose-100",
+            };
+
+            const statusLabels: any = {
+                pending: "Pendiente",
+                processing: "Procesando",
+                shipped: "Enviado",
+                delivered: "Entregado",
+                cancelled: "Cancelado",
+            };
+
+            async function loadOrders() {
+                const {
+                    data: { session },
+                } = await supabase.auth.getSession();
+
+                if (!session) {
+                    loading?.classList.add("hidden");
+                    authFailed?.classList.remove("hidden");
+                    return;
+                }
+
+                const userEmail = session.user.email;
+
+                // Sync guest orders
+                await supabase.rpc("associate_user_orders", {
+                    user_uuid: session.user.id,
+                    user_email: userEmail,
+                });
+
+                const { data: orders, error } = await supabase
+                    .from("orders")
+                    .select(
+                        `
+                        *,
+                        order_items (
+                            *,
+                            product:products(
+                                name, 
+                                product_images(image_url)
+                            )
+                        )
+                    `,
+                    )
+                    .or(
+                        `user_id.eq."${session.user.id}",customer_email.eq."${userEmail}",guest_email.eq."${userEmail}"`,
+                    )
+                    .order("created_at", { ascending: false });
+
+                loading?.classList.add("hidden");
+
+                if (error) {
+                    console.error("Error fetching orders:", error);
+                    if (noOrders) {
+                        noOrders.innerHTML = `<div class="p-8 text-rose-600 font-bold bg-rose-50 rounded-2xl border border-rose-100">Error: ${error.message}</div>`;
+                        noOrders.classList.remove("hidden");
+                    }
+                    return;
+                }
+
+                if (!orders || orders.length === 0) {
+                    noOrders?.classList.remove("hidden");
+                    return;
+                }
+
+                ordersList?.classList.remove("hidden");
+
+                orders.forEach((order: any) => {
+                    const clone = template.content.cloneNode(
+                        true,
+                    ) as HTMLElement;
+
+                    // Date & Total
+                    const date = new Date(order.created_at).toLocaleDateString(
+                        "es-ES",
+                        { day: "2-digit", month: "short", year: "numeric" },
+                    );
+                    clone.querySelector(".date-field")!.textContent = date;
+
+                    const orderTotal =
+                        order.total_price || order.total_amount || 0;
+                    clone.querySelector(".total-field")!.textContent =
+                        (orderTotal / 100).toFixed(2) + " €";
+                    clone.querySelector(".id-field")!.textContent =
+                        "#" + order.id.slice(0, 8).toUpperCase();
+
+                    // Status Badge
+                    const badge = clone.querySelector(
+                        ".status-badge",
+                    ) as HTMLElement;
+                    badge.className = `inline-flex items-center px-4 py-1.5 rounded-full text-[10px] font-black uppercase tracking-widest status-badge shadow-sm ${statusColors[order.status] || "bg-gray-100 text-gray-800"}`;
+                    badge.textContent =
+                        statusLabels[order.status] || order.status;
+
+                    // Items Rendering
+                    const itemsContainer =
+                        clone.querySelector(".items-container");
+                    const items = order.order_items || [];
+
+                    items.forEach((item: any) => {
+                        const itemDiv = document.createElement("div");
+                        itemDiv.className =
+                            "flex items-center gap-6 py-4 px-2 rounded-xl border border-transparent hover:border-gray-100 transition-colors";
+
+                        const productImg =
+                            item.product?.product_images?.[0]?.image_url;
+                        const imgHtml = productImg
+                            ? `<img src="${productImg}" alt="${item.product_name}" class="w-20 h-20 object-cover rounded-2xl shadow-sm bg-gray-50 border border-gray-100">`
+                            : `<div class="w-20 h-20 bg-gray-50 rounded-2xl flex items-center justify-center text-gray-200 text-[10px] font-black italic uppercase border border-gray-100">No Img</div>`;
+
+                        const itemPrice = item.price || 0;
+                        const itemQuantity = item.quantity || 0;
+
+                        itemDiv.innerHTML = `
+                            ${imgHtml}
+                            <div class="flex-1">
+                                <h4 class="font-black text-gray-900 uppercase tracking-tight italic text-lg leading-none mb-1">${item.product_name || item.product?.name || "Producto"}</h4>
+                                <p class="text-xs text-gray-400 font-bold uppercase tracking-widest">Cantidad: ${itemQuantity}</p>
+                            </div>
+                            <div class="font-black text-xl text-black tracking-tighter">
+                                 ${((itemPrice * itemQuantity) / 100).toFixed(2)}€
+                            </div>
+                        `;
+                        itemsContainer?.appendChild(itemDiv);
+                    });
+
+                    // Actions
+                    const buttonsFlex = clone.querySelector(".buttons-flex");
+                    if (buttonsFlex) {
+                        if (
+                            order.status === "pending" ||
+                            order.status === "processing"
+                        ) {
+                            const cancelBtn = document.createElement("button");
+                            cancelBtn.className =
+                                "text-[10px] font-black uppercase tracking-[0.2em] text-white bg-rose-600 px-6 py-3 rounded-xl hover:bg-rose-700 transition-all transform hover:-translate-y-0.5 shadow-lg shadow-rose-200 active:scale-95";
+                            cancelBtn.textContent = "Cancelar Pedido";
+                            cancelBtn.onclick = () =>
+                                showActionModal("cancel", order.id);
+                            buttonsFlex.appendChild(cancelBtn);
+                        } else if (order.status === "delivered") {
+                            const returnBtn = document.createElement("button");
+                            returnBtn.className =
+                                "text-[10px] font-black uppercase tracking-[0.2em] text-black border-2 border-black bg-white px-6 py-3 rounded-xl hover:bg-black hover:text-white transition-all transform hover:-translate-y-0.5 shadow-lg shadow-black/5 active:scale-95";
+                            returnBtn.textContent = "Devolver Producto";
+                            returnBtn.onclick = () =>
+                                showActionModal("return", order.id);
+                            buttonsFlex.appendChild(returnBtn);
+                        } else {
+                            const actionsContainer =
+                                clone.querySelector(".actions-container");
+                            if (actionsContainer)
+                                (actionsContainer as HTMLElement).classList.add(
+                                    "hidden",
+                                );
+                        }
+                    }
+
+                    ordersList?.appendChild(clone);
+                });
+            }
+
+            // Modal Logic
+            const actionModal = document.getElementById("action-modal");
+            const modalContainer =
+                actionModal?.querySelector(".modal-container");
+            const modalTitle = document.getElementById("modal-title");
+            const modalContent = document.getElementById("modal-content");
+            const primaryBtn = document.getElementById(
+                "modal-primary-btn",
+            ) as HTMLAnchorElement;
+
+            function showActionModal(
+                type: "cancel" | "return",
+                orderId: string,
+            ) {
+                if (
+                    !actionModal ||
+                    !modalTitle ||
+                    !modalContent ||
+                    !modalContainer
+                )
+                    return;
+
+                const orderRef = orderId.slice(0, 8).toUpperCase();
+                const waPhone = "34722108440";
+
+                if (type === "cancel") {
+                    modalTitle.textContent = "Cancelar Pedido";
+                    modalContent.innerHTML = `
+                        <div class="bg-rose-50 p-6 rounded-[1.5rem] border border-rose-100">
+                             <p class="text-[10px] font-black uppercase text-rose-600 tracking-widest mb-2">Pedido Seleccionado</p>
+                             <p class="font-mono text-2xl font-black text-rose-900 tracking-tighter italic">#${orderRef}</p>
+                        </div>
+                        <p class="text-sm font-medium leading-relaxed italic text-gray-600">¿Deseas cancelar tu compra? Nuestro equipo puede ayudarte rápidamente vía WhatsApp para detener el envío.</p>
+                        <ul class="space-y-3">
+                            <li class="flex items-center gap-3 text-xs font-bold uppercase tracking-widest text-gray-400">
+                                <span class="w-2 h-2 rounded-full bg-rose-400"></span>
+                                Reembolso al método original
+                            </li>
+                            <li class="flex items-center gap-3 text-xs font-bold uppercase tracking-widest text-gray-400">
+                                <span class="w-2 h-2 rounded-full bg-rose-400"></span>
+                                Gestión prioritaria
+                            </li>
+                        </ul>
+                    `;
+                    primaryBtn.href = `https://wa.me/${waPhone}?text=Hola%20SLC%20CUTS!%20Quiero%20solicitar%20la%20cancelaci%C3%B3n%20de%20mi%20pedido%20%23${orderRef}`;
+                } else {
+                    modalTitle.textContent = "Solicitar Devolución";
+                    modalContent.innerHTML = `
+                        <div class="bg-gray-100 p-6 rounded-[1.5rem] border border-gray-200">
+                             <p class="text-[10px] font-black uppercase text-gray-500 tracking-widest mb-2">Pedido Seleccionado</p>
+                             <p class="font-mono text-2xl font-black text-black tracking-tighter italic">#${orderRef}</p>
+                        </div>
+                        <p class="text-sm font-medium leading-relaxed italic text-gray-600">Dispones de 14 días para devoluciones. Contacta con nosotros para recibir tu etiqueta de envío y pasos a seguir.</p>
+                        <div class="grid grid-cols-2 gap-4">
+                            <div class="bg-gray-50 p-4 rounded-xl border border-gray-100">
+                                <p class="text-[9px] font-black uppercase tracking-widest mb-1">Paso 1</p>
+                                <p class="text-[10px] font-bold">Solicitud vía WhatsApp</p>
+                            </div>
+                            <div class="bg-gray-50 p-4 rounded-xl border border-gray-100">
+                                <p class="text-[9px] font-black uppercase tracking-widest mb-1">Paso 2</p>
+                                <p class="text-[10px] font-bold">Envío del paquete</p>
+                            </div>
+                        </div>
+                    `;
+                    primaryBtn.href = `https://wa.me/${waPhone}?text=Hola%20SLC%20CUTS!%20Deseo%20tramitar%20una%20devoluci%C3%B3n%20para%20el%20pedido%20%23${orderRef}`;
+                }
+
+                actionModal.classList.remove("hidden");
+                setTimeout(() => {
+                    modalContainer.classList.remove("scale-95", "opacity-0");
+                    modalContainer.classList.add("scale-100", "opacity-100");
+                }, 10);
+                document.body.style.overflow = "hidden";
+            }
+
+            function closeModal() {
+                if (!actionModal || !modalContainer) return;
+                modalContainer.classList.remove("scale-100", "opacity-100");
+                modalContainer.classList.add("scale-95", "opacity-0");
+                setTimeout(() => {
+                    actionModal.classList.add("hidden");
+                    document.body.style.overflow = "";
+                }, 300);
+            }
+
+            document
+                .querySelectorAll(".close-modal, .modal-overlay")
+                .forEach((el) => {
+                    el.addEventListener("click", closeModal);
+                });
+
+            loadOrders();
+        </script>
+    </div>
+</Layout>

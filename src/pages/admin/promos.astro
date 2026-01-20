@@ -1,0 +1,574 @@
+---
+export const prerender = false;
+import AdminLayout from "../../layouts/AdminLayout.astro";
+import { supabase } from "../../lib/supabase";
+
+// Fetch existing promo codes
+const { data: promoCodes, error } = await supabase
+    .from("promo_codes")
+    .select("*")
+    .order("created_at", { ascending: false });
+
+if (error) {
+    console.error("Error fetching promo codes:", error);
+}
+---
+
+<AdminLayout title="Códigos Promocionales" activeSection="promos">
+    <div class="space-y-6">
+        <!-- Header with Create Button -->
+        <div class="flex justify-between items-center">
+            <div>
+                <h2 class="text-2xl font-bold">Códigos Promocionales</h2>
+                <p class="text-gray-400 text-sm mt-1">
+                    Gestiona descuentos y promociones para tus clientes
+                </p>
+            </div>
+            <button
+                id="openCreateModal"
+                class="bg-blue-600 hover:bg-blue-700 text-white px-6 py-3 rounded-lg font-bold uppercase text-sm tracking-wider transition-all flex items-center gap-2"
+            >
+                <svg
+                    xmlns="http://www.w3.org/2000/svg"
+                    width="20"
+                    height="20"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    stroke-width="2"
+                    stroke-linecap="round"
+                    stroke-linejoin="round"
+                >
+                    <path d="M5 12h14"></path>
+                    <path d="M12 5v14"></path>
+                </svg>
+                Nuevo Código
+            </button>
+        </div>
+
+        <!-- Promo Codes Table -->
+        <div
+            class="bg-gray-800/50 rounded-xl border border-gray-700 overflow-hidden"
+        >
+            <div class="overflow-x-auto">
+                <table class="w-full">
+                    <thead class="bg-gray-900/50 border-b border-gray-700">
+                        <tr>
+                            <th
+                                class="px-6 py-4 text-left text-xs font-bold uppercase tracking-wider text-gray-400"
+                                >Código</th
+                            >
+                            <th
+                                class="px-6 py-4 text-left text-xs font-bold uppercase tracking-wider text-gray-400"
+                                >Descuento</th
+                            >
+                            <th
+                                class="px-6 py-4 text-left text-xs font-bold uppercase tracking-wider text-gray-400"
+                                >Validez</th
+                            >
+                            <th
+                                class="px-6 py-4 text-left text-xs font-bold uppercase tracking-wider text-gray-400"
+                                >Usos</th
+                            >
+                            <th
+                                class="px-6 py-4 text-left text-xs font-bold uppercase tracking-wider text-gray-400"
+                                >Estado</th
+                            >
+                            <th
+                                class="px-6 py-4 text-right text-xs font-bold uppercase tracking-wider text-gray-400"
+                                >Acciones</th
+                            >
+                        </tr>
+                    </thead>
+                    <tbody class="divide-y divide-gray-700">
+                        {
+                            promoCodes && promoCodes.length > 0 ? (
+                                promoCodes.map((promo) => (
+                                    <tr class="hover:bg-gray-700/30 transition-colors">
+                                        <td class="px-6 py-4">
+                                            <span class="font-mono font-bold text-white bg-gray-700 px-3 py-1 rounded">
+                                                {promo.code}
+                                            </span>
+                                        </td>
+                                        <td class="px-6 py-4 text-white">
+                                            {promo.discount_type === "percent"
+                                                ? `${promo.discount_value}%`
+                                                : `${(promo.discount_value / 100).toFixed(2)}€`}
+                                        </td>
+                                        <td class="px-6 py-4 text-sm text-gray-400">
+                                            {promo.valid_from &&
+                                            promo.valid_until ? (
+                                                <>
+                                                    {new Date(
+                                                        promo.valid_from,
+                                                    ).toLocaleDateString(
+                                                        "es-ES",
+                                                    )}{" "}
+                                                    -{" "}
+                                                    {new Date(
+                                                        promo.valid_until,
+                                                    ).toLocaleDateString(
+                                                        "es-ES",
+                                                    )}
+                                                </>
+                                            ) : (
+                                                <span class="text-gray-500">
+                                                    Sin límite
+                                                </span>
+                                            )}
+                                        </td>
+                                        <td class="px-6 py-4 text-sm text-gray-400">
+                                            {promo.times_used || 0}
+                                            {promo.usage_limit
+                                                ? ` / ${promo.usage_limit}`
+                                                : " / ∞"}
+                                        </td>
+                                        <td class="px-6 py-4">
+                                            {promo.active ? (
+                                                <span class="px-3 py-1 text-xs font-bold bg-green-500/20 text-green-400 rounded-full">
+                                                    ACTIVO
+                                                </span>
+                                            ) : (
+                                                <span class="px-3 py-1 text-xs font-bold bg-gray-500/20 text-gray-400 rounded-full">
+                                                    INACTIVO
+                                                </span>
+                                            )}
+                                        </td>
+                                        <td class="px-6 py-4 text-right">
+                                            <button
+                                                data-promo-id={promo.id}
+                                                class="delete-promo-btn text-red-400 hover:text-red-300 transition-colors p-2"
+                                                title="Eliminar código"
+                                            >
+                                                <svg
+                                                    xmlns="http://www.w3.org/2000/svg"
+                                                    width="18"
+                                                    height="18"
+                                                    viewBox="0 0 24 24"
+                                                    fill="none"
+                                                    stroke="currentColor"
+                                                    stroke-width="2"
+                                                    stroke-linecap="round"
+                                                    stroke-linejoin="round"
+                                                >
+                                                    <path d="M3 6h18" />
+                                                    <path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6" />
+                                                    <path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2" />
+                                                </svg>
+                                            </button>
+                                        </td>
+                                    </tr>
+                                ))
+                            ) : (
+                                <tr>
+                                    <td
+                                        colspan="6"
+                                        class="px-6 py-12 text-center text-gray-500"
+                                    >
+                                        <p class="mb-2">
+                                            No hay códigos promocionales creados
+                                        </p>
+                                        <p class="text-xs">
+                                            Crea el primero haciendo clic en
+                                            "Nuevo Código"
+                                        </p>
+                                    </td>
+                                </tr>
+                            )
+                        }
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <!-- Toast Notification -->
+    <div
+        id="toast"
+        class="fixed bottom-8 right-8 bg-gray-800 text-white px-6 py-4 rounded-lg shadow-2xl border border-gray-700 transform translate-y-32 opacity-0 transition-all duration-300 z-[100] flex items-center gap-3 max-w-md"
+    >
+        <div id="toastIcon" class="flex-shrink-0"></div>
+        <div>
+            <p id="toastTitle" class="font-bold text-sm"></p>
+            <p id="toastMessage" class="text-xs text-gray-400 mt-1"></p>
+        </div>
+    </div>
+
+    <!-- Create Promo Modal -->
+    <div
+        id="createPromoModal"
+        class="fixed inset-0 bg-black/70 z-50 flex items-center justify-center opacity-0 pointer-events-none transition-opacity duration-300"
+    >
+        <div
+            class="bg-gray-800 rounded-xl p-8 max-w-lg w-full mx-4 transform scale-95 transition-transform duration-300"
+            id="modalContent"
+        >
+            <h3 class="text-2xl font-bold mb-6">Crear Código Promocional</h3>
+            <form id="createPromoForm" class="space-y-4">
+                <!-- Code -->
+                <div>
+                    <label class="block text-sm font-bold mb-2"
+                        >Código (ej: VERANO2024)</label
+                    >
+                    <input
+                        type="text"
+                        id="code"
+                        required
+                        class="w-full bg-gray-700 border border-gray-600 rounded-lg px-4 py-3 focus:outline-none focus:border-blue-500 font-mono uppercase"
+                        placeholder="DESCUENTO20"
+                    />
+                </div>
+
+                <!-- Discount Type -->
+                <div>
+                    <label class="block text-sm font-bold mb-2"
+                        >Tipo de Descuento</label
+                    >
+                    <select
+                        id="discountType"
+                        class="w-full bg-gray-700 border border-gray-600 rounded-lg px-4 py-3 focus:outline-none focus:border-blue-500"
+                    >
+                        <option value="percent">Porcentaje (%)</option>
+                        <option value="fixed">Cantidad Fija (€)</option>
+                    </select>
+                </div>
+
+                <!-- Discount Value -->
+                <div>
+                    <label class="block text-sm font-bold mb-2"
+                        >Valor del Descuento</label
+                    >
+                    <input
+                        type="number"
+                        id="discountValue"
+                        required
+                        min="0.01"
+                        step="0.01"
+                        class="w-full bg-gray-700 border border-gray-600 rounded-lg px-4 py-3 focus:outline-none focus:border-blue-500"
+                        placeholder="20"
+                    />
+                    <p class="text-xs text-gray-400 mt-1">
+                        Para cantidad fija, ingresa el valor en euros (ej:
+                        10.00)
+                    </p>
+                </div>
+
+                <!-- Date Range (Optional) -->
+                <div class="grid grid-cols-2 gap-4">
+                    <div>
+                        <label class="block text-sm font-bold mb-2"
+                            >Válido Desde (Opcional)</label
+                        >
+                        <input
+                            type="date"
+                            id="validFrom"
+                            class="w-full bg-gray-700 border border-gray-600 rounded-lg px-4 py-3 focus:outline-none focus:border-blue-500"
+                        />
+                    </div>
+                    <div>
+                        <label class="block text-sm font-bold mb-2"
+                            >Válido Hasta (Opcional)</label
+                        >
+                        <input
+                            type="date"
+                            id="validUntil"
+                            class="w-full bg-gray-700 border border-gray-600 rounded-lg px-4 py-3 focus:outline-none focus:border-blue-500"
+                        />
+                    </div>
+                </div>
+
+                <!-- Usage Limit (Optional) -->
+                <div>
+                    <label class="block text-sm font-bold mb-2"
+                        >Límite de Usos (Opcional)</label
+                    >
+                    <input
+                        type="number"
+                        id="usageLimit"
+                        min="1"
+                        class="w-full bg-gray-700 border border-gray-600 rounded-lg px-4 py-3 focus:outline-none focus:border-blue-500"
+                        placeholder="Dejar vacío para uso ilimitado"
+                    />
+                </div>
+
+                <!-- Buttons -->
+                <div class="flex gap-3 pt-4">
+                    <button
+                        type="submit"
+                        class="flex-1 bg-blue-600 hover:bg-blue-700 text-white px-6 py-3 rounded-lg font-bold uppercase text-sm tracking-wider transition-all"
+                    >
+                        Crear Código
+                    </button>
+                    <button
+                        type="button"
+                        id="closeModal"
+                        class="px-6 py-3 bg-gray-700 hover:bg-gray-600 rounded-lg font-bold uppercase text-sm tracking-wider transition-all"
+                    >
+                        Cancelar
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Delete Confirmation Modal -->
+    <div
+        id="deleteConfirmModal"
+        class="fixed inset-0 bg-black/70 z-50 flex items-center justify-center opacity-0 pointer-events-none transition-opacity duration-300"
+    >
+        <div
+            class="bg-gray-800 rounded-xl p-8 max-w-md w-full mx-4 transform scale-95 transition-transform duration-300"
+            id="deleteModalContent"
+        >
+            <div class="flex items-center gap-3 mb-4">
+                <div
+                    class="w-12 h-12 rounded-full bg-red-500/20 flex items-center justify-center"
+                >
+                    <svg
+                        xmlns="http://www.w3.org/2000/svg"
+                        width="24"
+                        height="24"
+                        viewBox="0 0 24 24"
+                        fill="none"
+                        stroke="currentColor"
+                        stroke-width="2"
+                        stroke-linecap="round"
+                        stroke-linejoin="round"
+                        class="text-red-400"
+                    >
+                        <path d="M3 6h18"></path>
+                        <path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6"></path>
+                        <path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2"></path>
+                    </svg>
+                </div>
+                <div>
+                    <h3 class="text-xl font-bold text-white">
+                        Eliminar Código
+                    </h3>
+                    <p class="text-sm text-gray-400">
+                        Esta acción no se puede deshacer
+                    </p>
+                </div>
+            </div>
+            <p class="text-gray-300 mb-6">
+                ¿Estás seguro de que quieres eliminar este código promocional?
+            </p>
+            <div class="flex gap-3">
+                <button
+                    id="confirmDelete"
+                    class="flex-1 bg-red-600 hover:bg-red-700 text-white px-6 py-3 rounded-lg font-bold uppercase text-sm tracking-wider transition-all"
+                >
+                    Eliminar
+                </button>
+                <button
+                    id="cancelDelete"
+                    class="px-6 py-3 bg-gray-700 hover:bg-gray-600 rounded-lg font-bold uppercase text-sm tracking-wider transition-all"
+                >
+                    Cancelar
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        import { supabase } from "../../lib/supabase";
+
+        // Toast notification system
+        function showToast(
+            title: string,
+            message: string,
+            type: "success" | "error",
+        ) {
+            const toast = document.getElementById("toast");
+            const toastTitle = document.getElementById("toastTitle");
+            const toastMessage = document.getElementById("toastMessage");
+            const toastIcon = document.getElementById("toastIcon");
+
+            if (!toast || !toastTitle || !toastMessage || !toastIcon) return;
+
+            toastTitle.textContent = title;
+            toastMessage.textContent = message;
+
+            // Set icon based on type
+            if (type === "success") {
+                toastIcon.innerHTML =
+                    '<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="text-green-400"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"></path><polyline points="22 4 12 14.01 9 11.01"></polyline></svg>';
+            } else {
+                toastIcon.innerHTML =
+                    '<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="text-red-400"><circle cx="12" cy="12" r="10"></circle><line x1="12" y1="8" x2="12" y2="12"></line><line x1="12" y1="16" x2="12.01" y2="16"></line></svg>';
+            }
+
+            // Show toast
+            toast.classList.remove("translate-y-32", "opacity-0");
+            toast.classList.add("translate-y-0", "opacity-100");
+
+            // Hide after 4 seconds
+            setTimeout(() => {
+                toast.classList.add("translate-y-32", "opacity-0");
+                toast.classList.remove("translate-y-0", "opacity-100");
+            }, 4000);
+        }
+
+        const modal = document.getElementById("createPromoModal");
+        const modalContent = document.getElementById("modalContent");
+        const openBtn = document.getElementById("openCreateModal");
+        const closeBtn = document.getElementById("closeModal");
+        const form = document.getElementById(
+            "createPromoForm",
+        ) as HTMLFormElement;
+
+        // Open Modal
+        openBtn?.addEventListener("click", () => {
+            if (modal && modalContent) {
+                modal.classList.remove("pointer-events-none", "opacity-0");
+                modalContent.classList.remove("scale-95");
+                modalContent.classList.add("scale-100");
+            }
+        });
+
+        // Close Modal
+        const closeModal = () => {
+            if (modal && modalContent) {
+                modal.classList.add("opacity-0");
+                modalContent.classList.remove("scale-100");
+                modalContent.classList.add("scale-95");
+                setTimeout(() => {
+                    modal.classList.add("pointer-events-none");
+                }, 300);
+            }
+        };
+
+        closeBtn?.addEventListener("click", closeModal);
+        modal?.addEventListener("click", (e) => {
+            if (e.target === modal) closeModal();
+        });
+
+        // Create Promo Code
+        form?.addEventListener("submit", async (e) => {
+            e.preventDefault();
+
+            const code = (
+                document.getElementById("code") as HTMLInputElement
+            ).value.toUpperCase();
+            const discountType = (
+                document.getElementById("discountType") as HTMLSelectElement
+            ).value;
+            const discountValue = parseFloat(
+                (document.getElementById("discountValue") as HTMLInputElement)
+                    .value,
+            );
+            const validFrom =
+                (document.getElementById("validFrom") as HTMLInputElement)
+                    .value || null;
+            const validUntil =
+                (document.getElementById("validUntil") as HTMLInputElement)
+                    .value || null;
+            const usageLimit =
+                (document.getElementById("usageLimit") as HTMLInputElement)
+                    .value || null;
+
+            // Convert fixed amount to cents for storage
+            const finalDiscountValue =
+                discountType === "fixed"
+                    ? Math.round(discountValue * 100)
+                    : discountValue;
+
+            const { error } = await supabase.from("promo_codes").insert({
+                code,
+                discount_type: discountType,
+                discount_value: finalDiscountValue,
+                valid_from: validFrom,
+                valid_until: validUntil,
+                usage_limit: usageLimit ? parseInt(usageLimit) : null,
+                active: true,
+            });
+
+            if (error) {
+                showToast(
+                    "Error",
+                    "No se pudo crear el código: " + error.message,
+                    "error",
+                );
+                return;
+            }
+
+            showToast(
+                "¡Éxito!",
+                "Código promocional creado correctamente",
+                "success",
+            );
+            setTimeout(() => window.location.reload(), 1000);
+        });
+
+        // Delete Promo Code - Modal based
+        let promoToDelete = null;
+        const deleteModal = document.getElementById("deleteConfirmModal");
+        const deleteModalContent =
+            document.getElementById("deleteModalContent");
+        const confirmDeleteBtn = document.getElementById("confirmDelete");
+        const cancelDeleteBtn = document.getElementById("cancelDelete");
+
+        const openDeleteModal = (promoId) => {
+            promoToDelete = promoId;
+            if (deleteModal && deleteModalContent) {
+                deleteModal.classList.remove(
+                    "pointer-events-none",
+                    "opacity-0",
+                );
+                deleteModalContent.classList.remove("scale-95");
+                deleteModalContent.classList.add("scale-100");
+            }
+        };
+
+        const closeDeleteModal = () => {
+            if (deleteModal && deleteModalContent) {
+                deleteModal.classList.add("opacity-0");
+                deleteModalContent.classList.remove("scale-100");
+                deleteModalContent.classList.add("scale-95");
+                setTimeout(() => {
+                    deleteModal.classList.add("pointer-events-none");
+                    promoToDelete = null;
+                }, 300);
+            }
+        };
+
+        cancelDeleteBtn?.addEventListener("click", closeDeleteModal);
+        deleteModal?.addEventListener("click", (e) => {
+            if (e.target === deleteModal) closeDeleteModal();
+        });
+
+        confirmDeleteBtn?.addEventListener("click", async () => {
+            if (!promoToDelete) return;
+
+            const { error } = await supabase
+                .from("promo_codes")
+                .delete()
+                .eq("id", promoToDelete);
+
+            if (error) {
+                showToast(
+                    "Error",
+                    "No se pudo eliminar el código: " + error.message,
+                    "error",
+                );
+                closeDeleteModal();
+                return;
+            }
+
+            showToast(
+                "¡Eliminado!",
+                "Código promocional eliminado correctamente",
+                "success",
+            );
+            closeDeleteModal();
+            setTimeout(() => window.location.reload(), 1000);
+        });
+
+        document.querySelectorAll(".delete-promo-btn").forEach((btn) => {
+            btn.addEventListener("click", () => {
+                const promoId = btn.getAttribute("data-promo-id");
+                openDeleteModal(promoId);
+            });
+        });
+    </script>
+</AdminLayout>

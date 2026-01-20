@@ -1,0 +1,497 @@
+---
+export const prerender = false;
+import { supabase } from "../../../../lib/supabase";
+
+const { id } = Astro.params;
+
+// Fetch order details
+const { data: order, error } = await supabase
+    .from("orders")
+    .select(
+        `
+    *,
+    order_items (
+      quantity,
+      price,
+      product:products (name)
+    )
+  `,
+    )
+    .eq("id", id)
+    .single();
+
+if (error || !order) {
+    return Astro.redirect("/admin/orders");
+}
+
+const formatDate = (dateString: string) => {
+    return new Date(dateString).toLocaleDateString("es-ES", {
+        year: "numeric",
+        month: "long",
+        day: "numeric",
+        hour: "2-digit",
+        minute: "2-digit",
+    });
+};
+
+const formatPrice = (amount: number) => {
+    return new Intl.NumberFormat("es-ES", {
+        style: "currency",
+        currency: "EUR",
+    }).format(amount / 100);
+};
+
+// Calculate tax breakdown
+const subtotal = order.total_amount / 1.21;
+const tax = order.total_amount - subtotal;
+---
+
+<html lang="es">
+    <head>
+        <meta charset="UTF-8" />
+        <meta name="viewport" content="width=device-width" />
+        <title>Factura #{order.id.slice(0, 8).toUpperCase()}</title>
+        <link rel="preconnect" href="https://fonts.googleapis.com" />
+        <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+        <link
+            href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;600;800&display=swap"
+            rel="stylesheet"
+        />
+        <style>
+            * {
+                margin: 0;
+                padding: 0;
+                box-sizing: border-box;
+            }
+
+            body {
+                font-family:
+                    "Outfit",
+                    system-ui,
+                    -apple-system,
+                    sans-serif;
+                line-height: 1.6;
+                color: #1a1a1a;
+                max-width: 900px;
+                margin: 0 auto;
+                padding: 60px 40px;
+                background: #fafafa;
+            }
+
+            .invoice-container {
+                background: white;
+                box-shadow: 0 4px 6px -1px rgb(0 0 0 / 0.1);
+                border-radius: 12px;
+                overflow: hidden;
+            }
+
+            .invoice-header {
+                background: linear-gradient(135deg, #000000 0%, #1a1a1a 100%);
+                color: white;
+                padding: 40px;
+                display: flex;
+                justify-content: space-between;
+                align-items: flex-start;
+            }
+
+            .company-info {
+                flex: 1;
+            }
+
+            .logo-container {
+                display: flex;
+                align-items: center;
+                gap: 15px;
+                margin-bottom: 12px;
+            }
+
+            .logo {
+                width: 60px;
+                height: 60px;
+                background: white;
+                border-radius: 8px;
+                padding: 8px;
+                display: flex;
+                align-items: center;
+                justify-content: center;
+            }
+
+            .logo img {
+                width: 100%;
+                height: 100%;
+                object-fit: contain;
+            }
+
+            .company-name {
+                font-size: 28px;
+                font-weight: 800;
+                letter-spacing: 0.05em;
+                text-transform: uppercase;
+            }
+
+            .company-tagline {
+                font-size: 14px;
+                opacity: 0.9;
+                font-weight: 400;
+            }
+
+            .invoice-meta {
+                text-align: right;
+            }
+
+            .invoice-title {
+                font-size: 36px;
+                font-weight: 800;
+                text-transform: uppercase;
+                letter-spacing: 0.05em;
+                margin-bottom: 10px;
+            }
+
+            .invoice-number {
+                font-size: 16px;
+                opacity: 0.9;
+                font-weight: 600;
+            }
+
+            .invoice-date {
+                font-size: 14px;
+                opacity: 0.8;
+            }
+
+            .invoice-body {
+                padding: 40px;
+            }
+
+            .parties-grid {
+                display: grid;
+                grid-template-columns: 1fr 1fr;
+                gap: 40px;
+                margin-bottom: 40px;
+            }
+
+            .party-box {
+                background: #f9fafb;
+                padding: 24px;
+                border-radius: 8px;
+                border-left: 4px solid #000;
+            }
+
+            .party-title {
+                font-weight: 800;
+                text-transform: uppercase;
+                font-size: 11px;
+                letter-spacing: 0.1em;
+                color: #6b7280;
+                margin-bottom: 12px;
+            }
+
+            .party-name {
+                font-weight: 600;
+                font-size: 16px;
+                margin-bottom: 8px;
+                color: #000;
+            }
+
+            .party-details {
+                font-size: 14px;
+                color: #4b5563;
+                line-height: 1.8;
+            }
+
+            .items-table {
+                width: 100%;
+                border-collapse: collapse;
+                margin-bottom: 40px;
+            }
+
+            .items-table thead {
+                background: #f9fafb;
+            }
+
+            .items-table th {
+                text-align: left;
+                padding: 16px;
+                font-size: 11px;
+                font-weight: 800;
+                text-transform: uppercase;
+                letter-spacing: 0.1em;
+                color: #6b7280;
+                border-bottom: 2px solid #e5e7eb;
+            }
+
+            .items-table th:nth-child(2),
+            .items-table th:nth-child(3),
+            .items-table th:nth-child(4) {
+                text-align: right;
+            }
+
+            .items-table td {
+                padding: 16px;
+                border-bottom: 1px solid #f3f4f6;
+                color: #1a1a1a;
+            }
+
+            .items-table td:nth-child(2),
+            .items-table td:nth-child(3),
+            .items-table td:nth-child(4) {
+                text-align: right;
+            }
+
+            .items-table tbody tr:hover {
+                background: #fafafa;
+            }
+
+            .totals-section {
+                background: #f9fafb;
+                padding: 24px;
+                border-radius: 8px;
+                max-width: 400px;
+                margin-left: auto;
+            }
+
+            .total-row {
+                display: flex;
+                justify-content: space-between;
+                padding: 10px 0;
+                font-size: 14px;
+            }
+
+            .total-row.subtotal {
+                color: #6b7280;
+            }
+
+            .total-row.final {
+                border-top: 2px solid #000;
+                margin-top: 12px;
+                padding-top: 16px;
+                font-size: 20px;
+                font-weight: 800;
+                color: #000;
+            }
+
+            .invoice-footer {
+                background: #f9fafb;
+                padding: 32px 40px;
+                text-align: center;
+                border-top: 1px solid #e5e7eb;
+            }
+
+            .footer-text {
+                font-size: 13px;
+                color: #6b7280;
+                margin-bottom: 8px;
+            }
+
+            .footer-contact {
+                font-size: 13px;
+                color: #000;
+                font-weight: 600;
+            }
+
+            .print-button {
+                position: fixed;
+                top: 20px;
+                right: 20px;
+                padding: 12px 24px;
+                background: #000;
+                color: #fff;
+                border: none;
+                border-radius: 8px;
+                cursor: pointer;
+                font-weight: 600;
+                font-size: 14px;
+                box-shadow: 0 4px 6px -1px rgb(0 0 0 / 0.1);
+                transition: all 0.2s;
+            }
+
+            .print-button:hover {
+                background: #333;
+                transform: translateY(-2px);
+                box-shadow: 0 6px 8px -1px rgb(0 0 0 / 0.15);
+            }
+
+            .back-link {
+                position: fixed;
+                top: 20px;
+                left: 20px;
+                color: #666;
+                text-decoration: none;
+                font-weight: 600;
+                font-size: 14px;
+                transition: color 0.2s;
+            }
+
+            .back-link:hover {
+                color: #000;
+            }
+
+            @media print {
+                body {
+                    padding: 0;
+                    background: white;
+                }
+                .invoice-container {
+                    box-shadow: none;
+                    border-radius: 0;
+                }
+                .no-print {
+                    display: none !important;
+                }
+            }
+        </style>
+    </head>
+    <body onload="window.print()">
+        <a href="/admin/orders" class="back-link no-print">← Volver</a>
+        <button onclick="window.print()" class="print-button no-print">
+            Imprimir / Guardar PDF
+        </button>
+
+        <div class="invoice-container">
+            <div class="invoice-header">
+                <div class="company-info">
+                    <div class="logo-container">
+                        <div class="logo">
+                            <img src="/logo.png" alt="SLC CUTS Logo" />
+                        </div>
+                        <div>
+                            <div class="company-name">SLC CUTS</div>
+                            <div class="company-tagline">
+                                Barbería & Productos Premium
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="invoice-meta">
+                    <div class="invoice-title">Factura</div>
+                    <div class="invoice-number">
+                        Nº {order.id.slice(0, 8).toUpperCase()}
+                    </div>
+                    <div class="invoice-date">
+                        {formatDate(order.created_at)}
+                    </div>
+                </div>
+            </div>
+
+            <div class="invoice-body">
+                <div class="parties-grid">
+                    <div class="party-box">
+                        <div class="party-title">Emisor (Vendedor)</div>
+                        <div class="party-name">SLC CUTS Barbería</div>
+                        <div class="party-details">
+                            Joaquin Rivera Tirado<br />
+                            NIF: 722108440<br />
+                            C. Miguel de Cervantes, 79<br />
+                            11550 Chipiona, Cádiz<br />
+                            España
+                        </div>
+                    </div>
+
+                    <div class="party-box">
+                        <div class="party-title">Cliente</div>
+                        <div class="party-name">
+                            {order.contact_info?.name || "Cliente General"}
+                        </div>
+                        <div class="party-details">
+                            {order.contact_info?.email}<br />
+                            {
+                                order.contact_info?.phone && (
+                                    <>
+                                        Tel: {order.contact_info.phone}
+                                        <br />
+                                    </>
+                                )
+                            }
+                            {
+                                order.shipping_address && (
+                                    <>
+                                        <br />
+                                        <>
+                                            <strong>Dirección de Envío:</strong>
+                                            <br />
+                                        </>
+                                        {order.shipping_address.address}
+                                        <br />
+                                        {order.shipping_address.city},{" "}
+                                        {order.shipping_address.zip}
+                                    </>
+                                )
+                            }
+                            {
+                                order.shipping_method === "pickup" && (
+                                    <>
+                                        <br />
+                                        <strong>Método:</strong> Recogida en
+                                        Tienda
+                                    </>
+                                )
+                            }
+                        </div>
+                    </div>
+                </div>
+
+                <table class="items-table">
+                    <thead>
+                        <tr>
+                            <th>Concepto</th>
+                            <th>Cant.</th>
+                            <th>Precio Unit.</th>
+                            <th>Total</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {
+                            order.order_items.map((item: any) => (
+                                <tr>
+                                    <td>
+                                        {item.product?.name ||
+                                            "Producto Eliminado"}
+                                    </td>
+                                    <td>{item.quantity}</td>
+                                    <td>{formatPrice(item.price)}</td>
+                                    <td>
+                                        {formatPrice(
+                                            item.price * item.quantity,
+                                        )}
+                                    </td>
+                                </tr>
+                            ))
+                        }
+                    </tbody>
+                </table>
+
+                <div class="totals-section">
+                    <div class="total-row subtotal">
+                        <span>Base Imponible</span>
+                        <span>{formatPrice(subtotal)}</span>
+                    </div>
+                    <div class="total-row subtotal">
+                        <span>IVA (21%)</span>
+                        <span>{formatPrice(tax)}</span>
+                    </div>
+                    {
+                        order.shipping_cost > 0 && (
+                            <div class="total-row subtotal">
+                                <span>Envío</span>
+                                <span>{formatPrice(order.shipping_cost)}</span>
+                            </div>
+                        )
+                    }
+                    <div class="total-row final">
+                        <span>TOTAL</span>
+                        <span>{formatPrice(order.total_amount)}</span>
+                    </div>
+                </div>
+            </div>
+
+            <div class="invoice-footer">
+                <p class="footer-text">
+                    Gracias por tu confianza. Para cualquier consulta:
+                </p>
+                <p class="footer-contact">
+                    slccuts1998@gmail.com | C. Miguel de Cervantes, 79, 11550
+                    Chipiona, Cádiz
+                </p>
+            </div>
+        </div>
+    </body>
+</html>

@@ -1,0 +1,366 @@
+---
+import AdminLayout from "../../../layouts/AdminLayout.astro";
+import { supabase } from "../../../lib/supabase";
+
+export const prerender = false;
+
+// Get date filters from URL
+const today = new Date().toISOString().split("T")[0];
+const firstOfMonth = new Date(
+    new Date().getFullYear(),
+    new Date().getMonth(),
+    1,
+)
+    .toISOString()
+    .split("T")[0];
+
+const startDate = Astro.url.searchParams.get("start_date") || firstOfMonth;
+const endDate = Astro.url.searchParams.get("end_date") || today;
+
+// Fetch paid orders within range
+const { data: orders, error } = await supabase
+    .from("orders")
+    .select(
+        `
+        *,
+        order_items (
+            quantity,
+            price,
+            product:products (name)
+        )
+    `,
+    )
+    .eq("status", "paid")
+    .gte("created_at", `${startDate}T00:00:00Z`)
+    .lte("created_at", `${endDate}T23:59:59Z`)
+    .order("created_at", { ascending: false });
+
+// Calculate statistics
+const totalInvoiced =
+    orders?.reduce(
+        (acc: number, order: any) =>
+            acc + (order.total_amount || order.total_price || 0),
+        0,
+    ) || 0;
+const cardPayments =
+    orders
+        ?.filter((o: any) => o.payment_method === "card")
+        .reduce(
+            (acc: number, order: any) =>
+                acc + (order.total_amount || order.total_price || 0),
+            0,
+        ) || 0;
+const cashPayments =
+    orders
+        ?.filter((o: any) => o.payment_method === "cash")
+        .reduce(
+            (acc: number, order: any) =>
+                acc + (order.total_amount || order.total_price || 0),
+            0,
+        ) || 0;
+
+const formatPrice = (price: number) => {
+    return new Intl.NumberFormat("es-ES", {
+        style: "currency",
+        currency: "EUR",
+    }).format(price / 100);
+};
+
+const formatDate = (dateString: string) => {
+    return new Date(dateString).toLocaleDateString("es-ES", {
+        day: "2-digit",
+        month: "short",
+        year: "numeric",
+    });
+};
+---
+
+<AdminLayout title="Facturación" activeSection="invoices">
+    <div class="mb-10">
+        <h1 class="text-4xl font-black text-white tracking-tight mb-2">
+            Panel de <span class="text-white/40 italic">Facturación</span>
+        </h1>
+        <p class="text-gray-500 font-medium text-sm lg:text-base">
+            Gestiona y descarga los resúmenes de venta de tu negocio
+        </p>
+    </div>
+
+    <!-- Stats Grid -->
+    <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-10">
+        <div
+            class="p-8 bg-gray-900/50 backdrop-blur-xl rounded-[2rem] border border-white/5 shadow-2xl relative overflow-hidden group"
+        >
+            <div
+                class="absolute -right-10 -top-10 w-32 h-32 bg-white/5 blur-[50px] rounded-full group-hover:bg-white/10 transition-all duration-700"
+            >
+            </div>
+            <span
+                class="text-[10px] font-black text-gray-500 uppercase tracking-widest block mb-4"
+                >Total Facturado</span
+            >
+            <p
+                class="text-4xl font-black text-white italic tracking-tighter tabular-nums"
+            >
+                {formatPrice(totalInvoiced)}
+            </p>
+            <div class="mt-4 flex items-center gap-2">
+                <span
+                    class="text-[10px] font-bold text-gray-600 uppercase tracking-widest"
+                    >En el rango seleccionado</span
+                >
+            </div>
+        </div>
+
+        <div
+            class="p-8 bg-gray-900/50 backdrop-blur-xl rounded-[2rem] border border-white/5 shadow-2xl relative overflow-hidden group"
+        >
+            <div
+                class="absolute -right-10 -top-10 w-32 h-32 bg-blue-500/5 blur-[50px] rounded-full group-hover:bg-blue-500/10 transition-all duration-700"
+            >
+            </div>
+            <span
+                class="text-[10px] font-black text-gray-500 uppercase tracking-widest block mb-4"
+                >Pagos con Tarjeta</span
+            >
+            <p
+                class="text-4xl font-black text-blue-400 italic tracking-tighter tabular-nums"
+            >
+                {formatPrice(cardPayments)}
+            </p>
+            <div class="mt-4 flex items-center gap-2">
+                <span
+                    class="text-[10px] font-bold text-gray-600 uppercase tracking-widest"
+                    >Transacciones Online</span
+                >
+            </div>
+        </div>
+
+        <div
+            class="p-8 bg-gray-900/50 backdrop-blur-xl rounded-[2rem] border border-white/5 shadow-2xl relative overflow-hidden group"
+        >
+            <div
+                class="absolute -right-10 -top-10 w-32 h-32 bg-emerald-500/5 blur-[50px] rounded-full group-hover:bg-emerald-500/10 transition-all duration-700"
+            >
+            </div>
+            <span
+                class="text-[10px] font-black text-gray-500 uppercase tracking-widest block mb-4"
+                >Pagos en Efectivo</span
+            >
+            <p
+                class="text-4xl font-black text-emerald-400 italic tracking-tighter tabular-nums"
+            >
+                {formatPrice(cashPayments)}
+            </p>
+            <div class="mt-4 flex items-center gap-2">
+                <span
+                    class="text-[10px] font-bold text-gray-600 uppercase tracking-widest"
+                    >Venta en Local</span
+                >
+            </div>
+        </div>
+    </div>
+
+    <!-- Filters & Actions -->
+    <div
+        class="flex flex-col xl:flex-row items-stretch xl:items-end justify-between gap-6 mb-8"
+    >
+        <form
+            method="get"
+            class="flex flex-wrap items-end gap-4 p-6 bg-gray-900/50 backdrop-blur-xl rounded-3xl border border-white/5 shadow-2xl flex-1"
+        >
+            <div class="flex-1 min-w-[150px]">
+                <label
+                    class="block text-[9px] font-black text-gray-600 uppercase tracking-widest mb-2"
+                    >Desde</label
+                >
+                <input
+                    type="date"
+                    name="start_date"
+                    value={startDate}
+                    class="w-full h-12 bg-black/40 border border-white/10 rounded-xl px-4 text-xs font-bold text-white focus:border-white/20 focus:outline-none transition-all [color-scheme:dark]"
+                />
+            </div>
+            <div class="flex-1 min-w-[150px]">
+                <label
+                    class="block text-[9px] font-black text-gray-600 uppercase tracking-widest mb-2"
+                    >Hasta</label
+                >
+                <input
+                    type="date"
+                    name="end_date"
+                    value={endDate}
+                    class="w-full h-12 bg-black/40 border border-white/10 rounded-xl px-4 text-xs font-bold text-white focus:border-white/20 focus:outline-none transition-all [color-scheme:dark]"
+                />
+            </div>
+            <button
+                type="submit"
+                class="h-12 px-8 bg-white text-black rounded-xl text-[11px] font-black uppercase tracking-widest hover:scale-105 active:scale-95 transition-all shadow-lg hover:shadow-white/10 shrink-0"
+            >
+                Calcular
+            </button>
+        </form>
+
+        <div class="flex gap-4">
+            <a
+                href={`/admin/invoices/summary?start_date=${startDate}&end_date=${endDate}`}
+                target="_blank"
+                class="h-16 px-8 bg-white/5 border border-white/10 text-white rounded-[1.5rem] flex items-center justify-center gap-3 hover:bg-white hover:text-black transition-all group overflow-hidden relative shadow-2xl"
+            >
+                <div
+                    class="absolute inset-0 bg-white/5 translate-y-full group-hover:translate-y-0 transition-transform duration-500"
+                >
+                </div>
+                <span class="text-2xl relative z-10">📊</span>
+                <span
+                    class="text-[11px] font-black uppercase tracking-widest relative z-10"
+                    >Imprimir Resumen</span
+                >
+            </a>
+            <button
+                id="downloadAllInvoices"
+                class="h-16 px-8 bg-white/5 border border-white/10 text-white rounded-[1.5rem] flex items-center justify-center gap-3 hover:bg-white hover:text-black transition-all group overflow-hidden relative shadow-2xl"
+            >
+                <div
+                    class="absolute inset-0 bg-white/5 translate-y-full group-hover:translate-y-0 transition-transform duration-500"
+                >
+                </div>
+                <span class="text-2xl relative z-10">📁</span>
+                <span
+                    class="text-[11px] font-black uppercase tracking-widest relative z-10 text-left leading-tight"
+                >
+                    Descargar Todas<br /><span class="text-[9px] opacity-70"
+                        >En un solo PDF</span
+                    >
+                </span>
+            </button>
+        </div>
+    </div>
+
+    <!-- Invoices List -->
+    <div
+        class="bg-gray-900/30 rounded-[3rem] border border-white/5 overflow-hidden shadow-2xl"
+    >
+        <table class="w-full border-collapse">
+            <thead>
+                <tr class="border-b border-white/5">
+                    <th
+                        class="text-left p-8 text-[10px] font-black text-gray-600 uppercase tracking-widest"
+                        >Pedido / Fecha</th
+                    >
+                    <th
+                        class="text-left p-8 text-[10px] font-black text-gray-600 uppercase tracking-widest"
+                        >Cliente</th
+                    >
+                    <th
+                        class="text-left p-8 text-[10px] font-black text-gray-600 uppercase tracking-widest"
+                        >Método</th
+                    >
+                    <th
+                        class="text-right p-8 text-[10px] font-black text-gray-600 uppercase tracking-widest"
+                        >Total</th
+                    >
+                    <th
+                        class="text-right p-8 text-[10px] font-black text-gray-600 uppercase tracking-widest"
+                        >Acciones</th
+                    >
+                </tr>
+            </thead>
+            <tbody class="divide-y divide-white/[0.03]">
+                {
+                    orders?.map((order: any) => (
+                        <tr class="group hover:bg-white/[0.02] transition-colors">
+                            <td class="p-8">
+                                <div class="flex flex-col gap-1">
+                                    <span class="text-xs font-black text-white italic">
+                                        #{order.id.slice(0, 8).toUpperCase()}
+                                    </span>
+                                    <span class="text-[10px] font-bold text-gray-500 uppercase tracking-widest">
+                                        {formatDate(order.created_at)}
+                                    </span>
+                                </div>
+                            </td>
+                            <td class="p-8">
+                                <div class="flex flex-col">
+                                    <span class="text-xs font-black text-white uppercase">
+                                        {order.contact_info?.name || "Invitado"}
+                                    </span>
+                                    <span class="text-[10px] font-bold text-gray-500 tracking-tight">
+                                        {order.contact_info?.email ||
+                                            order.guest_email}
+                                    </span>
+                                </div>
+                            </td>
+                            <td class="p-8">
+                                <span
+                                    class={`inline-flex px-3 py-1 rounded-full text-[9px] font-black uppercase tracking-widest ${
+                                        order.payment_method === "card"
+                                            ? "bg-blue-500/10 text-blue-400 border border-blue-500/20"
+                                            : "bg-emerald-500/10 text-emerald-400 border border-emerald-500/20"
+                                    }`}
+                                >
+                                    {order.payment_method === "card"
+                                        ? "💳 Tarjeta"
+                                        : "💵 Efectivo"}
+                                </span>
+                            </td>
+                            <td class="p-8 text-right">
+                                <span class="text-xl font-black text-white italic tabular-nums">
+                                    {formatPrice(
+                                        order.total_amount || order.total_price,
+                                    )}
+                                </span>
+                            </td>
+                            <td class="p-8 text-right">
+                                <a
+                                    href={`/admin/orders/invoice/${order.id}`}
+                                    target="_blank"
+                                    class="inline-flex items-center justify-center w-12 h-12 bg-white/5 border border-white/10 text-white rounded-xl hover:bg-white hover:text-black transition-all shadow-lg hover:shadow-white/10 active:scale-95"
+                                    title="Descargar Individual"
+                                >
+                                    <span class="text-xl">📄</span>
+                                </a>
+                            </td>
+                        </tr>
+                    ))
+                }
+            </tbody>
+        </table>
+
+        {
+            (!orders || orders.length === 0) && (
+                <div class="text-center py-32">
+                    <div class="w-20 h-20 bg-white/5 rounded-full flex items-center justify-center mx-auto mb-8 text-3xl">
+                        🔍
+                    </div>
+                    <h2 class="text-xl font-black text-white italic uppercase mb-2">
+                        Sin movimientos
+                    </h2>
+                    <p class="text-gray-500 font-bold uppercase tracking-widest text-[10px]">
+                        No hay pedidos pagados en este rango de fechas
+                    </p>
+                </div>
+            )
+        }
+    </div>
+</AdminLayout>
+
+<script>
+    // Handle "Download All" functionality
+    // Since generating a single ZIP or combined PDF client-side is complex,
+    // we'll implement a printing approach that triggers the print dialog for a special "batch" page
+    // or simply warns the user that we are opening them.
+
+    document
+        .getElementById("downloadAllInvoices")
+        ?.addEventListener("click", () => {
+            const urlParams = new URLSearchParams(window.location.search);
+            const start = urlParams.get("start_date") || "";
+            const end = urlParams.get("end_date") || "";
+
+            // Redirect to a bulk print page that renders all invoices one after another
+            window.open(
+                `/admin/invoices/bulk?start_date=${start}&end_date=${end}`,
+                "_blank",
+            );
+        });
+</script>

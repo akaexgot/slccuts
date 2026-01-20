@@ -73,7 +73,8 @@ const { data: images } = await supabase
                         <!-- Navigation Arrows -->
                         <button 
                             id="prevBtn"
-                            class="absolute left-2 top-1/2 -translate-y-1/2 w-12 h-12 bg-black/80 hover:bg-black text-white rounded-full flex items-center justify-center shadow-lg transition-all z-10 hidden md:flex"
+                            class="absolute left-2 top-1/2 -translate-y-1/2 w-14 h-14 bg-black/80 hover:bg-black text-white rounded-full flex items-center justify-center shadow-lg transition-all z-10 hidden md:flex"
+                            aria-label="Ver imagen anterior de la galería"
                         >
                             <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                                 <path d="m15 18-6-6 6-6"/>
@@ -81,7 +82,8 @@ const { data: images } = await supabase
                         </button>
                         <button 
                             id="nextBtn"
-                            class="absolute right-2 top-1/2 -translate-y-1/2 w-12 h-12 bg-black/80 hover:bg-black text-white rounded-full flex items-center justify-center shadow-lg transition-all z-10 hidden md:flex"
+                            class="absolute right-2 top-1/2 -translate-y-1/2 w-14 h-14 bg-black/80 hover:bg-black text-white rounded-full flex items-center justify-center shadow-lg transition-all z-10 hidden md:flex"
+                            aria-label="Ver siguiente imagen de la galería"
                         >
                             <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                                 <path d="m9 18 6-6-6-6"/>
@@ -89,8 +91,10 @@ const { data: images } = await supabase
                         </button>
 
                         <!-- Scroll Indicator (Mobile) -->
-                        <div class="flex justify-center gap-2 mt-4 md:hidden">
-                            <span class="text-gray-400 text-sm">← Desliza para ver más →</span>
+                        <div class="flex justify-center gap-2 mt-4 md:hidden items-center text-gray-400 text-sm">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m15 18-6-6 6-6"/></svg>
+                            <span>Desliza para ver más</span>
+                            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m9 18 6-6-6-6"/></svg>
                         </div>
                     </div>
 
@@ -161,20 +165,20 @@ const { data: images } = await supabase
 
     <!-- Lightbox Modal -->
     <div id="lightbox" class="fixed inset-0 z-50 hidden bg-black/95 backdrop-blur-sm">
-        <button id="closeLightbox" class="absolute top-6 right-6 text-white p-2 hover:bg-white/10 rounded-full transition-colors z-20">
+        <button id="closeLightbox" class="absolute top-6 right-6 text-white p-4 hover:bg-white/10 rounded-full transition-colors z-20" aria-label="Cerrar vista ampliada">
             <svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                 <path d="M18 6 6 18"/>
                 <path d="m6 6 12 12"/>
             </svg>
         </button>
         
-        <button id="lightboxPrev" class="absolute left-4 top-1/2 -translate-y-1/2 text-white p-3 hover:bg-white/10 rounded-full transition-colors z-20">
+        <button id="lightboxPrev" class="absolute left-4 top-1/2 -translate-y-1/2 text-white p-5 hover:bg-white/10 rounded-full transition-colors z-20" aria-label="Imagen anterior">
             <svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                 <path d="m15 18-6-6 6-6"/>
             </svg>
         </button>
         
-        <button id="lightboxNext" class="absolute right-4 top-1/2 -translate-y-1/2 text-white p-3 hover:bg-white/10 rounded-full transition-colors z-20">
+        <button id="lightboxNext" class="absolute right-4 top-1/2 -translate-y-1/2 text-white p-5 hover:bg-white/10 rounded-full transition-colors z-20" aria-label="Siguiente imagen">
             <svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                 <path d="m9 18 6-6-6-6"/>
             </svg>

@@ -49,6 +49,17 @@ import Layout from "../layouts/Layout.astro";
                         </div>
                     </div>
                     <div>
+                        <label for="phone" class="sr-only">Teléfono</label>
+                        <input
+                            id="phone"
+                            name="phone"
+                            type="tel"
+                            required
+                            class="relative block w-full rounded-lg border-0 py-3 px-4 text-gray-900 ring-1 ring-inset ring-gray-300 placeholder:text-gray-400 focus:z-10 focus:ring-2 focus:ring-inset focus:ring-indigo-600 sm:text-sm sm:leading-6"
+                            placeholder="Teléfono"
+                        />
+                    </div>
+                    <div>
                         <label for="email-address" class="sr-only"
                             >Correo electrónico</label
                         >
@@ -62,7 +73,7 @@ import Layout from "../layouts/Layout.astro";
                             placeholder="Correo electrónico"
                         />
                     </div>
-                    <div>
+                    <div class="relative">
                         <label for="password" class="sr-only">Contraseña</label>
                         <input
                             id="password"
@@ -70,11 +81,36 @@ import Layout from "../layouts/Layout.astro";
                             type="password"
                             autocomplete="new-password"
                             required
-                            class="relative block w-full rounded-lg border-0 py-3 px-4 text-gray-900 ring-1 ring-inset ring-gray-300 placeholder:text-gray-400 focus:z-10 focus:ring-2 focus:ring-inset focus:ring-indigo-600 sm:text-sm sm:leading-6"
-                            placeholder="Contraseña"
+                            minlength="8"
+                            class="relative block w-full rounded-lg border-0 py-3 px-4 text-gray-900 ring-1 ring-inset ring-gray-300 placeholder:text-gray-400 focus:z-10 focus:ring-2 focus:ring-inset focus:ring-indigo-600 sm:text-sm sm:leading-6 pr-10"
+                            placeholder="Contraseña (mín. 8 caracteres)"
                         />
+                        <button
+                            type="button"
+                            class="absolute inset-y-0 right-0 pr-3 flex items-center toggle-password"
+                            data-target="password"
+                        >
+                            <svg
+                                class="h-5 w-5 text-gray-400"
+                                fill="none"
+                                viewBox="0 0 24 24"
+                                stroke="currentColor"
+                            >
+                                <path
+                                    stroke-linecap="round"
+                                    stroke-linejoin="round"
+                                    stroke-width="2"
+                                    d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path>
+                                <path
+                                    stroke-linecap="round"
+                                    stroke-linejoin="round"
+                                    stroke-width="2"
+                                    d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"
+                                ></path>
+                            </svg>
+                        </button>
                     </div>
-                    <div>
+                    <div class="relative">
                         <label for="password-confirm" class="sr-only"
                             >Confirmar Contraseña</label
                         >
@@ -83,9 +119,34 @@ import Layout from "../layouts/Layout.astro";
                             name="password-confirm"
                             type="password"
                             required
-                            class="relative block w-full rounded-lg border-0 py-3 px-4 text-gray-900 ring-1 ring-inset ring-gray-300 placeholder:text-gray-400 focus:z-10 focus:ring-2 focus:ring-inset focus:ring-indigo-600 sm:text-sm sm:leading-6"
+                            minlength="8"
+                            class="relative block w-full rounded-lg border-0 py-3 px-4 text-gray-900 ring-1 ring-inset ring-gray-300 placeholder:text-gray-400 focus:z-10 focus:ring-2 focus:ring-inset focus:ring-indigo-600 sm:text-sm sm:leading-6 pr-10"
                             placeholder="Confirmar contraseña"
                         />
+                        <button
+                            type="button"
+                            class="absolute inset-y-0 right-0 pr-3 flex items-center toggle-password"
+                            data-target="password-confirm"
+                        >
+                            <svg
+                                class="h-5 w-5 text-gray-400"
+                                fill="none"
+                                viewBox="0 0 24 24"
+                                stroke="currentColor"
+                            >
+                                <path
+                                    stroke-linecap="round"
+                                    stroke-linejoin="round"
+                                    stroke-width="2"
+                                    d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path>
+                                <path
+                                    stroke-linecap="round"
+                                    stroke-linejoin="round"
+                                    stroke-width="2"
+                                    d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"
+                                ></path>
+                            </svg>
+                        </button>
                     </div>
                 </div>
 
@@ -99,7 +160,7 @@ import Layout from "../layouts/Layout.astro";
                     />
                     <label for="terms" class="ml-2 block text-sm text-gray-900"
                         >Acepto los <a
-                            href="#"
+                            href="/terms"
                             class="text-indigo-600 hover:text-indigo-500"
                             >Términos y Condiciones</a
                         ></label
@@ -115,6 +176,195 @@ import Layout from "../layouts/Layout.astro";
                     </button>
                 </div>
             </form>
+
+            <div
+                id="errorMessage"
+                class="hidden mt-4 bg-red-50 text-red-500 text-sm p-4 rounded-lg"
+            >
+            </div>
+            <div
+                id="successMessage"
+                class="hidden mt-4 bg-green-50 text-green-500 text-sm p-4 rounded-lg"
+            >
+                Cuenta creada correctamente. Redirigiendo...
+            </div>
+
+            <script>
+                import { supabase } from "../lib/supabase";
+
+                const form = document.querySelector("form") as HTMLFormElement;
+                const errorMessage = document.getElementById("errorMessage");
+                const successMessage =
+                    document.getElementById("successMessage");
+                const submitBtn = form?.querySelector(
+                    "button[type='submit']",
+                ) as HTMLButtonElement;
+
+                // Password toggle logic
+                document
+                    .querySelectorAll(".toggle-password")
+                    .forEach((button) => {
+                        button.addEventListener("click", () => {
+                            const targetId = button.getAttribute("data-target");
+                            const input = document.getElementById(
+                                targetId!,
+                            ) as HTMLInputElement;
+                            if (input.type === "password") {
+                                input.type = "text";
+                                button.innerHTML = `
+                                <svg class="h-5 w-5 text-indigo-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13.875 18.825A10.05 10.05 0 0112 19c-4.478 0-8.268-2.943-9.543-7a9.97 9.97 0 011.563-3.029m5.858.908a3 3 0 114.243 4.243M9.878 9.878l4.242 4.242M9.88 9.88l-3.29-3.29m7.532 7.532l3.29 3.29M3 3l18 18" />
+                                </svg>
+                            `;
+                            } else {
+                                input.type = "password";
+                                button.innerHTML = `
+                                <svg class="h-5 w-5 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
+                                </svg>
+                            `;
+                            }
+                        });
+                    });
+
+                form?.addEventListener("submit", async (e) => {
+                    e.preventDefault();
+                    if (errorMessage) errorMessage.classList.add("hidden");
+                    if (submitBtn) {
+                        submitBtn.disabled = true;
+                        submitBtn.innerText = "Creando cuenta...";
+                    }
+
+                    const formData = new FormData(form);
+                    const firstName = formData.get("first-name") as string;
+                    const lastName = formData.get("last-name") as string;
+                    const phone = formData.get("phone") as string;
+                    const email = formData.get("email") as string;
+                    const password = formData.get("password") as string;
+                    const passwordConfirm = formData.get(
+                        "password-confirm",
+                    ) as string;
+                    const terms = formData.get("terms");
+
+                    // Validations
+                    if (password.length < 8) {
+                        if (errorMessage) {
+                            errorMessage.innerText =
+                                "La contraseña debe tener al menos 8 caracteres.";
+                            errorMessage.classList.remove("hidden");
+                        }
+                        resetButton();
+                        return;
+                    }
+
+                    if (password !== passwordConfirm) {
+                        if (errorMessage) {
+                            errorMessage.innerText =
+                                "Las contraseñas no coinciden.";
+                            errorMessage.classList.remove("hidden");
+                        }
+                        resetButton();
+                        return;
+                    }
+
+                    if (!terms) {
+                        if (errorMessage) {
+                            errorMessage.innerText =
+                                "Debes aceptar los Términos y Condiciones.";
+                            errorMessage.classList.remove("hidden");
+                        }
+                        resetButton();
+                        return;
+                    }
+
+                    try {
+                        // 1. Sign Up
+                        const { data: authData, error: authError } =
+                            await supabase.auth.signUp({
+                                email,
+                                password,
+                                options: {
+                                    data: {
+                                        first_name: firstName,
+                                        last_name: lastName,
+                                        phone: phone,
+                                    },
+                                },
+                            });
+
+                        if (authError) {
+                            // Map specific Supabase errors to Spanish
+                            let userMsg = authError.message;
+                            if (
+                                authError.message.includes(
+                                    "User already registered",
+                                )
+                            ) {
+                                userMsg =
+                                    "Este correo electrónico ya está registrado.";
+                            } else if (
+                                authError.message.includes(
+                                    "Password should be at least 6 characters",
+                                )
+                            ) {
+                                userMsg =
+                                    "La contraseña debe tener al menos 8 caracteres.";
+                            }
+                            throw new Error(userMsg);
+                        }
+
+                        if (authData.user) {
+                            // 2. Upsert into users table
+                            const { error: dbError } = await supabase
+                                .from("users")
+                                .upsert([
+                                    {
+                                        id: authData.user.id,
+                                        email: email,
+                                        first_name: firstName,
+                                        last_name: lastName,
+                                        phone: phone,
+                                        role: "user",
+                                    },
+                                ]);
+
+                            if (dbError)
+                                throw new Error(
+                                    "Error creando el perfil: " +
+                                        dbError.message,
+                                );
+
+                            // 3. Associate previous guest orders if any
+                            await supabase.rpc("associate_user_orders", {
+                                user_uuid: authData.user.id,
+                                user_email: email,
+                            });
+
+                            if (successMessage)
+                                successMessage.classList.remove("hidden");
+
+                            setTimeout(() => {
+                                window.location.href = "/";
+                            }, 2000);
+                        }
+                    } catch (error: any) {
+                        console.error("Error:", error);
+                        if (errorMessage) {
+                            errorMessage.innerText = error.message;
+                            errorMessage.classList.remove("hidden");
+                        }
+                        resetButton();
+                    }
+                });
+
+                function resetButton() {
+                    if (submitBtn) {
+                        submitBtn.disabled = false;
+                        submitBtn.innerText = "Crear Cuenta";
+                    }
+                }
+            </script>
         </div>
     </div>
 </Layout>

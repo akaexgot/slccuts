@@ -16,15 +16,25 @@ export default function CheckoutPage() {
     });
     const [touched, setTouched] = useState<Record<string, boolean>>({});
     const [isProcessing, setIsProcessing] = useState(false);
+    const [promoCode, setPromoCode] = useState('');
+    const [promoDiscount, setPromoDiscount] = useState(0);
+    const [promoError, setPromoError] = useState('');
+    const [toast, setToast] = useState<{ message: string; type: 'error' | 'success' } | null>(null);
 
     const total = items.reduce((sum, item) => sum + item.price * item.quantity, 0);
     const shippingCost = (method === 'pickup' || total >= SHIPPING_THRESHOLD) ? 0 : SHIPPING_COST;
+    const finalTotal = total + shippingCost - promoDiscount;
 
     const formatPrice = (price: number) => {
         return new Intl.NumberFormat("es-ES", {
             style: "currency",
             currency: "EUR",
         }).format(price / 100);
+    };
+
+    const showToast = (message: string, type: 'error' | 'success') => {
+        setToast({ message, type });
+        setTimeout(() => setToast(null), 5000);
     };
 
     const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -63,6 +73,72 @@ export default function CheckoutPage() {
         return '';
     };
 
+    const validatePromoCode = async (code: string) => {
+        if (!code.trim()) {
+            setPromoDiscount(0);
+            setPromoError('');
+            return;
+        }
+
+        try {
+            const { supabase } = await import('../../lib/supabase');
+            const { data: promo, error } = await supabase
+                .from('promo_codes')
+                .select('*')
+                .eq('code', code.toUpperCase())
+                .eq('active', true)
+                .single();
+
+            if (error || !promo) {
+                setPromoError('Código no válido');
+                setPromoDiscount(0);
+                return;
+            }
+
+            // Validate dates
+            const now = new Date();
+            const validFrom = promo.valid_from ? new Date(promo.valid_from) : null;
+            const validUntil = promo.valid_until ? new Date(promo.valid_until) : null;
+
+            const isDateValid =
+                (!validFrom || now >= validFrom) &&
+                (!validUntil || now <= validUntil);
+
+            // Validate usage limit
+            const isUsageLimitValid =
+                !promo.usage_limit ||
+                (promo.times_used || 0) < promo.usage_limit;
+
+            if (!isDateValid) {
+                setPromoError('Código expirado');
+                setPromoDiscount(0);
+                return;
+            }
+
+            if (!isUsageLimitValid) {
+                setPromoError('Código agotado');
+                setPromoDiscount(0);
+                return;
+            }
+
+            // Calculate discount
+            let discount = 0;
+            if (promo.discount_type === 'percent') {
+                discount = Math.round(total * (promo.discount_value / 100));
+            } else {
+                // Fixed amount (stored in cents)
+                discount = promo.discount_value;
+            }
+
+            setPromoDiscount(discount);
+            setPromoError('');
+        } catch (err) {
+            console.error('Error validating promo code:', err);
+            setPromoError('Error al validar código');
+            setPromoDiscount(0);
+        }
+    };
+
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
 
@@ -77,7 +153,7 @@ export default function CheckoutPage() {
         });
 
         if (hasErrors) {
-            alert('Por favor, corrige los errores en el formulario');
+            showToast('Por favor, completa todos los campos requeridos correctamente', 'error');
             return;
         }
 
@@ -87,8 +163,11 @@ export default function CheckoutPage() {
             const { supabase } = await import('../../lib/supabase');
 
             // 1. Create Order
+            const { data: { session } } = await supabase.auth.getSession();
+
             const orderData = {
-                total_amount: Math.round(total + shippingCost),
+                user_id: session?.user?.id || null, // Link to user if logged in
+                customer_email: formData.email, // Explicitly save email for guest lookup
                 total_price: Math.round(total + shippingCost),
                 payment_method: method === 'pickup' ? pickupPayment : 'online',
                 shipping_method: method,
@@ -136,6 +215,9 @@ export default function CheckoutPage() {
             const { clearCart } = await import('../../store/cartStore');
 
             if (isOnlinePayment) {
+                // Get promo code
+                const finalPromoCode = promoCode.trim() || undefined;
+
                 // Redirect to Stripe
                 const response = await fetch('/api/create-checkout-session', {
                     method: 'POST',
@@ -155,7 +237,8 @@ export default function CheckoutPage() {
                         ],
                         orderId: order.id,
                         customerEmail: formData.email,
-                        shippingMethod: method
+                        shippingMethod: method,
+                        promoCode: finalPromoCode
                     }),
                 });
 
@@ -186,7 +269,7 @@ export default function CheckoutPage() {
 
         } catch (error: any) {
             console.error('Error creating order:', error);
-            alert(`Error: ${error.message || 'Error desconocido'}`);
+            showToast(error.message || 'Error al procesar el pedido. Por favor, inténtalo de nuevo.', 'error');
             setIsProcessing(false);
         }
     };
@@ -203,6 +286,27 @@ export default function CheckoutPage() {
 
     return (
         <div className="container mx-auto px-4 py-12 max-w-6xl relative">
+            {/* Toast Notification */}
+            {toast && (
+                <div className={`fixed top-20 right-8 z-50 px-6 py-4 rounded-lg shadow-2xl border flex items-center gap-3 animate-in slide-in-from-right duration-300 ${toast.type === 'error'
+                    ? 'bg-red-50 border-red-200 text-red-800'
+                    : 'bg-green-50 border-green-200 text-green-800'
+                    }`}>
+                    {toast.type === 'error' ? (
+                        <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                            <circle cx="12" cy="12" r="10"></circle>
+                            <line x1="12" y1="8" x2="12" y2="12"></line>
+                            <line x1="12" y1="16" x2="12.01" y2="16"></line>
+                        </svg>
+                    ) : (
+                        <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                            <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"></path>
+                            <polyline points="22 4 12 14.01 9 11.01"></polyline>
+                        </svg>
+                    )}
+                    <span className="font-medium text-sm">{toast.message}</span>
+                </div>
+            )}
             {isProcessing && (
                 <div className="fixed inset-0 z-50 bg-white/80 backdrop-blur-sm flex flex-col items-center justify-center animate-in fade-in duration-300">
                     <div className="w-16 h-16 border-4 border-black border-t-transparent rounded-full animate-spin mb-6"></div>
@@ -486,11 +590,43 @@ export default function CheckoutPage() {
                                 <span>Envío</span>
                                 <span>{shippingCost === 0 ? 'Gratis' : formatPrice(shippingCost)}</span>
                             </div>
+                            {promoDiscount > 0 && (
+                                <div className="flex justify-between text-green-600 font-bold">
+                                    <span>Descuento ({promoCode})</span>
+                                    <span>-{formatPrice(promoDiscount)}</span>
+                                </div>
+                            )}
                             <div className="flex justify-between text-xl font-bold pt-2 text-gray-900">
                                 <span>Total</span>
-                                <span>{formatPrice(total + shippingCost)}</span>
+                                <span>{formatPrice(finalTotal)}</span>
                             </div>
                         </div>
+
+                        {/* Promo Code Input */}
+                        {(method === 'delivery' || pickupPayment === 'online') && (
+                            <div className="mt-6 pt-4 border-t border-gray-200">
+                                <label className="block text-sm font-bold mb-2">¿Tienes un código promocional?</label>
+                                <div className="flex gap-2">
+                                    <input
+                                        type="text"
+                                        value={promoCode}
+                                        onChange={(e) => setPromoCode(e.target.value.toUpperCase())}
+                                        placeholder="DESCUENTO20"
+                                        className="flex-1 px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-black uppercase font-mono"
+                                        maxLength={20}
+                                    />
+                                    <button
+                                        type="button"
+                                        onClick={() => validatePromoCode(promoCode)}
+                                        className="px-4 py-2 bg-gray-800 text-white text-xs font-bold rounded-lg hover:bg-black transition-colors uppercase tracking-wider"
+                                    >
+                                        Aplicar
+                                    </button>
+                                </div>
+                                {promoError && <p className="text-red-500 text-xs mt-1">{promoError}</p>}
+                                {promoDiscount > 0 && <p className="text-green-600 text-xs mt-1">✓ Código aplicado</p>}
+                            </div>
+                        )}
 
                         <button
                             onClick={(e) => {

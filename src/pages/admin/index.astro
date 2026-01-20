@@ -1753,9 +1753,14 @@ const visitsValues = Object.values(visitsByDay);
                 newsHiddenUrlInput.value = publicUrl;
                 newsPreviewImg.src = publicUrl;
                 newsPreviewContainer?.classList.remove("hidden");
+                window.showToast(
+                    "Éxito",
+                    "Imagen subida correctamente",
+                    "success",
+                );
             } catch (error) {
                 console.error("Full upload error:", error);
-                alert("Error al subir la imagen");
+                window.showToast("Error", "Error al subir la imagen", "error");
                 newsDropZone?.classList.remove("hidden");
             } finally {
                 newsProgress?.classList.add("hidden");
@@ -1787,11 +1792,15 @@ const visitsValues = Object.values(visitsByDay);
                 const { error } = await supabase.from("news").insert([data]);
                 if (error) throw error;
 
-                showToast("¡Noticia publicada correctamente!");
+                window.showToast("¡Noticia publicada correctamente!");
                 setTimeout(() => window.location.reload(), 1500);
             } catch (error) {
                 console.error("Database Error:", error);
-                alert("Error al guardar la noticia");
+                window.showToast(
+                    "Error",
+                    "Error al guardar la noticia",
+                    "error",
+                );
                 newsSubmitBtn.disabled = false;
                 newsSubmitBtn.innerText = "Publicar Ahora";
             }

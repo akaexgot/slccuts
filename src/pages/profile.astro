@@ -1,0 +1,255 @@
+---
+import Layout from "../layouts/Layout.astro";
+import MosaicBackground from "../components/ui/MosaicBackground.astro";
+---
+
+<Layout title="Mi Perfil">
+    <div class="relative py-8 min-h-[80vh] overflow-hidden">
+        <MosaicBackground mode="light" opacity="opacity-[0.03]" />
+
+        <div class="container mx-auto px-4 max-w-2xl relative z-10">
+            <h1 class="text-3xl font-bold font-chomsky tracking-widest mb-8">
+                Mi Perfil
+            </h1>
+
+            <div id="loading" class="text-center py-12">
+                <p class="text-gray-500">Cargando información del perfil...</p>
+            </div>
+
+            <div id="profile-content" class="hidden space-y-8">
+                <!-- Info Personal -->
+                <div
+                    class="bg-white p-6 rounded-lg shadow-sm border border-gray-100"
+                >
+                    <h2 class="text-xl font-bold mb-6">Información Personal</h2>
+                    <form id="profile-form" class="space-y-4">
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                            <div>
+                                <label
+                                    class="block text-sm font-medium text-gray-700 mb-1"
+                                    >Nombre</label
+                                >
+                                <input
+                                    type="text"
+                                    name="first_name"
+                                    class="w-full rounded-md border-gray-300 shadow-sm focus:border-black focus:ring-black"
+                                />
+                            </div>
+                            <div>
+                                <label
+                                    class="block text-sm font-medium text-gray-700 mb-1"
+                                    >Apellidos</label
+                                >
+                                <input
+                                    type="text"
+                                    name="last_name"
+                                    class="w-full rounded-md border-gray-300 shadow-sm focus:border-black focus:ring-black"
+                                />
+                            </div>
+                        </div>
+
+                        <div>
+                            <label
+                                class="block text-sm font-medium text-gray-700 mb-1"
+                                >Email</label
+                            >
+                            <input
+                                type="email"
+                                name="email"
+                                disabled
+                                class="w-full rounded-md border-gray-300 bg-gray-50 text-gray-500 shadow-sm cursor-not-allowed"
+                            />
+                        </div>
+
+                        <div>
+                            <label
+                                class="block text-sm font-medium text-gray-700 mb-1"
+                                >Teléfono</label
+                            >
+                            <input
+                                type="tel"
+                                name="phone"
+                                placeholder="+34 600 000 000"
+                                class="w-full rounded-md border-gray-300 shadow-sm focus:border-black focus:ring-black"
+                            />
+                        </div>
+
+                        <div
+                            class="pt-4 border-t border-gray-100 flex justify-end"
+                        >
+                            <button
+                                type="submit"
+                                id="save-btn"
+                                class="bg-black text-white px-6 py-2 rounded-md hover:bg-gray-800 transition-colors disabled:opacity-50"
+                            >
+                                Guardar Cambios
+                            </button>
+                        </div>
+                        <div
+                            id="form-message"
+                            class="hidden text-center text-sm font-medium mt-2"
+                        >
+                        </div>
+                    </form>
+                </div>
+            </div>
+
+            <div id="auth-check-failed" class="hidden text-center py-12">
+                <p class="text-gray-600 mb-4">
+                    Debes iniciar sesión para ver esta página.
+                </p>
+                <a
+                    href="/login"
+                    class="inline-block bg-black text-white px-6 py-2 rounded-md hover:bg-gray-800"
+                    >Iniciar Sesión</a
+                >
+            </div>
+        </div>
+
+        <script>
+            import { supabase } from "../lib/supabase";
+
+            const loading = document.getElementById("loading");
+            const content = document.getElementById("profile-content");
+            const authFailed = document.getElementById("auth-check-failed");
+            const form = document.getElementById(
+                "profile-form",
+            ) as HTMLFormElement;
+            const msg = document.getElementById("form-message");
+            const saveBtn = document.getElementById(
+                "save-btn",
+            ) as HTMLButtonElement;
+
+            let userId: string | null = null;
+
+            async function loadProfile() {
+                const {
+                    data: { session },
+                } = await supabase.auth.getSession();
+
+                if (!session) {
+                    loading?.classList.add("hidden");
+                    authFailed?.classList.remove("hidden");
+                    return;
+                }
+
+                userId = session.user.id;
+
+                // Fetch profile data
+                const { data: profile, error } = await supabase
+                    .from("users")
+                    .select("*")
+                    .eq("id", userId)
+                    .single();
+
+                if (error && error.code !== "PGRST116") {
+                    // PGRST116 is 'not found' which might happen if sync failed
+                    console.error("Error fetching profile:", error);
+                }
+
+                // Fill form
+                if (form) {
+                    (
+                        form.querySelector('[name="email"]') as HTMLInputElement
+                    ).value = session.user.email || "";
+                    if (profile) {
+                        (
+                            form.querySelector(
+                                '[name="first_name"]',
+                            ) as HTMLInputElement
+                        ).value = profile.first_name || "";
+                        (
+                            form.querySelector(
+                                '[name="last_name"]',
+                            ) as HTMLInputElement
+                        ).value = profile.last_name || "";
+                        (
+                            form.querySelector(
+                                '[name="phone"]',
+                            ) as HTMLInputElement
+                        ).value = profile.phone || "";
+                    } else {
+                        // Try metadata if no profile record
+                        (
+                            form.querySelector(
+                                '[name="first_name"]',
+                            ) as HTMLInputElement
+                        ).value = session.user.user_metadata.first_name || "";
+                        (
+                            form.querySelector(
+                                '[name="last_name"]',
+                            ) as HTMLInputElement
+                        ).value = session.user.user_metadata.last_name || "";
+                    }
+                }
+
+                loading?.classList.add("hidden");
+                content?.classList.remove("hidden");
+            }
+
+            form?.addEventListener("submit", async (e) => {
+                e.preventDefault();
+                const {
+                    data: { session },
+                } = await supabase.auth.getSession();
+                if (!session) return;
+
+                userId = session.user.id;
+                saveBtn.disabled = true;
+                saveBtn.textContent = "Guardando...";
+                if (msg) msg.classList.add("hidden");
+
+                const formData = new FormData(form);
+                const updates = {
+                    id: userId,
+                    email: session.user.email, // Include email to satisfy NOT NULL constraint
+                    first_name: formData.get("first_name"),
+                    last_name: formData.get("last_name"),
+                    phone: formData.get("phone"),
+                    updated_at: new Date().toISOString(),
+                };
+
+                const { error } = await supabase.from("users").upsert(updates);
+
+                if (error) {
+                    if (msg) {
+                        msg.textContent = "Error al guardar: " + error.message;
+                        msg.className =
+                            "text-center text-sm font-medium mt-2 text-red-600";
+                        msg.classList.remove("hidden");
+                    }
+                } else {
+                    if (msg) {
+                        msg.textContent = "Perfil actualizado correctamente";
+                        msg.className =
+                            "text-center text-sm font-medium mt-2 text-green-600";
+                        msg.classList.remove("hidden");
+                    }
+
+                    // Update header info if it changed
+                    const userNameDisplay =
+                        document.getElementById("user-name-display");
+                    const userInitials =
+                        document.getElementById("user-initials");
+
+                    if (userNameDisplay) {
+                        userNameDisplay.textContent =
+                            updates.first_name as string;
+                    }
+                    if (userInitials && updates.first_name) {
+                        userInitials.textContent = (
+                            updates.first_name as string
+                        )
+                            .charAt(0)
+                            .toUpperCase();
+                    }
+                }
+
+                saveBtn.disabled = false;
+                saveBtn.textContent = "Guardando Cambios";
+            });
+
+            loadProfile();
+        </script>
+    </div>
+</Layout>

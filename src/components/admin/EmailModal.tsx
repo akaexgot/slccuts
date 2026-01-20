@@ -126,11 +126,15 @@ export default function EmailModal() {
             } else {
                 const error = await response.json();
                 console.error('Error sending email:', error);
-                alert('Error al enviar el email: ' + (error.error || 'Error desconocido'));
+                if (typeof window !== 'undefined' && (window as any).showToast) {
+                    (window as any).showToast('Error', 'Error al enviar el email: ' + (error.error || 'Error desconocido'), 'error');
+                }
             }
         } catch (error) {
             console.error('Network error sending email:', error);
-            alert('Error de red al enviar el email');
+            if (typeof window !== 'undefined' && (window as any).showToast) {
+                (window as any).showToast('Error', 'Error de red al enviar el email', 'error');
+            }
         } finally {
             setIsSending(false);
         }

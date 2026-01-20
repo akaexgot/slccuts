@@ -495,6 +495,14 @@ const formatDate = (dateString: string) => {
                                                 📞
                                             </a>
                                         )}
+                                        <a
+                                            href={`/admin/orders/invoice/${order.id}`}
+                                            target="_blank"
+                                            class="flex-1 h-12 flex items-center justify-center rounded-2xl bg-white/5 hover:bg-white text-white hover:text-black transition-all duration-300 border border-white/5 text-xl shadow-lg hover:shadow-white/10 active:scale-95"
+                                            title="Descargar Factura"
+                                        >
+                                            📄
+                                        </a>
                                         <button
                                             data-email={
                                                 contact.email ||

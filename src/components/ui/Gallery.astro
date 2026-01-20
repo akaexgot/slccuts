@@ -21,7 +21,7 @@ const fallbackImages = [
     },
     {
         image_url:
-            "https://images.unsplash.com/photo-1503951914290-934c4881524e?auto=format&fit=crop&q=80&w=800",
+            "https://images.unsplash.com/photo-1516733725897-1aa73b87c8e8",
     },
     {
         image_url:
@@ -33,7 +33,19 @@ const fallbackImages = [
     },
 ];
 
-const displayImages = images && images.length > 0 ? images : fallbackImages;
+const cleanUrl = (url: string) => {
+    if (url && url.includes("?")) {
+        return url.split("?")[0];
+    }
+    return url;
+};
+
+const displayImages = (
+    images && images.length > 0 ? images : fallbackImages
+).map((img: any) => ({
+    ...img,
+    image_url: cleanUrl(img.image_url),
+}));
 ---
 
 <div class="w-full relative group">
@@ -49,8 +61,8 @@ const displayImages = images && images.length > 0 ? images : fallbackImages;
                         src={img.image_url}
                         alt={img.alt_text || "Galería SLC CUTS"}
                         title={img.description || ""}
-                        width={800}
-                        height={800}
+                        width={600}
+                        height={600}
                         class="w-full h-full object-cover transform hover:scale-110 transition-transform duration-700"
                         loading="lazy"
                     />
