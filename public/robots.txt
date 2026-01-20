@@ -1,0 +1,3 @@
+User-agent: *
+Allow: /
+Sitemap: https://slccuts_byjoaquinrivera.victoriafp.online/sitemap-index.xml
