@@ -196,7 +196,7 @@ if (popupsEnabled) {
                 <div class="flex items-center gap-6 text-gray-900">
                     <a
                         href="/contact"
-                        class="p-2 hover:text-gray-600 transition-colors"
+                        class="p-2 hover:text-gray-600 transition-colors hidden md:block"
                         aria-label="Contactar por teléfono"
                     >
                         <svg
@@ -216,7 +216,7 @@ if (popupsEnabled) {
                         >
                     </a>
                     <!-- User Icon -->
-                    <div class="relative">
+                    <div class="relative hidden md:block">
                         <button
                             id="user-menu-btn"
                             class="p-2 hover:text-gray-600 transition-colors focus:outline-none"
@@ -594,6 +594,70 @@ if (popupsEnabled) {
                 // Hide initials if not logged in (though button redirects anyway)
                 toggleDropdown(false);
             }
+
+            // Mobile Auth Logic
+            const mobileUserInfo = document.getElementById("mobile-user-info");
+            const mobileAuthButtons = document.getElementById(
+                "mobile-auth-buttons",
+            );
+            const mobileUserInitials = document.getElementById(
+                "mobile-user-initials",
+            );
+            const mobileUserName = document.getElementById("mobile-user-name");
+            const mobileAdminLink =
+                document.getElementById("mobile-admin-link");
+            const mobileLogoutBtn =
+                document.getElementById("mobile-logout-btn");
+
+            if (session) {
+                // Show User Info, Hide Auth Buttons
+                if (mobileUserInfo) mobileUserInfo.classList.remove("hidden");
+                if (mobileAuthButtons)
+                    mobileAuthButtons.classList.add("hidden");
+
+                // Update Name
+                const { user } = session;
+                const metadata = user.user_metadata;
+                let firstName = "Usuario";
+
+                if (metadata && (metadata.first_name || metadata.full_name)) {
+                    firstName = metadata.first_name || metadata.full_name;
+                }
+
+                // We could fetch profile here too if metadata is missing, but reusing the Desktop logic's fetch if possible
+                // For simplicity, we'll rely on what we have or refactor slightly.
+                // Re-using the profile fetch from above would be cleaner but let's just duplicate the check or move it up.
+                // Let's assume the earlier fetch ran.
+
+                if (mobileUserName) mobileUserName.textContent = firstName;
+                if (mobileUserInitials)
+                    mobileUserInitials.textContent = firstName
+                        .charAt(0)
+                        .toUpperCase();
+
+                // Check Admin
+                const { data: profile } = await supabase
+                    .from("users")
+                    .select("role")
+                    .eq("id", user.id)
+                    .single(); // This is redundant but safe
+
+                if (profile?.role?.toLowerCase().trim() === "admin") {
+                    if (mobileAdminLink)
+                        mobileAdminLink.classList.remove("hidden");
+                }
+
+                // Mobile Logout
+                mobileLogoutBtn?.addEventListener("click", async () => {
+                    await supabase.auth.signOut();
+                    window.location.href = "/";
+                });
+            } else {
+                // Show Auth Buttons, Hide User Info
+                if (mobileUserInfo) mobileUserInfo.classList.add("hidden");
+                if (mobileAuthButtons)
+                    mobileAuthButtons.classList.remove("hidden");
+            }
         }
 
         initAuth();
@@ -957,6 +1021,71 @@ if (popupsEnabled) {
                             y2="18"></line></svg
                     >
                 </button>
+            </div>
+
+            <!-- Mobile User Section -->
+            <div class="px-6 py-6 border-b border-gray-100 bg-gray-50/50">
+                <!-- User Info (Hidden by default) -->
+                <div id="mobile-user-info" class="hidden">
+                    <div class="flex items-center gap-3 mb-4">
+                        <div
+                            class="w-10 h-10 rounded-full bg-black text-white flex items-center justify-center font-bold shadow-sm"
+                            id="mobile-user-initials"
+                        >
+                            U
+                        </div>
+                        <div>
+                            <p
+                                class="text-[10px] uppercase tracking-widest text-gray-500 font-bold"
+                            >
+                                Bienvenido
+                            </p>
+                            <p
+                                class="font-bold text-gray-900 leading-tight"
+                                id="mobile-user-name"
+                            >
+                                Usuario
+                            </p>
+                        </div>
+                    </div>
+                    <div class="grid grid-cols-2 gap-2">
+                        <a
+                            href="/profile"
+                            class="text-xs font-bold uppercase tracking-wider text-center py-2.5 bg-white border border-gray-200 rounded-xl hover:border-black transition-colors"
+                            >Perfil</a
+                        >
+                        <a
+                            href="/orders"
+                            class="text-xs font-bold uppercase tracking-wider text-center py-2.5 bg-white border border-gray-200 rounded-xl hover:border-black transition-colors"
+                            >Pedidos</a
+                        >
+                    </div>
+                    <a
+                        href="/admin"
+                        id="mobile-admin-link"
+                        class="hidden mt-2 block w-full text-xs font-bold uppercase tracking-wider text-center py-2.5 bg-indigo-50 text-indigo-700 rounded-xl border border-indigo-100"
+                        >Panel Admin</a
+                    >
+                    <button
+                        id="mobile-logout-btn"
+                        class="mt-2 w-full text-xs font-bold uppercase tracking-wider text-center py-2.5 text-red-600 hover:bg-red-50 rounded-xl transition-colors"
+                        >Cerrar Sesión</button
+                    >
+                </div>
+
+                <!-- Login/Register (Shown by default) -->
+                <div id="mobile-auth-buttons" class="flex gap-3">
+                    <a
+                        href="/login"
+                        class="flex-1 text-center py-3 bg-black text-white text-xs font-bold uppercase tracking-widest rounded-xl hover:bg-gray-800 transition-colors"
+                        >Entrar</a
+                    >
+                    <a
+                        href="/login?tab=register"
+                        class="flex-1 text-center py-3 bg-white border border-black text-black text-xs font-bold uppercase tracking-widest rounded-xl hover:bg-gray-50 transition-colors"
+                        >Registro</a
+                    >
+                </div>
             </div>
 
             <nav
