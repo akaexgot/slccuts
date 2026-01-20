@@ -21,5 +21,8 @@ export default defineConfig({
   integrations: [react()],
   image: {
     domains: ["images.unsplash.com", "fwecgvsfbxzzobjkklul.supabase.co"]
+  },
+  security: {
+    checkOrigin: false
   }
 });
