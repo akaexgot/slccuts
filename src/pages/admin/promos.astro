@@ -138,7 +138,9 @@ if (error) {
                                             <button
                                                 data-promo-id={promo.id}
                                                 data-promo-code={promo.code}
-                                                data-promo-type={promo.discount_type}
+                                                data-promo-type={
+                                                    promo.discount_type
+                                                }
                                                 data-promo-value={
                                                     promo.discount_type ===
                                                     "fixed"
@@ -146,9 +148,15 @@ if (error) {
                                                           100
                                                         : promo.discount_value
                                                 }
-                                                data-promo-from={promo.valid_from}
-                                                data-promo-until={promo.valid_until}
-                                                data-promo-limit={promo.usage_limit}
+                                                data-promo-from={
+                                                    promo.valid_from
+                                                }
+                                                data-promo-until={
+                                                    promo.valid_until
+                                                }
+                                                data-promo-limit={
+                                                    promo.usage_limit
+                                                }
                                                 class="edit-promo-btn text-blue-400 hover:text-blue-300 transition-colors p-2"
                                                 title="Editar código"
                                             >
@@ -163,10 +171,8 @@ if (error) {
                                                     stroke-linecap="round"
                                                     stroke-linejoin="round"
                                                 >
-                                                    <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"
-                                                    ></path>
-                                                    <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"
-                                                    ></path>
+                                                    <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7" />
+                                                    <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z" />
                                                 </svg>
                                             </button>
                                             <button
@@ -460,19 +466,16 @@ if (error) {
 
         // Open Modal
         openBtn?.addEventListener("click", () => {
-            if (modal && modalContent) {
-                modal.classList.remove("pointer-events-none", "opacity-0");
-                modalContent.classList.remove("scale-95");
-            if (modal && modalContent) {
-                // Reset for Create mode
-                isEditing = false;
-                editingId = null;
-                form.reset();
-                if (modalTitle) modalTitle.textContent = "Crear Código Promocional";
-                if (submitBtnText) submitBtnText.textContent = "Crear Código";
-                (document.getElementById("code") as HTMLInputElement).disabled =
-                    false;
+            // Reset for Create mode
+            isEditing = false;
+            editingId = null;
+            form.reset();
+            if (modalTitle) modalTitle.textContent = "Crear Código Promocional";
+            if (submitBtnText) submitBtnText.textContent = "Crear Código";
+            (document.getElementById("code") as HTMLInputElement).disabled =
+                false;
 
+            if (modal && modalContent) {
                 modal.classList.remove("pointer-events-none", "opacity-0");
                 modalContent.classList.remove("scale-95");
                 modalContent.classList.add("scale-100");
@@ -665,16 +668,20 @@ if (error) {
                 (
                     document.getElementById("discountValue") as HTMLInputElement
                 ).value = value || "";
-                (document.getElementById("validFrom") as HTMLInputElement).value =
-                    from || "";
-                (document.getElementById("validUntil") as HTMLInputElement).value =
-                    until || "";
-                (document.getElementById("usageLimit") as HTMLInputElement).value =
-                    limit || "";
+                (
+                    document.getElementById("validFrom") as HTMLInputElement
+                ).value = from || "";
+                (
+                    document.getElementById("validUntil") as HTMLInputElement
+                ).value = until || "";
+                (
+                    document.getElementById("usageLimit") as HTMLInputElement
+                ).value = limit || "";
 
                 if (modalTitle)
                     modalTitle.textContent = "Editar Código Promocional";
-                if (submitBtnText) submitBtnText.textContent = "Actualizar Código";
+                if (submitBtnText)
+                    submitBtnText.textContent = "Actualizar Código";
 
                 if (modal && modalContent) {
                     modal.classList.remove("pointer-events-none", "opacity-0");
