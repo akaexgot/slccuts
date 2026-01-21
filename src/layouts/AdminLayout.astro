@@ -10,6 +10,31 @@ interface Props {
 
 const { title, activeSection = "dashboard" } = Astro.props;
 
+// Fetch feature settings
+const { data: featureSettings } = await supabase
+    .from("settings")
+    .select("*")
+    .in("key", [
+        "feature_news_enabled",
+        "feature_promos_enabled",
+        "feature_gallery_enabled",
+        "feature_popups_enabled",
+        "feature_newsletter_enabled",
+    ]);
+
+const getFeatureSetting = (key: string) => {
+    const setting = featureSettings?.find((s: any) => s.key === key);
+    return setting ? setting.value : true;
+};
+
+const features = {
+    news: getFeatureSetting("feature_news_enabled"),
+    promos: getFeatureSetting("feature_promos_enabled"),
+    gallery: getFeatureSetting("feature_gallery_enabled"),
+    popups: getFeatureSetting("feature_popups_enabled"),
+    newsletter: getFeatureSetting("feature_newsletter_enabled"),
+};
+
 // Server-side Auth Check
 
 const navItems = [
@@ -64,6 +89,25 @@ const navItems = [
         icon: "newspaper",
     },
 ];
+
+// Filter navItems based on feature settings
+const featureToNavIdMap: Record<string, string> = {
+    news: "news",
+    promos: "promos",
+    gallery: "gallery",
+    popups: "popups",
+    newsletter: "newsletter",
+};
+
+const filteredNavItems = navItems.filter((item) => {
+    const featureKey = Object.keys(featureToNavIdMap).find(
+        (key) => featureToNavIdMap[key] === item.id,
+    );
+    if (featureKey) {
+        return features[featureKey as keyof typeof features];
+    }
+    return true; // Keep items not related to features (dashboard, products, orders, etc.)
+});
 ---
 
 <!doctype html>
@@ -128,7 +172,7 @@ const navItems = [
             <nav class="flex-1 py-6">
                 <ul class="space-y-1 px-3">
                     {
-                        navItems.map((item) => (
+                        filteredNavItems.map((item) => (
                             <li>
                                 <a
                                     href={item.href}

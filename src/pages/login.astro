@@ -177,8 +177,12 @@ import Layout from "../layouts/Layout.astro";
 
                         console.log("Sesión iniciada correctamente.");
 
-                        // All users go to home page
-                        window.location.href = "/";
+                        // Redirect based on role
+                        if (profile?.role === "admin") {
+                            window.location.href = "/admin";
+                        } else {
+                            window.location.href = "/";
+                        }
                         return;
                     }
                 } catch (error: any) {

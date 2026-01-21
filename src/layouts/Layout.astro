@@ -27,6 +27,13 @@ const newsletterEnabled =
 const popupsEnabled =
     settings?.find((s: any) => s.key === "popups_enabled")?.value ?? true;
 
+// Feature toggles for public site
+const galleryEnabled =
+    settings?.find((s: any) => s.key === "feature_gallery_enabled")?.value ??
+    true;
+const newsEnabled =
+    settings?.find((s: any) => s.key === "feature_news_enabled")?.value ?? true;
+
 // Fetch latest active popup if enabled
 let latestPopup = null;
 if (popupsEnabled) {
@@ -169,15 +176,26 @@ if (popupsEnabled) {
                         class="hover:text-gray-600 transition-colors"
                         >Productos</a
                     >
-                    <a
-                        href="/gallery"
-                        class="hover:text-gray-600 transition-colors">Galería</a
-                    >
-                    <a
-                        href="/news"
-                        class="hover:text-gray-600 transition-colors"
-                        >Noticias</a
-                    >
+                    {
+                        galleryEnabled && (
+                            <a
+                                href="/gallery"
+                                class="hover:text-gray-600 transition-colors"
+                            >
+                                Galería
+                            </a>
+                        )
+                    }
+                    {
+                        newsEnabled && (
+                            <a
+                                href="/news"
+                                class="hover:text-gray-600 transition-colors"
+                            >
+                                Noticias
+                            </a>
+                        )
+                    }
                     <a
                         href="/services"
                         class="bg-black text-white px-6 py-3 rounded-lg text-xs md:text-sm font-bold uppercase tracking-widest hover:bg-gray-800 transition-colors"
@@ -701,19 +719,30 @@ if (popupsEnabled) {
                             >Ofertas</a
                         >
                     </li>
-                    <li>
-                        <a
-                            href="/gallery"
-                            class="hover:text-white transition-colors"
-                            >Galería</a
-                        >
-                    </li>
-                    <li>
-                        <a
-                            href="/news"
-                            class="hover:text-white transition-colors">Blog</a
-                        >
-                    </li>
+                    {
+                        galleryEnabled && (
+                            <li>
+                                <a
+                                    href="/gallery"
+                                    class="hover:text-white transition-colors"
+                                >
+                                    Galería
+                                </a>
+                            </li>
+                        )
+                    }
+                    {
+                        newsEnabled && (
+                            <li>
+                                <a
+                                    href="/news"
+                                    class="hover:text-white transition-colors"
+                                >
+                                    Blog
+                                </a>
+                            </li>
+                        )
+                    }
                 </ul>
             </div>
             <div>
@@ -1095,12 +1124,26 @@ if (popupsEnabled) {
                     href="/shop/new"
                     class="hover:text-gray-600 transition-colors">Productos</a
                 >
-                <a href="/gallery" class="hover:text-gray-600 transition-colors"
-                    >Galería</a
-                >
-                <a href="/news" class="hover:text-gray-600 transition-colors"
-                    >Noticias</a
-                >
+                {
+                    galleryEnabled && (
+                        <a
+                            href="/gallery"
+                            class="hover:text-gray-600 transition-colors"
+                        >
+                            Galería
+                        </a>
+                    )
+                }
+                {
+                    newsEnabled && (
+                        <a
+                            href="/news"
+                            class="hover:text-gray-600 transition-colors"
+                        >
+                            Noticias
+                        </a>
+                    )
+                }
                 <a
                     href="/shop/offers"
                     class="text-red-600 hover:text-red-700 transition-colors"

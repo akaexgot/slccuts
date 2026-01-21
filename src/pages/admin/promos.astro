@@ -138,6 +138,43 @@ if (error) {
                                             <button
                                                 data-promo-id={promo.id}
                                                 class="delete-promo-btn text-red-400 hover:text-red-300 transition-colors p-2"
+                                            <button
+                                                data-promo-id={promo.id}
+                                                data-promo-code={promo.code}
+                                                data-promo-type={promo.discount_type}
+                                                data-promo-value={
+                                                    promo.discount_type ===
+                                                    "fixed"
+                                                        ? promo.discount_value /
+                                                          100
+                                                        : promo.discount_value
+                                                }
+                                                data-promo-from={promo.valid_from}
+                                                data-promo-until={promo.valid_until}
+                                                data-promo-limit={promo.usage_limit}
+                                                class="edit-promo-btn text-blue-400 hover:text-blue-300 transition-colors p-2"
+                                                title="Editar código"
+                                            >
+                                                <svg
+                                                    xmlns="http://www.w3.org/2000/svg"
+                                                    width="18"
+                                                    height="18"
+                                                    viewBox="0 0 24 24"
+                                                    fill="none"
+                                                    stroke="currentColor"
+                                                    stroke-width="2"
+                                                    stroke-linecap="round"
+                                                    stroke-linejoin="round"
+                                                >
+                                                    <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"
+                                                    ></path>
+                                                    <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"
+                                                    ></path>
+                                                </svg>
+                                            </button>
+                                            <button
+                                                data-promo-id={promo.id}
+                                                class="delete-promo-btn text-red-400 hover:text-red-300 transition-colors p-2"
                                                 title="Eliminar código"
                                             >
                                                 <svg
@@ -203,7 +240,9 @@ if (error) {
             class="bg-gray-800 rounded-xl p-8 max-w-lg w-full mx-4 transform scale-95 transition-transform duration-300"
             id="modalContent"
         >
-            <h3 class="text-2xl font-bold mb-6">Crear Código Promocional</h3>
+            <h3 id="modalTitle" class="text-2xl font-bold mb-6">
+                Crear Código Promocional
+            </h3>
             <form id="createPromoForm" class="space-y-4">
                 <!-- Code -->
                 <div>
@@ -297,7 +336,7 @@ if (error) {
                         type="submit"
                         class="flex-1 bg-blue-600 hover:bg-blue-700 text-white px-6 py-3 rounded-lg font-bold uppercase text-sm tracking-wider transition-all"
                     >
-                        Crear Código
+                        <span id="submitBtnText">Crear Código</span>
                     </button>
                     <button
                         type="button"
@@ -416,10 +455,27 @@ if (error) {
         const form = document.getElementById(
             "createPromoForm",
         ) as HTMLFormElement;
+        const modalTitle = document.getElementById("modalTitle");
+        const submitBtnText = document.getElementById("submitBtnText");
+
+        let isEditing = false;
+        let editingId = null;
 
         // Open Modal
         openBtn?.addEventListener("click", () => {
             if (modal && modalContent) {
+                modal.classList.remove("pointer-events-none", "opacity-0");
+                modalContent.classList.remove("scale-95");
+            if (modal && modalContent) {
+                // Reset for Create mode
+                isEditing = false;
+                editingId = null;
+                form.reset();
+                if (modalTitle) modalTitle.textContent = "Crear Código Promocional";
+                if (submitBtnText) submitBtnText.textContent = "Crear Código";
+                (document.getElementById("code") as HTMLInputElement).disabled =
+                    false;
+
                 modal.classList.remove("pointer-events-none", "opacity-0");
                 modalContent.classList.remove("scale-95");
                 modalContent.classList.add("scale-100");
@@ -473,15 +529,33 @@ if (error) {
                     ? Math.round(discountValue * 100)
                     : discountValue;
 
-            const { error } = await supabase.from("promo_codes").insert({
-                code,
+            const payload: any = {
                 discount_type: discountType,
                 discount_value: finalDiscountValue,
                 valid_from: validFrom,
                 valid_until: validUntil,
                 usage_limit: usageLimit ? parseInt(usageLimit) : null,
                 active: true,
-            });
+            };
+
+            if (!isEditing) {
+                payload.code = code;
+            }
+
+            let error;
+
+            if (isEditing && editingId) {
+                const result = await supabase
+                    .from("promo_codes")
+                    .update(payload)
+                    .eq("id", editingId);
+                error = result.error;
+            } else {
+                const result = await supabase
+                    .from("promo_codes")
+                    .insert(payload);
+                error = result.error;
+            }
 
             if (error) {
                 showToast(
@@ -494,7 +568,7 @@ if (error) {
 
             showToast(
                 "¡Éxito!",
-                "Código promocional creado correctamente",
+                `Código promocional ${isEditing ? "actualizado" : "creado"} correctamente`,
                 "success",
             );
             setTimeout(() => window.location.reload(), 1000);
@@ -568,6 +642,48 @@ if (error) {
             btn.addEventListener("click", () => {
                 const promoId = btn.getAttribute("data-promo-id");
                 openDeleteModal(promoId);
+            });
+        });
+
+        document.querySelectorAll(".edit-promo-btn").forEach((btn) => {
+            btn.addEventListener("click", () => {
+                isEditing = true;
+                editingId = btn.getAttribute("data-promo-id");
+
+                const code = btn.getAttribute("data-promo-code");
+                const type = btn.getAttribute("data-promo-type");
+                const value = btn.getAttribute("data-promo-value");
+                const from = btn.getAttribute("data-promo-from");
+                const until = btn.getAttribute("data-promo-until");
+                const limit = btn.getAttribute("data-promo-limit");
+
+                // Populate form
+                (document.getElementById("code") as HTMLInputElement).value =
+                    code || "";
+                (document.getElementById("code") as HTMLInputElement).disabled =
+                    true; // Cannot edit code string
+                (
+                    document.getElementById("discountType") as HTMLSelectElement
+                ).value = type || "percent";
+                (
+                    document.getElementById("discountValue") as HTMLInputElement
+                ).value = value || "";
+                (document.getElementById("validFrom") as HTMLInputElement).value =
+                    from || "";
+                (document.getElementById("validUntil") as HTMLInputElement).value =
+                    until || "";
+                (document.getElementById("usageLimit") as HTMLInputElement).value =
+                    limit || "";
+
+                if (modalTitle)
+                    modalTitle.textContent = "Editar Código Promocional";
+                if (submitBtnText) submitBtnText.textContent = "Actualizar Código";
+
+                if (modal && modalContent) {
+                    modal.classList.remove("pointer-events-none", "opacity-0");
+                    modalContent.classList.remove("scale-95");
+                    modalContent.classList.add("scale-100");
+                }
             });
         });
     </script>

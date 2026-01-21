@@ -22,6 +22,7 @@ const NewsletterPopup: React.FC = () => {
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
         setStatus('loading');
+        setMessage('');
 
         try {
             const response = await fetch('/api/newsletter/subscribe', {
@@ -30,7 +31,16 @@ const NewsletterPopup: React.FC = () => {
                 body: JSON.stringify({ email }),
             });
 
-            const data = await response.json();
+            // Check content type before parsing
+            const contentType = response.headers.get("content-type");
+            let data;
+
+            if (contentType && contentType.indexOf("application/json") !== -1) {
+                data = await response.json();
+            } else {
+                // If not JSON (likely a 500 error page), throw custom error
+                throw new Error("Respuesta inesperada del servidor");
+            }
 
             if (response.ok) {
                 setStatus('success');
@@ -38,11 +48,12 @@ const NewsletterPopup: React.FC = () => {
                 setTimeout(() => setIsVisible(false), 3000);
             } else {
                 setStatus('error');
-                setMessage(data.error || 'Algo ha salido mal');
+                setMessage(data.error || 'Algo ha salido mal. Inténtalo de nuevo.');
             }
         } catch (error) {
+            console.error(error);
             setStatus('error');
-            setMessage('Error de conexión');
+            setMessage('Error de conexión. Comprueba tu red.');
         }
     };
 
@@ -54,8 +65,8 @@ const NewsletterPopup: React.FC = () => {
     if (!isVisible && status !== 'success') return null;
 
     return (
-        <div className={`fixed bottom-6 right-6 z-[60] w-[350px] max-w-[calc(100vw-3rem)] transform transition-all duration-700 ease-out ${isVisible ? 'translate-y-0 opacity-100' : 'translate-y-20 opacity-0 pointer-events-none'}`}>
-            <div className="bg-black/95 backdrop-blur-xl border border-white/10 p-8 rounded-[2rem] shadow-2xl relative overflow-hidden group">
+        <div className={`fixed inset-x-4 bottom-6 md:inset-auto md:bottom-6 md:right-6 z-[200] w-auto md:w-[350px] max-w-lg mx-auto transform transition-all duration-700 ease-out flex justify-center md:block ${isVisible ? 'translate-y-0 opacity-100' : 'translate-y-20 opacity-0 pointer-events-none'}`}>
+            <div className="bg-black/95 backdrop-blur-xl border border-white/10 p-8 rounded-[2rem] shadow-2xl relative overflow-hidden group w-full">
                 {/* Background effects */}
                 <div className="absolute -right-10 -top-10 w-32 h-32 bg-white/5 blur-[50px] rounded-full group-hover:bg-white/10 transition-all duration-700" />
 

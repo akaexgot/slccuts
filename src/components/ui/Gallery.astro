@@ -9,30 +9,6 @@ const { data: images } = await supabase
     .eq("active", true)
     .order("created_at", { ascending: false });
 
-// Fallback images if no database data (or mock mode empty)
-const fallbackImages = [
-    {
-        image_url:
-            "https://images.unsplash.com/photo-1585747860715-2ba37e788b70?auto=format&fit=crop&q=80&w=800",
-    },
-    {
-        image_url:
-            "https://images.unsplash.com/photo-1621605815971-fbc98d665033?auto=format&fit=crop&q=80&w=800",
-    },
-    {
-        image_url:
-            "https://images.unsplash.com/photo-1622286342621-4bd786c2447c",
-    },
-    {
-        image_url:
-            "https://images.unsplash.com/photo-1593702295094-aea8cdd39d38?auto=format&fit=crop&q=80&w=800",
-    },
-    {
-        image_url:
-            "https://images.unsplash.com/photo-1622286342621-4bd786c2447c?auto=format&fit=crop&q=80&w=800",
-    },
-];
-
 const cleanUrl = (url: string) => {
     if (url && url.includes("?")) {
         return url.split("?")[0];
@@ -40,23 +16,25 @@ const cleanUrl = (url: string) => {
     return url;
 };
 
-const displayImages = (
-    images && images.length > 0 ? images : fallbackImages
-).map((img: any) => ({
-    ...img,
-    image_url: cleanUrl(img.image_url),
-}));
+// If no images are active, we don't display anything or we pass an empty array
+const displayImages =
+    images?.map((img: any) => ({
+        ...img,
+        image_url: cleanUrl(img.image_url),
+    })) || [];
 ---
 
-<div class="w-full relative group">
-    <!-- Scroll Container -->
-    <div
-        class="flex overflow-x-auto snap-x snap-mandatory scrollbar-hide gap-4 pb-4 px-4 md:px-0"
-        style="-ms-overflow-style: none; scrollbar-width: none;"
-    >
-        {
-            displayImages.map((img: any, index: number) => (
-                <div class="snap-center shrink-0 w-[80vw] md:w-[400px] h-[300px] md:h-[400px] relative overflow-hidden rounded-lg shadow-md aspect-square filter grayscale hover:grayscale-0 transition-all duration-500 cursor-pointer group">
+{
+    displayImages.length > 0 && (
+        <div class="w-full relative group">
+            <!-- Scroll Container -->
+            <div
+                class="flex overflow-x-auto snap-x snap-mandatory scrollbar-hide gap-4 pb-4 px-4 md:px-0"
+                style="-ms-overflow-style: none; scrollbar-width: none;"
+            >
+                {
+                    displayImages.map((img: any, index: number) => (
+                        <div class="snap-center shrink-0 w-[80vw] md:w-[400px] h-[300px] md:h-[400px] relative overflow-hidden rounded-lg shadow-md aspect-square filter grayscale hover:grayscale-0 transition-all duration-500 cursor-pointer group">
                     <Image
                         src={img.image_url}
                         alt={img.alt_text || "Galería SLC CUTS"}
@@ -83,6 +61,9 @@ const displayImages = (
         class="absolute top-0 right-0 h-full w-20 bg-gradient-to-l from-white to-transparent pointer-events-none md:hidden"
     >
     </div>
+    </div>
+    )
+}
 </div>
 
 <style>

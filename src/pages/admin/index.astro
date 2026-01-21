@@ -18,11 +18,36 @@ const { count: newsCount } = await supabase
     .from("news")
     .select("*", { count: "exact", head: true });
 
-// Fetch categories for product form
 const { data: categories } = await supabase
     .from("categories")
     .select("*")
     .order("name");
+
+// Fetch feature settings
+const { data: featureSettings } = await supabase
+    .from("settings")
+    .select("*")
+    .in("key", [
+        "feature_news_enabled",
+        "feature_promos_enabled",
+        "feature_gallery_enabled",
+        "feature_popups_enabled",
+        "feature_newsletter_enabled",
+        "maintenance_mode",
+    ]);
+
+const getFeatureSetting = (key: string) => {
+    const setting = featureSettings?.find((s: any) => s.key === key);
+    return setting ? setting.value : true; // Default to true if not set
+};
+
+const features = {
+    news: getFeatureSetting("feature_news_enabled"),
+    promos: getFeatureSetting("feature_promos_enabled"),
+    gallery: getFeatureSetting("feature_gallery_enabled"),
+    popups: getFeatureSetting("feature_popups_enabled"),
+    newsletter: getFeatureSetting("feature_newsletter_enabled"),
+};
 
 // Fetch sales data for chart (last 7 days)
 const sevenDaysAgo = new Date();
@@ -349,6 +374,174 @@ const visitsValues = Object.values(visitsByDay);
             <div class="h-64">
                 <canvas id="visitsChart"></canvas>
             </div>
+        </div>
+    </div>
+
+    <!-- Feature Toggles Section -->
+    <div class="mt-12">
+        <h2 class="text-xl font-bold uppercase tracking-wider mb-6">
+            ⚙️ Funciones del Sitio
+        </h2>
+        <p class="text-gray-400 text-sm mb-6">
+            Activa o desactiva secciones de tu web. Al desactivar una función,
+            su elemento desaparecerá del menú de administración.
+        </p>
+        <div class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-4">
+            <!-- News Toggle -->
+            <div class="bg-gray-800 rounded-xl p-5">
+                <div class="flex items-center justify-between mb-3">
+                    <span
+                        class="text-sm font-bold uppercase tracking-wider text-gray-300"
+                        >Noticias</span
+                    >
+                    <button
+                        class="feature-toggle w-12 h-7 rounded-full transition-colors relative"
+                        data-feature="news"
+                        data-enabled={features.news}
+                        style={`background-color: ${features.news ? "#22c55e" : "#374151"}`}
+                    >
+                        <span
+                            class={`absolute top-1 left-1 w-5 h-5 bg-white rounded-full transition-transform ${features.news ? "translate-x-5" : ""}`}
+                        ></span>
+                    </button>
+                </div>
+                <p class="text-[10px] text-gray-500 uppercase tracking-widest">
+                    Blog / Actualidad
+                </p>
+            </div>
+
+            <!-- Promos Toggle -->
+            <div class="bg-gray-800 rounded-xl p-5">
+                <div class="flex items-center justify-between mb-3">
+                    <span
+                        class="text-sm font-bold uppercase tracking-wider text-gray-300"
+                        >Promociones</span
+                    >
+                    <button
+                        class="feature-toggle w-12 h-7 rounded-full transition-colors relative"
+                        data-feature="promos"
+                        data-enabled={features.promos}
+                        style={`background-color: ${features.promos ? "#22c55e" : "#374151"}`}
+                    >
+                        <span
+                            class={`absolute top-1 left-1 w-5 h-5 bg-white rounded-full transition-transform ${features.promos ? "translate-x-5" : ""}`}
+                        ></span>
+                    </button>
+                </div>
+                <p class="text-[10px] text-gray-500 uppercase tracking-widest">
+                    Códigos de Descuento
+                </p>
+            </div>
+
+            <!-- Gallery Toggle -->
+            <div class="bg-gray-800 rounded-xl p-5">
+                <div class="flex items-center justify-between mb-3">
+                    <span
+                        class="text-sm font-bold uppercase tracking-wider text-gray-300"
+                        >Galería</span
+                    >
+                    <button
+                        class="feature-toggle w-12 h-7 rounded-full transition-colors relative"
+                        data-feature="gallery"
+                        data-enabled={features.gallery}
+                        style={`background-color: ${features.gallery ? "#22c55e" : "#374151"}`}
+                    >
+                        <span
+                            class={`absolute top-1 left-1 w-5 h-5 bg-white rounded-full transition-transform ${features.gallery ? "translate-x-5" : ""}`}
+                        ></span>
+                    </button>
+                </div>
+                <p class="text-[10px] text-gray-500 uppercase tracking-widest">
+                    La Esencia SLC
+                </p>
+            </div>
+
+            <!-- Popups Toggle -->
+            <div class="bg-gray-800 rounded-xl p-5">
+                <div class="flex items-center justify-between mb-3">
+                    <span
+                        class="text-sm font-bold uppercase tracking-wider text-gray-300"
+                        >Pop-ups</span
+                    >
+                    <button
+                        class="feature-toggle w-12 h-7 rounded-full transition-colors relative"
+                        data-feature="popups"
+                        data-enabled={features.popups}
+                        style={`background-color: ${features.popups ? "#22c55e" : "#374151"}`}
+                    >
+                        <span
+                            class={`absolute top-1 left-1 w-5 h-5 bg-white rounded-full transition-transform ${features.popups ? "translate-x-5" : ""}`}
+                        ></span>
+                    </button>
+                </div>
+                <p class="text-[10px] text-gray-500 uppercase tracking-widest">
+                    Avisos Promocionales
+                </p>
+            </div>
+
+            <!-- Newsletter Toggle -->
+            <div class="bg-gray-800 rounded-xl p-5">
+                <div class="flex items-center justify-between mb-3">
+                    <span
+                        class="text-sm font-bold uppercase tracking-wider text-gray-300"
+                        >Newsletter</span
+                    >
+                    <button
+                        class="feature-toggle w-12 h-7 rounded-full transition-colors relative"
+                        data-feature="newsletter"
+                        data-enabled={features.newsletter}
+                        style={`background-color: ${features.newsletter ? "#22c55e" : "#374151"}`}
+                    >
+                        <span
+                            class={`absolute top-1 left-1 w-5 h-5 bg-white rounded-full transition-transform ${features.newsletter ? "translate-x-5" : ""}`}
+                        ></span>
+                    </button>
+                </div>
+                <p class="text-[10px] text-gray-500 uppercase tracking-widest">
+                    Suscriptores Email
+                </p>
+            </div>
+        </div>
+    </div>
+
+    <!-- Maintenance Mode Section -->
+    <div class="mt-12">
+        <h2 class="text-xl font-bold uppercase tracking-wider mb-6">
+            🚧 Modo Mantenimiento
+        </h2>
+        <div class="bg-gray-800 rounded-xl p-6">
+            <div class="flex items-center justify-between">
+                <div>
+                    <h3 class="text-lg font-bold text-white mb-2">
+                        Activar Mantenimiento
+                    </h3>
+                    <p class="text-gray-400 text-sm">
+                        Cuando está activo, los visitantes verán una página de
+                        mantenimiento. <br />
+                        Solo la sección de reservas (Setmore) seguirá disponible.
+                    </p>
+                </div>
+                <button
+                    id="maintenanceToggle"
+                    class="maintenance-toggle w-16 h-9 rounded-full transition-colors relative"
+                    data-enabled={getFeatureSetting("maintenance_mode") ||
+                        false}
+                    style={`background-color: ${getFeatureSetting("maintenance_mode") ? "#ef4444" : "#374151"}`}
+                >
+                    <span
+                        class={`absolute top-1.5 left-1.5 w-6 h-6 bg-white rounded-full transition-transform ${getFeatureSetting("maintenance_mode") ? "translate-x-7" : ""}`}
+                    ></span>
+                </button>
+            </div>
+            {
+                getFeatureSetting("maintenance_mode") && (
+                    <div class="mt-4 p-4 bg-red-500/10 border border-red-500/20 rounded-xl">
+                        <p class="text-red-400 text-sm font-bold uppercase tracking-wider">
+                            ⚠️ Web en modo mantenimiento
+                        </p>
+                    </div>
+                )
+            }
         </div>
     </div>
 
@@ -1815,6 +2008,110 @@ const visitsValues = Object.values(visitsByDay);
         newsTitleInput?.addEventListener("input", (e) => {
             const val = (e.target as HTMLInputElement).value;
             newsSlugInput.value = generateSlug(val);
+        });
+
+        // Feature Toggles
+        document.querySelectorAll(".feature-toggle").forEach((btn) => {
+            btn.addEventListener("click", async () => {
+                const feature = btn.getAttribute("data-feature");
+                const currentEnabled =
+                    btn.getAttribute("data-enabled") === "true";
+                const newEnabled = !currentEnabled;
+                const settingKey = `feature_${feature}_enabled`;
+
+                // Immediately animate the toggle
+                const toggleCircle = btn.querySelector("span");
+                if (newEnabled) {
+                    (btn as HTMLElement).style.backgroundColor = "#22c55e";
+                    toggleCircle?.classList.add("translate-x-5");
+                } else {
+                    (btn as HTMLElement).style.backgroundColor = "#374151";
+                    toggleCircle?.classList.remove("translate-x-5");
+                }
+                btn.setAttribute("data-enabled", String(newEnabled));
+
+                const { error } = await supabase
+                    .from("settings")
+                    .upsert({ key: settingKey, value: newEnabled });
+
+                if (error) {
+                    // Revert animation on error
+                    if (!newEnabled) {
+                        (btn as HTMLElement).style.backgroundColor = "#22c55e";
+                        toggleCircle?.classList.add("translate-x-5");
+                    } else {
+                        (btn as HTMLElement).style.backgroundColor = "#374151";
+                        toggleCircle?.classList.remove("translate-x-5");
+                    }
+                    btn.setAttribute("data-enabled", String(currentEnabled));
+                    (window as any).showToast(
+                        "Error",
+                        "No se pudo cambiar la configuración",
+                        "error",
+                    );
+                } else {
+                    (window as any).showToast(
+                        "Éxito",
+                        `Función ${newEnabled ? "activada" : "desactivada"}`,
+                        "success",
+                    );
+                }
+            });
+        });
+
+        // Maintenance Mode Toggle
+        const maintenanceToggle = document.getElementById("maintenanceToggle");
+        maintenanceToggle?.addEventListener("click", async () => {
+            const currentEnabled =
+                maintenanceToggle.getAttribute("data-enabled") === "true";
+            const newEnabled = !currentEnabled;
+
+            // Animate immediately
+            const toggleCircle = maintenanceToggle.querySelector("span");
+            if (newEnabled) {
+                (maintenanceToggle as HTMLElement).style.backgroundColor =
+                    "#ef4444";
+                toggleCircle?.classList.add("translate-x-7");
+            } else {
+                (maintenanceToggle as HTMLElement).style.backgroundColor =
+                    "#374151";
+                toggleCircle?.classList.remove("translate-x-7");
+            }
+            maintenanceToggle.setAttribute("data-enabled", String(newEnabled));
+
+            const { error } = await supabase
+                .from("settings")
+                .upsert({ key: "maintenance_mode", value: newEnabled });
+
+            if (error) {
+                // Revert
+                if (!newEnabled) {
+                    (maintenanceToggle as HTMLElement).style.backgroundColor =
+                        "#ef4444";
+                    toggleCircle?.classList.add("translate-x-7");
+                } else {
+                    (maintenanceToggle as HTMLElement).style.backgroundColor =
+                        "#374151";
+                    toggleCircle?.classList.remove("translate-x-7");
+                }
+                maintenanceToggle.setAttribute(
+                    "data-enabled",
+                    String(currentEnabled),
+                );
+                (window as any).showToast(
+                    "Error",
+                    "No se pudo cambiar el estado",
+                    "error",
+                );
+            } else {
+                (window as any).showToast(
+                    newEnabled ? "🚧 Mantenimiento" : "✅ Web activa",
+                    newEnabled
+                        ? "Web en modo mantenimiento"
+                        : "Web funcionando normalmente",
+                    newEnabled ? "warning" : "success",
+                );
+            }
         });
     </script>
 </AdminLayout>

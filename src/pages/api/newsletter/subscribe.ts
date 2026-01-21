@@ -54,6 +54,11 @@ export const post: APIRoute = async ({ request }) => {
         return new Response(JSON.stringify({ success: true }), { status: 200 });
     } catch (error: any) {
         console.error('Newsletter Error:', error);
-        return new Response(JSON.stringify({ error: 'Error del servidor' }), { status: 500 });
+        return new Response(JSON.stringify({ error: 'Error del servidor. Por favor, inténtelo de nuevo más tarde.' }), {
+            status: 500,
+            headers: {
+                'Content-Type': 'application/json'
+            }
+        });
     }
 };

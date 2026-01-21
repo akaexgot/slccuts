@@ -1,0 +1,189 @@
+---
+export const prerender = false;
+import { supabase } from "../lib/supabase";
+
+// Check if maintenance mode is enabled
+const { data: maintenanceSetting } = await supabase
+    .from("settings")
+    .select("value")
+    .eq("key", "maintenance_mode")
+    .single();
+
+const isMaintenanceMode = maintenanceSetting?.value ?? false;
+
+// If not in maintenance mode, redirect to home
+if (!isMaintenanceMode) {
+    return Astro.redirect("/");
+}
+---
+
+<!doctype html>
+<html lang="es">
+    <head>
+        <meta charset="UTF-8" />
+        <meta name="viewport" content="width=device-width" />
+        <meta name="robots" content="noindex, nofollow" />
+        <link rel="icon" type="image/png" href="/logo.png" />
+        <link rel="preconnect" href="https://fonts.googleapis.com" />
+        <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+        <link
+            href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Outfit:wght@300;400;500;600&display=swap"
+            rel="stylesheet"
+        />
+        <title>Mantenimiento | SLC CUTS</title>
+        <script src="https://cdn.tailwindcss.com"></script>
+        <style>
+            * {
+                margin: 0;
+                padding: 0;
+                box-sizing: border-box;
+            }
+
+            body {
+                font-family: "Outfit", sans-serif;
+                background: #000;
+                color: #fff;
+            }
+
+            .pattern {
+                background-image: url("/logoblancotransparente.png");
+                background-size: 80px;
+                background-repeat: repeat;
+                opacity: 0.02;
+                position: fixed;
+                inset: 0;
+                pointer-events: none;
+            }
+
+            .bebas {
+                font-family: "Bebas Neue", sans-serif;
+                letter-spacing: 0.05em;
+            }
+
+            .admin-link {
+                position: fixed;
+                bottom: 20px;
+                right: 20px;
+                font-size: 10px;
+                text-transform: uppercase;
+                letter-spacing: 0.15em;
+                color: #555;
+                transition: color 0.3s;
+                text-decoration: none;
+                z-index: 100;
+            }
+
+            .admin-link:hover {
+                color: #888;
+            }
+
+            .setmore-container {
+                background: #fff;
+                border-radius: 20px;
+                overflow: hidden;
+                box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5);
+            }
+
+            @media (max-width: 768px) {
+                .setmore-container {
+                    border-radius: 16px;
+                }
+            }
+        </style>
+    </head>
+    <body>
+        <!-- Background Pattern -->
+        <div class="pattern"></div>
+
+        <!-- Main Content -->
+        <div style="min-height: 100vh; display: flex; flex-direction: column;">
+            <!-- Header -->
+            <header style="text-align: center; padding: 60px 20px 40px;">
+                <img
+                    src="/logoblancotransparente.png"
+                    alt="SLC CUTS"
+                    style="height: 60px; margin: 0 auto 30px; opacity: 0.7;"
+                />
+
+                <div style="max-width: 600px; margin: 0 auto;">
+                    <h1
+                        class="bebas"
+                        style="font-size: clamp(32px, 5vw, 48px); margin-bottom: 16px; font-weight: 400;"
+                    >
+                        MANTENIMIENTO PROGRAMADO
+                    </h1>
+
+                    <p
+                        style="color: #888; font-size: 15px; font-weight: 300; line-height: 1.6;"
+                    >
+                        Estamos actualizando nuestro sistema para mejorar tu
+                        experiencia.<br />
+                        Puedes continuar reservando tu cita a continuación.
+                    </p>
+                </div>
+            </header>
+
+            <!-- Setmore Section -->
+            <main style="flex: 1; padding: 0 20px 60px;">
+                <div style="max-width: 1100px; margin: 0 auto;">
+                    <div class="setmore-container">
+                        <iframe
+                            src="https://slccuts.setmore.com/"
+                            width="100%"
+                            height="1800"
+                            frameborder="0"
+                            scrolling="no"
+                            style="display: block; min-height: 1500px;"
+                            title="Reservar Cita"></iframe>
+                    </div>
+
+                    <!-- Footer Info -->
+                    <div style="text-align: center; margin-top: 40px;">
+                        <p
+                            style="color: #666; font-size: 13px; margin-bottom: 12px; font-weight: 300;"
+                        >
+                            ¿Necesitas ayuda?
+                        </p>
+                        <div
+                            style="display: flex; justify-content: center; gap: 20px; flex-wrap: wrap; font-size: 13px; color: #888;"
+                        >
+                            <a
+                                href="tel:+34722108440"
+                                style="color: #888; text-decoration: none; transition: color 0.3s;"
+                                onmouseover="this.style.color='#fff'"
+                                onmouseout="this.style.color='#888'"
+                            >
+                                722 10 84 40
+                            </a>
+                            <span style="color: #333;">·</span>
+                            <a
+                                href="https://wa.me/34722108440"
+                                target="_blank"
+                                style="color: #888; text-decoration: none; transition: color 0.3s;"
+                                onmouseover="this.style.color='#fff'"
+                                onmouseout="this.style.color='#888'"
+                            >
+                                WhatsApp
+                            </a>
+                            <span style="color: #333;">·</span>
+                            <a
+                                href="https://instagram.com/slc.cuts"
+                                target="_blank"
+                                style="color: #888; text-decoration: none; transition: color 0.3s;"
+                                onmouseover="this.style.color='#fff'"
+                                onmouseout="this.style.color='#888'"
+                            >
+                                Instagram
+                            </a>
+                        </div>
+                    </div>
+                </div>
+            </main>
+        </div>
+
+        <!-- Admin Access -->
+        <a href="/login" class="admin-link" title="Acceso Administrador"
+            >Admin</a
+        >
+    </body>
+</html>
