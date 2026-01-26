@@ -13,8 +13,17 @@ const { data: popups, error } = await supabase
 // Fetch settings
 const { data: settings } = await supabase.from("settings").select("*");
 
-const popupsEnabled =
-    settings?.find((s) => s.key === "popups_enabled")?.value ?? true;
+// Helper to properly parse boolean settings (handles string "true"/"false" or boolean)
+const parseBoolSetting = (key: string, defaultValue: boolean): boolean => {
+    const setting = settings?.find((s: any) => s.key === key);
+    if (!setting) return defaultValue;
+    const val = setting.value;
+    if (typeof val === "boolean") return val;
+    if (typeof val === "string") return val.toLowerCase() === "true";
+    return defaultValue;
+};
+
+const popupsEnabled = parseBoolSetting("popups_enabled", true);
 
 const formatDate = (dateString: string) => {
     return new Date(dateString).toLocaleDateString("es-ES", {

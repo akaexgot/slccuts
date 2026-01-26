@@ -19,20 +19,25 @@ const {
 
 const { data: settings } = await supabase.from("settings").select("key, value");
 
-const showFlashOffers =
-    settings?.find((s: any) => s.key === "flash_offers_enabled")?.value ??
-    false;
-const newsletterEnabled =
-    settings?.find((s: any) => s.key === "newsletter_enabled")?.value ?? true;
-const popupsEnabled =
-    settings?.find((s: any) => s.key === "popups_enabled")?.value ?? true;
+// Helper function to properly parse boolean values from database
+// Handles cases where value might be stored as string "true"/"false" instead of boolean
+const parseBoolSetting = (key: string, defaultValue: boolean): boolean => {
+    const setting = settings?.find((s: any) => s.key === key);
+    if (!setting) return defaultValue;
+
+    const val = setting.value;
+    if (typeof val === "boolean") return val;
+    if (typeof val === "string") return val.toLowerCase() === "true";
+    return defaultValue;
+};
+
+const showFlashOffers = parseBoolSetting("flash_offers_enabled", false);
+const newsletterEnabled = parseBoolSetting("newsletter_enabled", true);
+const popupsEnabled = parseBoolSetting("popups_enabled", true);
 
 // Feature toggles for public site
-const galleryEnabled =
-    settings?.find((s: any) => s.key === "feature_gallery_enabled")?.value ??
-    true;
-const newsEnabled =
-    settings?.find((s: any) => s.key === "feature_news_enabled")?.value ?? true;
+const galleryEnabled = parseBoolSetting("feature_gallery_enabled", true);
+const newsEnabled = parseBoolSetting("feature_news_enabled", true);
 
 // Fetch latest active popup if enabled
 let latestPopup = null;
