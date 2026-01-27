@@ -79,24 +79,18 @@ const formatDate = (dateString: string) => {
 };
 ---
 
-<AdminLayout title="Pedidos" activeSection="orders">
-    <div
-        class="mb-10 flex flex-col xl:flex-row xl:items-end justify-between gap-8"
-    >
-        <div class="space-y-4 flex-1">
-            <div>
-                <h1 class="text-4xl font-black text-white tracking-tight mb-2">
-                    Gestión de <span class="text-white/40 italic">Pedidos</span>
-                </h1>
-                <p class="text-gray-500 font-medium">
-                    Supervisa y filtra las compras realizadas en la tienda
-                </p>
-            </div>
-
+<AdminLayout
+    title="Gestión de"
+    highlightTitle="Pedidos"
+    subtitle="Supervisa y filtra las compras realizadas en la tienda"
+    activeSection="orders"
+>
+    <div class="mb-10 flex flex-col items-start gap-8">
+        <div class="space-y-4 w-full">
             <!-- Filters Bar -->
             <form
                 method="get"
-                class="flex flex-wrap items-end gap-4 p-4 bg-gray-900/50 backdrop-blur-xl rounded-2xl border border-white/5 shadow-2xl"
+                class="flex flex-wrap items-end gap-4 p-8 bg-white/[0.04] backdrop-blur-2xl rounded-[2.5rem] border border-white/10 shadow-2xl"
             >
                 <input type="hidden" name="status" value={currentStatus} />
 
@@ -176,7 +170,7 @@ const formatDate = (dateString: string) => {
 
         <!-- Status Filter Tabs -->
         <div
-            class="inline-flex p-1.5 bg-gray-900/80 backdrop-blur-xl rounded-2xl border border-white/5 shadow-2xl overflow-x-auto scrollbar-hide shrink-0"
+            class="inline-flex p-1.5 bg-white/[0.04] backdrop-blur-2xl rounded-2xl border border-white/10 shadow-2xl overflow-x-auto scrollbar-hide shrink-0"
         >
             {
                 [
@@ -234,13 +228,13 @@ const formatDate = (dateString: string) => {
                 const isCancelled = order.status === "cancelled";
 
                 return (
-                    <div class="group relative bg-[#0f1117] hover:bg-[#141721] rounded-[2rem] border border-white/[0.03] hover:border-white/[0.08] transition-all duration-500 overflow-visible">
+                    <div class="order-card group relative bg-[#0f1117] hover:bg-[#141721] rounded-[2rem] border border-white/[0.03] hover:border-white/[0.08] transition-all duration-500 overflow-hidden">
                         {/* Background Glow Effect */}
                         <div class="absolute -right-10 -top-10 w-40 h-40 bg-white/5 blur-[80px] rounded-full group-hover:bg-white/10 transition-all duration-700 pointer-events-none" />
 
-                        <div class="relative p-8 lg:p-10 flex flex-col lg:flex-row items-start lg:items-center gap-10">
+                        <div class="relative p-8 lg:p-10 flex flex-col 2xl:flex-row items-start 2xl:items-center gap-10">
                             {/* 1. ID / Date Section */}
-                            <div class="w-full lg:w-40 flex-shrink-0">
+                            <div class="w-full 2xl:w-40 flex-shrink-0">
                                 <span class="inline-flex items-center px-3 py-1 bg-white/5 border border-white/10 rounded-full text-[10px] font-bold text-white/50 mb-3 tracking-widest">
                                     #{order.id.slice(0, 8).toUpperCase()}
                                 </span>
@@ -263,7 +257,7 @@ const formatDate = (dateString: string) => {
                             </div>
 
                             {/* 2. Client Info */}
-                            <div class="w-full lg:w-64 flex-shrink-0">
+                            <div class="w-full 2xl:w-64 flex-shrink-0">
                                 <h3 class="text-white font-black text-xl mb-4 tracking-tight group-hover:text-white transition-colors">
                                     {contact.name || "Invitado Especial"}
                                 </h3>
@@ -291,7 +285,7 @@ const formatDate = (dateString: string) => {
                             </div>
 
                             {/* 3. Delivery / Payment Method */}
-                            <div class="w-full lg:w-48 flex-shrink-0 grid grid-cols-2 lg:grid-cols-1 gap-4">
+                            <div class="w-full 2xl:w-48 flex-shrink-0 grid grid-cols-2 2xl:grid-cols-1 gap-4">
                                 <div class="bg-gray-900/50 p-4 rounded-2xl border border-white/5">
                                     <span class="text-[9px] font-black text-gray-600 uppercase tracking-widest block mb-2">
                                         Entrega
@@ -454,7 +448,7 @@ const formatDate = (dateString: string) => {
                             </div>
 
                             {/* 5. Total & Actions */}
-                            <div class="w-full lg:w-48 flex-shrink-0 flex flex-row lg:flex-col items-center lg:items-end justify-between lg:justify-center gap-6 border-t lg:border-t-0 lg:border-l border-white/5 pt-6 lg:pt-0 lg:pl-10">
+                            <div class="w-full 2xl:w-48 flex-shrink-0 flex flex-row 2xl:flex-col items-center 2xl:items-end justify-between 2xl:justify-center gap-6 border-t 2xl:border-t-0 2xl:border-l border-white/5 pt-6 2xl:pt-0 2xl:pl-10">
                                 <div class="text-right">
                                     <p class="text-gray-600 text-[10px] font-black uppercase tracking-widest mb-1">
                                         Total
@@ -549,160 +543,164 @@ const formatDate = (dateString: string) => {
     </div>
 
     <EmailModal client:only="react" />
-</AdminLayout>
 
-<script>
-    // Handle clicks on email buttons
-    document.addEventListener("click", (e) => {
-        const target = (e.target as HTMLElement).closest(".email-btn");
-        if (target) {
-            console.log("Email button clicked");
-            const btn = target as HTMLElement;
-            const email = btn.dataset.email;
-            const orderId = btn.dataset.orderId;
-            const status = btn.dataset.status;
-            const type = btn.dataset.type || "manual";
-            const firstName = btn.dataset.firstName || "Cliente";
+    <script>
+        // Handle clicks on email buttons
+        document.addEventListener("click", (e) => {
+            const target = (e.target as HTMLElement).closest(".email-btn");
+            if (target) {
+                console.log("Email button clicked");
+                const btn = target as HTMLElement;
+                const email = btn.dataset.email;
+                const orderId = btn.dataset.orderId;
+                const status = btn.dataset.status;
+                const type = btn.dataset.type || "manual";
+                const firstName = btn.dataset.firstName || "Cliente";
 
-            if (email && orderId) {
-                console.log("Dispatching open-email-modal event", {
-                    email,
-                    orderId,
-                    status,
-                    type,
-                    firstName,
-                });
-                // Dispatch custom event directly instead of importing helper
-                const event = new CustomEvent("open-email-modal", {
-                    detail: {
-                        to: email,
+                if (email && orderId) {
+                    console.log("Dispatching open-email-modal event", {
+                        email,
                         orderId,
-                        status: status || "pending",
+                        status,
                         type,
                         firstName,
-                    },
-                });
-                window.dispatchEvent(event);
-            } else {
-                console.error("Missing email or orderId data attributes");
+                    });
+                    // Dispatch custom event directly instead of importing helper
+                    const event = new CustomEvent("open-email-modal", {
+                        detail: {
+                            to: email,
+                            orderId,
+                            status: status || "pending",
+                            type,
+                            firstName,
+                        },
+                    });
+                    window.dispatchEvent(event);
+                } else {
+                    console.error("Missing email or orderId data attributes");
+                }
             }
-        }
-    });
+        });
 
-    // Listen for status updates from StatusSelect component
-    window.addEventListener("order-status-updated", ((e: CustomEvent) => {
-        const { orderId, status } = e.detail;
+        // Listen for status updates from StatusSelect component
+        window.addEventListener("order-status-updated", ((e: CustomEvent) => {
+            const { orderId, status } = e.detail;
 
-        // 1. Update Email Button Data
-        const btn = document.querySelector(
-            `.email-btn[data-order-id="${orderId}"]`,
-        ) as HTMLElement;
-        if (btn) btn.dataset.status = status;
+            // 1. Update Email Button Data
+            const btn = document.querySelector(
+                `.email-btn[data-order-id="${orderId}"]`,
+            ) as HTMLElement;
+            if (btn) btn.dataset.status = status;
 
-        // 2. Update Stepper Logic
-        const flow = ["pending", "paid", "shipped", "completed"];
-        const colors: Record<string, string> = {
-            pending: "#3b82f6",
-            paid: "#22c55e",
-            shipped: "#8b5cf6",
-            completed: "#f59e0b",
-            cancelled: "#ef4444",
-        };
+            // 2. Update Stepper Logic
+            const flow = ["pending", "paid", "shipped", "completed"];
+            const colors: Record<string, string> = {
+                pending: "#3b82f6",
+                paid: "#22c55e",
+                shipped: "#8b5cf6",
+                completed: "#f59e0b",
+                cancelled: "#ef4444",
+            };
 
-        const isCancelled = status === "cancelled";
-        const statusIdx = flow.indexOf(status);
+            const isCancelled = status === "cancelled";
+            const statusIdx = flow.indexOf(status);
 
-        // Update Percentage Text
-        const progressText = document.getElementById(
-            `progress-text-${orderId}`,
-        );
-        if (progressText) {
-            progressText.innerText = isCancelled
-                ? "CANCELADO"
-                : `${Math.round(((statusIdx + 1) / 4) * 100)}% Completado`;
-        }
-
-        // Update Label Color
-        const label = document.getElementById(`status-label-${orderId}`);
-        if (label) label.style.color = colors[status];
-
-        // Update Progress Line
-        const line = document.getElementById(`progress-line-${orderId}`);
-        if (line) {
-            if (isCancelled) {
-                line.style.width = "100%";
-                line.style.backgroundColor = colors.cancelled;
-                line.style.boxShadow = `0 0 15px ${colors.cancelled}80`;
-                line.style.opacity = "0.3";
-            } else {
-                const width = (statusIdx / (flow.length - 1)) * 100;
-                line.style.width = `${width}%`;
-                line.style.backgroundColor = colors[status];
-                line.style.boxShadow = `0 0 15px ${colors[status]}80`;
-                line.style.opacity = "1";
-            }
-        }
-
-        // Update Dots Opacity and State
-        flow.forEach((s, idx) => {
-            const dot = document.getElementById(`status-dot-${orderId}-${s}`);
-            const text = document.getElementById(`status-text-${orderId}-${s}`);
-            const dotContainer = dot?.parentElement;
-
-            if (dotContainer) {
-                dotContainer.style.opacity = isCancelled ? "0.3" : "1";
+            // Update Percentage Text
+            const progressText = document.getElementById(
+                `progress-text-${orderId}`,
+            );
+            if (progressText) {
+                progressText.innerText = isCancelled
+                    ? "CANCELADO"
+                    : `${Math.round(((statusIdx + 1) / 4) * 100)}% Completado`;
             }
 
-            if (dot && !isCancelled) {
-                if (idx <= statusIdx) {
-                    dot.style.backgroundColor = colors[s];
-                    dot.style.boxShadow = `0 0 20px ${colors[s]}60`;
-                    dot.style.transform = "scale(1.1)";
-                    if (idx < statusIdx && !dot.querySelector("svg")) {
-                        dot.innerHTML = `
+            // Update Label Color
+            const label = document.getElementById(`status-label-${orderId}`);
+            if (label) label.style.color = colors[status];
+
+            // Update Progress Line
+            const line = document.getElementById(`progress-line-${orderId}`);
+            if (line) {
+                if (isCancelled) {
+                    line.style.width = "100%";
+                    line.style.backgroundColor = colors.cancelled;
+                    line.style.boxShadow = `0 0 15px ${colors.cancelled}80`;
+                    line.style.opacity = "0.3";
+                } else {
+                    const width = (statusIdx / (flow.length - 1)) * 100;
+                    line.style.width = `${width}%`;
+                    line.style.backgroundColor = colors[status];
+                    line.style.boxShadow = `0 0 15px ${colors[status]}80`;
+                    line.style.opacity = "1";
+                }
+            }
+
+            // Update Dots Opacity and State
+            flow.forEach((s, idx) => {
+                const dot = document.getElementById(
+                    `status-dot-${orderId}-${s}`,
+                );
+                const text = document.getElementById(
+                    `status-text-${orderId}-${s}`,
+                );
+                const dotContainer = dot?.parentElement;
+
+                if (dotContainer) {
+                    dotContainer.style.opacity = isCancelled ? "0.3" : "1";
+                }
+
+                if (dot && !isCancelled) {
+                    if (idx <= statusIdx) {
+                        dot.style.backgroundColor = colors[s];
+                        dot.style.boxShadow = `0 0 20px ${colors[s]}60`;
+                        dot.style.transform = "scale(1.1)";
+                        if (idx < statusIdx && !dot.querySelector("svg")) {
+                            dot.innerHTML = `
                             <svg xmlns="http://www.w3.org/2000/svg" width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="black" stroke-width="4" stroke-linecap="round" stroke-linejoin="round">
                                 <path d="M20 6 9 17l-5-5" />
                             </svg>
                         `;
-                    } else if (idx === statusIdx) {
+                        } else if (idx === statusIdx) {
+                            dot.innerHTML = "";
+                        }
+                    } else {
+                        dot.style.backgroundColor = "#1f2937";
+                        dot.style.boxShadow = "none";
+                        dot.style.transform = "scale(1)";
                         dot.innerHTML = "";
                     }
-                } else {
+                } else if (dot && isCancelled) {
                     dot.style.backgroundColor = "#1f2937";
                     dot.style.boxShadow = "none";
                     dot.style.transform = "scale(1)";
                     dot.innerHTML = "";
                 }
-            } else if (dot && isCancelled) {
-                dot.style.backgroundColor = "#1f2937";
-                dot.style.boxShadow = "none";
-                dot.style.transform = "scale(1)";
-                dot.innerHTML = "";
-            }
 
-            if (text) {
-                text.className = `status-text absolute top-8 text-[8px] font-black uppercase tracking-tighter whitespace-nowrap transition-colors duration-500 ${!isCancelled && idx <= statusIdx ? "text-white" : "text-gray-700"}`;
+                if (text) {
+                    text.className = `status-text absolute top-8 text-[8px] font-black uppercase tracking-tighter whitespace-nowrap transition-colors duration-500 ${!isCancelled && idx <= statusIdx ? "text-white" : "text-gray-700"}`;
+                }
+            });
+        }) as EventListener);
+
+        // 4. Shipping Modal Dispatcher
+        document.addEventListener("click", (e) => {
+            const btn = (e.target as HTMLElement).closest(".shipping-btn");
+            if (btn) {
+                const orderId = btn.getAttribute("data-id")!;
+                const addressRaw = btn.getAttribute("data-address")!;
+
+                try {
+                    const address = JSON.parse(addressRaw);
+                    // Dispatch custom event for ShippingModal.tsx
+                    const event = new CustomEvent("open-shipping-modal", {
+                        detail: { address, orderId },
+                    });
+                    window.dispatchEvent(event);
+                } catch (err) {
+                    console.error("Error parsing address JSON:", err);
+                }
             }
         });
-    }) as EventListener);
-
-    // 4. Shipping Modal Dispatcher
-    document.addEventListener("click", (e) => {
-        const btn = (e.target as HTMLElement).closest(".shipping-btn");
-        if (btn) {
-            const orderId = btn.getAttribute("data-id")!;
-            const addressRaw = btn.getAttribute("data-address")!;
-
-            try {
-                const address = JSON.parse(addressRaw);
-                // Dispatch custom event for ShippingModal.tsx
-                const event = new CustomEvent("open-shipping-modal", {
-                    detail: { address, orderId },
-                });
-                window.dispatchEvent(event);
-            } catch (err) {
-                console.error("Error parsing address JSON:", err);
-            }
-        }
-    });
-</script>
+    </script>
+</AdminLayout>

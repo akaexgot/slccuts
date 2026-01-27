@@ -8,9 +8,14 @@ import MosaicBackground from "../components/ui/MosaicBackground.astro";
         <MosaicBackground mode="light" opacity="opacity-[0.03]" />
 
         <div class="container mx-auto px-4 max-w-2xl relative z-10">
-            <h1 class="text-3xl font-bold font-chomsky tracking-widest mb-8">
-                Mi Perfil
-            </h1>
+            <div class="mb-12">
+                <h1
+                    class="text-4xl md:text-6xl font-black text-black italic uppercase tracking-tighter mb-4"
+                >
+                    Mi <span class="text-gray-400">Perfil</span>
+                </h1>
+                <div class="h-1.5 w-full bg-black"></div>
+            </div>
 
             <div id="loading" class="text-center py-12">
                 <p class="text-gray-500">Cargando información del perfil...</p>

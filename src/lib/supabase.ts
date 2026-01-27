@@ -107,3 +107,34 @@ if (supabaseUrl && supabaseKey) {
 }
 
 export const supabase = client;
+
+export const getSupabasePageClient = async (cookies: any) => {
+    // If we're in mock mode, just return the singleton
+    if (!supabaseUrl || !supabaseKey) return client;
+
+    const accessToken = cookies.get("sb-access-token")?.value;
+    const refreshToken = cookies.get("sb-refresh-token")?.value;
+
+    // Use a fresh client for SSR to avoid session leaking
+    const pageClient = createClient(supabaseUrl, supabaseKey);
+
+    if (accessToken && refreshToken) {
+        try {
+            const { data: { session }, error } = await pageClient.auth.setSession({
+                access_token: accessToken,
+                refresh_token: refreshToken,
+            });
+
+            if (!error && session && session.access_token !== accessToken) {
+                console.log("Tokens refreshed during SSR utility, updating cookies");
+                const maxAge = 60 * 60 * 24 * 7;
+                cookies.set("sb-access-token", session.access_token, { path: "/", maxAge });
+                cookies.set("sb-refresh-token", session.refresh_token, { path: "/", maxAge });
+            }
+        } catch (err) {
+            console.error("Error setting session in SSR utility:", err);
+        }
+    }
+
+    return pageClient;
+};

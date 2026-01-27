@@ -40,14 +40,18 @@ if (Astro.request.method === "POST") {
 }
 ---
 
-<AdminLayout title="Categorías" activeSection="categories">
+<AdminLayout
+    title="Gestión de"
+    highlightTitle="Categorías"
+    subtitle="Gestiona las categorías de tus productos"
+    activeSection="categories"
+>
     <!-- Header -->
-    <div class="flex justify-between items-center mb-8">
-        <p class="text-gray-400">Gestiona las categorías de tus productos</p>
+    <div class="flex justify-end mb-8">
         <button
             type="button"
             id="openCreateModal"
-            class="bg-white text-black px-6 py-3 font-bold uppercase tracking-wider hover:bg-gray-200 transition-colors rounded-lg"
+            class="bg-white text-black px-8 py-4 font-bold uppercase tracking-widest text-[10px] hover:scale-[1.05] active:scale-[0.95] transition-all rounded-2xl shadow-xl"
         >
             + Nueva Categoría
         </button>
@@ -78,7 +82,7 @@ if (Astro.request.method === "POST") {
             </thead>
             <tbody class="divide-y divide-gray-700">
                 {
-                    categories?.map((category) => (
+                    categories?.map((category: any) => (
                         <tr class="hover:bg-gray-750 transition-colors">
                             <td class="px-6 py-4">
                                 <div class="w-12 h-12 bg-gray-900 rounded-lg overflow-hidden border border-white/10">
@@ -470,209 +474,213 @@ if (Astro.request.method === "POST") {
             </div>
         </div>
     </div>
-</AdminLayout>
 
-<script>
-    const modal = document.getElementById("categoryModal");
-    const deleteModal = document.getElementById("deleteModal");
-    const form = document.getElementById("categoryForm") as HTMLFormElement;
-    const modalTitle = document.getElementById("modalTitle");
-    const formAction = document.getElementById(
-        "formAction",
-    ) as HTMLInputElement;
-    const formCategoryId = document.getElementById(
-        "formCategoryId",
-    ) as HTMLInputElement;
-    const nameInput = document.getElementById(
-        "categoryName",
-    ) as HTMLInputElement;
-    const slugInput = document.getElementById(
-        "categorySlug",
-    ) as HTMLInputElement;
-    const deleteId = document.getElementById("deleteId") as HTMLInputElement;
+    <script>
+        const modal = document.getElementById("categoryModal");
+        const deleteModal = document.getElementById("deleteModal");
+        const form = document.getElementById("categoryForm") as HTMLFormElement;
+        const modalTitle = document.getElementById("modalTitle");
+        const formAction = document.getElementById(
+            "formAction",
+        ) as HTMLInputElement;
+        const formCategoryId = document.getElementById(
+            "formCategoryId",
+        ) as HTMLInputElement;
+        const nameInput = document.getElementById(
+            "categoryName",
+        ) as HTMLInputElement;
+        const slugInput = document.getElementById(
+            "categorySlug",
+        ) as HTMLInputElement;
+        const deleteId = document.getElementById(
+            "deleteId",
+        ) as HTMLInputElement;
 
-    // Image Upload Elements
-    const dropZone = document.getElementById("dropZone");
-    const fileInput = document.getElementById("fileInput") as HTMLInputElement;
-    const formImageUrl = document.getElementById(
-        "formImageUrl",
-    ) as HTMLInputElement;
-    const imagePreviewContainer = document.getElementById(
-        "imagePreviewContainer",
-    );
-    const imagePreview = document.getElementById(
-        "imagePreview",
-    ) as HTMLImageElement;
-    const removeImageBtn = document.getElementById("removeImage");
-    const uploadContent = document.getElementById("uploadContent");
-    const uploadProgress = document.getElementById("uploadProgress");
-
-    // Toast
-    const toast = document.getElementById("toast");
-    const toastMessage = document.getElementById("toastMessage");
-
-    function showToast(message: string, isError = false) {
-        if (toastMessage) toastMessage.innerText = message;
-        toast?.classList.remove("translate-y-32", "opacity-0");
-        setTimeout(
-            () => toast?.classList.add("translate-y-32", "opacity-0"),
-            3000,
+        // Image Upload Elements
+        const dropZone = document.getElementById("dropZone");
+        const fileInput = document.getElementById(
+            "fileInput",
+        ) as HTMLInputElement;
+        const formImageUrl = document.getElementById(
+            "formImageUrl",
+        ) as HTMLInputElement;
+        const imagePreviewContainer = document.getElementById(
+            "imagePreviewContainer",
         );
-    }
+        const imagePreview = document.getElementById(
+            "imagePreview",
+        ) as HTMLImageElement;
+        const removeImageBtn = document.getElementById("removeImage");
+        const uploadContent = document.getElementById("uploadContent");
+        const uploadProgress = document.getElementById("uploadProgress");
 
-    // Helper to generate slug
-    const generateSlug = (text: string) => {
-        return text
-            .toLowerCase()
-            .normalize("NFD")
-            .replace(/[\u0300-\u036f]/g, "")
-            .replace(/[^\w ]+/g, "")
-            .replace(/ +/g, "-");
-    };
+        // Toast
+        const toast = document.getElementById("toast");
+        const toastMessage = document.getElementById("toastMessage");
 
-    nameInput?.addEventListener("input", (e) => {
-        if (formAction.value === "create") {
-            slugInput.value = generateSlug(
-                (e.target as HTMLInputElement).value,
+        function showToast(message: string, isError = false) {
+            if (toastMessage) toastMessage.innerText = message;
+            toast?.classList.remove("translate-y-32", "opacity-0");
+            setTimeout(
+                () => toast?.classList.add("translate-y-32", "opacity-0"),
+                3000,
             );
         }
-    });
 
-    // Image Upload Handlers
-    dropZone?.addEventListener("click", () => fileInput.click());
+        // Helper to generate slug
+        const generateSlug = (text: string) => {
+            return text
+                .toLowerCase()
+                .normalize("NFD")
+                .replace(/[\u0300-\u036f]/g, "")
+                .replace(/[^\w ]+/g, "")
+                .replace(/ +/g, "-");
+        };
 
-    dropZone?.addEventListener("dragover", (e) => {
-        e.preventDefault();
-        dropZone.classList.add("border-white/20", "bg-white/5");
-    });
-
-    dropZone?.addEventListener("dragleave", () => {
-        dropZone.classList.remove("border-white/20", "bg-white/5");
-    });
-
-    dropZone?.addEventListener("drop", async (e) => {
-        e.preventDefault();
-        dropZone.classList.remove("border-white/20", "bg-white/5");
-        const files = e.dataTransfer?.files;
-        if (files && files.length > 0) await handleUpload(files[0]);
-    });
-
-    fileInput?.addEventListener("change", async () => {
-        if (fileInput.files && fileInput.files.length > 0) {
-            await handleUpload(fileInput.files[0]);
-        }
-    });
-
-    async function handleUpload(file: File) {
-        if (!file.type.startsWith("image/")) {
-            showToast("Por favor, sube una imagen", true);
-            return;
-        }
-
-        uploadProgress?.classList.remove("hidden");
-
-        try {
-            const formData = new FormData();
-            formData.append("file", file);
-
-            const response = await fetch("/api/categories/upload", {
-                method: "POST",
-                body: formData,
-            });
-
-            const data = await response.json();
-
-            if (data.success) {
-                formImageUrl.value = data.url;
-                imagePreview.src = data.url;
-                imagePreviewContainer?.classList.remove("hidden");
-                dropZone?.classList.add("hidden");
-                showToast("Imagen subida");
-            } else {
-                showToast(data.error || "Error al subir", true);
+        nameInput?.addEventListener("input", (e) => {
+            if (formAction.value === "create") {
+                slugInput.value = generateSlug(
+                    (e.target as HTMLInputElement).value,
+                );
             }
-        } catch (error) {
-            showToast("Error de conexión", true);
-        } finally {
-            uploadProgress?.classList.add("hidden");
-            fileInput.value = "";
+        });
+
+        // Image Upload Handlers
+        dropZone?.addEventListener("click", () => fileInput.click());
+
+        dropZone?.addEventListener("dragover", (e) => {
+            e.preventDefault();
+            dropZone.classList.add("border-white/20", "bg-white/5");
+        });
+
+        dropZone?.addEventListener("dragleave", () => {
+            dropZone.classList.remove("border-white/20", "bg-white/5");
+        });
+
+        dropZone?.addEventListener("drop", async (e) => {
+            e.preventDefault();
+            dropZone.classList.remove("border-white/20", "bg-white/5");
+            const files = e.dataTransfer?.files;
+            if (files && files.length > 0) await handleUpload(files[0]);
+        });
+
+        fileInput?.addEventListener("change", async () => {
+            if (fileInput.files && fileInput.files.length > 0) {
+                await handleUpload(fileInput.files[0]);
+            }
+        });
+
+        async function handleUpload(file: File) {
+            if (!file.type.startsWith("image/")) {
+                showToast("Por favor, sube una imagen", true);
+                return;
+            }
+
+            uploadProgress?.classList.remove("hidden");
+
+            try {
+                const formData = new FormData();
+                formData.append("file", file);
+
+                const response = await fetch("/api/categories/upload", {
+                    method: "POST",
+                    body: formData,
+                });
+
+                const data = await response.json();
+
+                if (data.success) {
+                    formImageUrl.value = data.url;
+                    imagePreview.src = data.url;
+                    imagePreviewContainer?.classList.remove("hidden");
+                    dropZone?.classList.add("hidden");
+                    showToast("Imagen subida");
+                } else {
+                    showToast(data.error || "Error al subir", true);
+                }
+            } catch (error) {
+                showToast("Error de conexión", true);
+            } finally {
+                uploadProgress?.classList.add("hidden");
+                fileInput.value = "";
+            }
         }
-    }
 
-    removeImageBtn?.addEventListener("click", (e) => {
-        e.stopPropagation();
-        formImageUrl.value = "";
-        imagePreview.src = "";
-        imagePreviewContainer?.classList.add("hidden");
-        dropZone?.classList.remove("hidden");
-    });
-
-    // Open Create Modal
-    document
-        .getElementById("openCreateModal")
-        ?.addEventListener("click", () => {
-            modalTitle!.innerText = "Nueva Categoría";
-            formAction.value = "create";
-            form.reset();
+        removeImageBtn?.addEventListener("click", (e) => {
+            e.stopPropagation();
             formImageUrl.value = "";
             imagePreview.src = "";
             imagePreviewContainer?.classList.add("hidden");
             dropZone?.classList.remove("hidden");
-            modal?.classList.remove("hidden");
         });
 
-    // Open Edit Modal
-    document.querySelectorAll(".edit-btn").forEach((btn) => {
-        btn.addEventListener("click", () => {
-            const category = JSON.parse(btn.getAttribute("data-category")!);
-            modalTitle!.innerText = "Editar Categoría";
-            formAction.value = "update";
-            formCategoryId.value = category.id;
-            nameInput.value = category.name;
-            slugInput.value = category.slug;
-
-            // Handle Image
-            if (category.image_url) {
-                formImageUrl.value = category.image_url;
-                imagePreview.src = category.image_url;
-                imagePreviewContainer?.classList.remove("hidden");
-                dropZone?.classList.add("hidden");
-            } else {
+        // Open Create Modal
+        document
+            .getElementById("openCreateModal")
+            ?.addEventListener("click", () => {
+                modalTitle!.innerText = "Nueva Categoría";
+                formAction.value = "create";
+                form.reset();
                 formImageUrl.value = "";
                 imagePreview.src = "";
                 imagePreviewContainer?.classList.add("hidden");
                 dropZone?.classList.remove("hidden");
-            }
+                modal?.classList.remove("hidden");
+            });
 
-            modal?.classList.remove("hidden");
+        // Open Edit Modal
+        document.querySelectorAll(".edit-btn").forEach((btn) => {
+            btn.addEventListener("click", () => {
+                const category = JSON.parse(btn.getAttribute("data-category")!);
+                modalTitle!.innerText = "Editar Categoría";
+                formAction.value = "update";
+                formCategoryId.value = category.id;
+                nameInput.value = category.name;
+                slugInput.value = category.slug;
+
+                // Handle Image
+                if (category.image_url) {
+                    formImageUrl.value = category.image_url;
+                    imagePreview.src = category.image_url;
+                    imagePreviewContainer?.classList.remove("hidden");
+                    dropZone?.classList.add("hidden");
+                } else {
+                    formImageUrl.value = "";
+                    imagePreview.src = "";
+                    imagePreviewContainer?.classList.add("hidden");
+                    dropZone?.classList.remove("hidden");
+                }
+
+                modal?.classList.remove("hidden");
+            });
         });
-    });
 
-    // Open Delete Modal
-    document.querySelectorAll(".delete-btn").forEach((btn) => {
-        btn.addEventListener("click", () => {
-            const id = btn.getAttribute("data-id");
-            deleteId.value = id!;
-            deleteModal?.classList.remove("hidden");
+        // Open Delete Modal
+        document.querySelectorAll(".delete-btn").forEach((btn) => {
+            btn.addEventListener("click", () => {
+                const id = btn.getAttribute("data-id");
+                deleteId.value = id!;
+                deleteModal?.classList.remove("hidden");
+            });
         });
-    });
 
-    // Close Modals
-    document.querySelectorAll(".close-modal").forEach((btn) => {
-        btn.addEventListener("click", () => {
-            modal?.classList.add("hidden");
+        // Close Modals
+        document.querySelectorAll(".close-modal").forEach((btn) => {
+            btn.addEventListener("click", () => {
+                modal?.classList.add("hidden");
+            });
         });
-    });
 
-    document.querySelectorAll(".close-delete-modal").forEach((btn) => {
-        btn.addEventListener("click", () => {
-            deleteModal?.classList.add("hidden");
+        document.querySelectorAll(".close-delete-modal").forEach((btn) => {
+            btn.addEventListener("click", () => {
+                deleteModal?.classList.add("hidden");
+            });
         });
-    });
 
-    // Close on backdrop click
-    window.addEventListener("click", (e) => {
-        if (e.target === modal) modal?.classList.add("hidden");
-        if (e.target === deleteModal) deleteModal?.classList.add("hidden");
-    });
-</script>
+        // Close on backdrop click
+        window.addEventListener("click", (e) => {
+            if (e.target === modal) modal?.classList.add("hidden");
+            if (e.target === deleteModal) deleteModal?.classList.add("hidden");
+        });
+    </script>
+</AdminLayout>

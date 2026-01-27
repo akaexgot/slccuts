@@ -119,20 +119,12 @@ const visitsLabels = Object.keys(visitsByDay);
 const visitsValues = Object.values(visitsByDay);
 ---
 
-<AdminLayout title="Dashboard" activeSection="dashboard">
-    <!-- Welcome Header with Logo -->
-    <div class="flex items-center gap-6 mb-10">
-        <img
-            src="/logoblancotransparente.png"
-            alt="SLC CUTS"
-            class="h-20 w-20 object-contain"
-        />
-        <div>
-            <h2 class="text-3xl font-bold text-white">Bienvenido al Panel</h2>
-            <p class="text-gray-400 mt-1">Gestiona tu barbería desde aquí</p>
-        </div>
-    </div>
-
+<AdminLayout
+    title="Bienvenido al"
+    highlightTitle="Panel"
+    subtitle="Gestiona tu tienda y barbería desde aquí"
+    activeSection="dashboard"
+>
     <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
         <!-- Products Card -->
         <a

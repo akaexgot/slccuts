@@ -5,10 +5,17 @@ import { supabase } from "../lib/supabase";
 
 interface Props {
     title: string;
+    highlightTitle?: string;
+    subtitle?: string;
     activeSection?: string;
 }
 
-const { title, activeSection = "dashboard" } = Astro.props;
+const {
+    title,
+    highlightTitle,
+    subtitle,
+    activeSection = "dashboard",
+} = Astro.props;
 
 // Fetch feature settings
 const { data: featureSettings } = await supabase
@@ -126,7 +133,7 @@ const filteredNavItems = navItems.filter((item) => {
         <title>{title} | Admin SLC CUTS</title>
     </head>
     <body
-        class="bg-gray-900 text-white min-h-screen flex relative"
+        class="bg-gray-900 text-white min-h-screen relative overflow-x-hidden"
         id="adminBody"
     >
         <!-- Loading Overlay -->
@@ -513,6 +520,17 @@ const filteredNavItems = navItems.filter((item) => {
                     return;
                 }
 
+                // Auto-fix missing cookies for SSR if needed
+                if (!document.cookie.includes("sb-access-token")) {
+                    console.log("Restoring SSR cookies...");
+                    const maxAge = 60 * 60 * 24 * 7;
+                    document.cookie = `sb-access-token=${session.access_token}; path=/; max-age=${maxAge}; samesite=lax`;
+                    document.cookie = `sb-refresh-token=${session.refresh_token}; path=/; max-age=${maxAge}; samesite=lax`;
+                    // Redirect to self to trigger SSR with cookies
+                    window.location.reload();
+                    return;
+                }
+
                 // Double check role
                 const { data: profile, error } = await supabase
                     .from("users")
@@ -573,8 +591,30 @@ const filteredNavItems = navItems.filter((item) => {
                 .getElementById("logoutBtn")
                 ?.addEventListener("click", async () => {
                     await supabase.auth.signOut();
+                    // Clear cookies
+                    document.cookie =
+                        "sb-access-token=; path=/; expires=Thu, 01 Jan 1970 00:00:00 UTC";
+                    document.cookie =
+                        "sb-refresh-token=; path=/; expires=Thu, 01 Jan 1970 00:00:00 UTC";
                     window.location.href = "/login";
                 });
+
+            // Keep cookies in sync with current session (especially for refreshes)
+            supabase.auth.onAuthStateChange((event: any, session: any) => {
+                if (
+                    session &&
+                    (event === "SIGNED_IN" || event === "TOKEN_REFRESHED")
+                ) {
+                    const maxAge = 60 * 60 * 24 * 7;
+                    document.cookie = `sb-access-token=${session.access_token}; path=/; max-age=${maxAge}; samesite=lax`;
+                    document.cookie = `sb-refresh-token=${session.refresh_token}; path=/; max-age=${maxAge}; samesite=lax`;
+                } else if (event === "SIGNED_OUT") {
+                    document.cookie =
+                        "sb-access-token=; path=/; expires=Thu, 01 Jan 1970 00:00:00 UTC";
+                    document.cookie =
+                        "sb-refresh-token=; path=/; expires=Thu, 01 Jan 1970 00:00:00 UTC";
+                }
+            });
 
             // Sidebar Toggle Logic
             const sidebar = document.getElementById("adminSidebar");
@@ -654,14 +694,14 @@ const filteredNavItems = navItems.filter((item) => {
         </script>
 
         <!-- Main Content -->
-        <main class="flex-1 lg:ml-64 min-h-screen relative z-10 w-full">
+        <main class="lg:ml-64 min-h-screen relative z-10">
             <!-- Top Bar -->
             <header
-                class="bg-gray-900/80 backdrop-blur-sm border-b border-gray-700 px-4 md:px-8 py-4 sticky top-0 z-40 flex items-center justify-between"
+                class="bg-gray-900/90 backdrop-blur-md border-b border-white/5 px-6 md:px-12 py-8 sticky top-0 z-40 flex items-center justify-between"
             >
-                <div class="flex items-center gap-4">
+                <div class="flex items-center gap-6">
                     <button
-                        class="sidebar-toggle p-2 text-gray-400 hover:text-white transition-colors lg:hidden -ml-2"
+                        class="sidebar-toggle p-3 bg-white/5 rounded-2xl text-gray-400 hover:text-white transition-all lg:hidden -ml-2 hover:bg-white/10"
                         aria-label="Abrir menú"
                     >
                         <svg
@@ -671,7 +711,7 @@ const filteredNavItems = navItems.filter((item) => {
                             viewBox="0 0 24 24"
                             fill="none"
                             stroke="currentColor"
-                            stroke-width="2"
+                            stroke-width="3"
                             stroke-linecap="round"
                             stroke-linejoin="round"
                             class="lucide lucide-menu"
@@ -686,11 +726,27 @@ const filteredNavItems = navItems.filter((item) => {
                                 y2="18"></line></svg
                         >
                     </button>
-                    <h1
-                        class="text-xl md:text-2xl font-bold uppercase tracking-wider truncate"
-                    >
-                        {title}
-                    </h1>
+                    <div class="flex flex-col">
+                        <h1
+                            class="text-3xl xl:text-5xl font-black text-white tracking-tighter truncate leading-none flex items-center gap-4"
+                        >
+                            <span class="text-white">{title}</span>
+                            {
+                                highlightTitle && (
+                                    <span class="text-blue-500 italic">
+                                        {highlightTitle}
+                                    </span>
+                                )
+                            }
+                        </h1>
+                        {
+                            subtitle && (
+                                <p class="text-[11px] md:text-xs font-black text-gray-500 uppercase tracking-[0.3em] mt-3 ml-1">
+                                    {subtitle}
+                                </p>
+                            )
+                        }
+                    </div>
                 </div>
 
                 <div class="flex items-center gap-3">
@@ -720,7 +776,7 @@ const filteredNavItems = navItems.filter((item) => {
             </header>
 
             <!-- Page Content -->
-            <div class="p-4 md:p-8">
+            <div class="px-6 md:px-12 py-8 max-w-full overflow-x-hidden">
                 <slot />
             </div>
         </main>

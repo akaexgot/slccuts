@@ -23,20 +23,19 @@ const formatDate = (dateStr: string) => {
 };
 ---
 
-<AdminLayout title="Gestionar Noticias" activeSection="news">
-    <div class="flex justify-between items-center mb-10">
-        <div>
-            <h2 class="text-3xl font-bold text-white">Publicaciones</h2>
-            <p class="text-gray-400 mt-1">
-                Gestiona las noticias y novedades de tu tienda
-            </p>
-        </div>
+<AdminLayout
+    title="Gestión de"
+    highlightTitle="Noticias"
+    subtitle="Gestiona las noticias y novedades de tu tienda"
+    activeSection="news"
+>
+    <div class="flex justify-end mb-10">
         <button
             type="button"
             id="openNewsModal"
-            class="bg-pink-600 hover:bg-pink-700 text-white px-6 py-3 rounded-xl font-bold uppercase tracking-wider transition-all shadow-lg shadow-pink-500/20 active:scale-95 flex items-center gap-2"
+            class="h-16 px-10 bg-white text-black rounded-[2rem] text-[11px] font-black uppercase tracking-widest hover:scale-[1.05] active:scale-[0.95] transition-all shadow-2xl flex items-center gap-3"
         >
-            <span>+</span> Nueva Publicación
+            <span class="text-xl">+</span> Nueva Publicación
         </button>
     </div>
 
@@ -317,300 +316,316 @@ const formatDate = (dateStr: string) => {
             </div>
         </div>
     </div>
-</AdminLayout>
 
-<script>
-    import { supabase } from "../../../lib/supabase";
+    <script>
+        import { supabase } from "../../../lib/supabase";
 
-    // Modal Logic
-    const openBtn = document.getElementById("openNewsModal");
-    const modal = document.getElementById("newsModal");
-    const modalTitle = document.getElementById("modalTitle");
-    const submitBtn = document.getElementById("submitBtn") as HTMLButtonElement;
-    const closeBtns = document.querySelectorAll("[data-close-modal]");
-    const form = document.getElementById("newsForm") as HTMLFormElement;
-    const newsIdInput = document.getElementById(
-        "newsIdInput",
-    ) as HTMLInputElement;
-
-    openBtn?.addEventListener("click", () => {
-        newsIdInput.value = "";
-        if (modalTitle) modalTitle.innerText = "Nueva Publicación";
-        if (submitBtn) submitBtn.innerText = "Publicar Ahora";
-        modal?.classList.remove("hidden");
-        modal?.classList.add("flex");
-        document.body.style.overflow = "hidden";
-    });
-
-    const closeModal = () => {
-        modal?.classList.add("hidden");
-        modal?.classList.remove("flex");
-        document.body.style.overflow = "auto";
-        form?.reset();
-        document
-            .getElementById("newsImagePreviewContainer")
-            ?.classList.add("hidden");
-        document.getElementById("newsDropZone")?.classList.remove("hidden");
-        (
-            document.getElementById("newsFormImageUrl") as HTMLInputElement
-        ).value = "";
-    };
-
-    closeBtns.forEach((btn) => btn.addEventListener("click", closeModal));
-
-    // Edit Logic (Event Delegation)
-    document.addEventListener("click", (e) => {
-        const btn = (e.target as HTMLElement).closest(
-            ".edit-news-btn",
+        // Modal Logic
+        const openBtn = document.getElementById("openNewsModal");
+        const modal = document.getElementById("newsModal");
+        const modalTitle = document.getElementById("modalTitle");
+        const submitBtn = document.getElementById(
+            "submitBtn",
         ) as HTMLButtonElement;
-        if (!btn) return;
+        const closeBtns = document.querySelectorAll("[data-close-modal]");
+        const form = document.getElementById("newsForm") as HTMLFormElement;
+        const newsIdInput = document.getElementById(
+            "newsIdInput",
+        ) as HTMLInputElement;
 
-        try {
-            const dataAttr = btn.getAttribute("data-item");
-            if (!dataAttr) return;
-            const item = JSON.parse(dataAttr);
-
-            // Populate form
-            if (newsIdInput) newsIdInput.value = item.id;
-
-            const titleField = form.querySelector(
-                'input[name="title"]',
-            ) as HTMLInputElement;
-            const slugField = form.querySelector(
-                'input[name="slug"]',
-            ) as HTMLInputElement;
-            const contentField = form.querySelector(
-                'textarea[name="content"]',
-            ) as HTMLTextAreaElement;
-            const imgUrlField = form.querySelector(
-                'input[name="image_url"]',
-            ) as HTMLInputElement;
-
-            if (titleField) titleField.value = item.title;
-            if (slugField) slugField.value = item.slug;
-            if (contentField) contentField.value = item.content;
-            if (imgUrlField) imgUrlField.value = item.image_url || "";
-
-            if (item.image_url) {
-                const previewImg = document.getElementById(
-                    "newsImagePreview",
-                ) as HTMLImageElement;
-                const previewContainer = document.getElementById(
-                    "newsImagePreviewContainer",
-                );
-                const dropZone = document.getElementById("newsDropZone");
-
-                if (previewImg) previewImg.src = item.image_url;
-                previewContainer?.classList.remove("hidden");
-                dropZone?.classList.add("hidden");
-            } else {
-                document
-                    .getElementById("newsImagePreviewContainer")
-                    ?.classList.add("hidden");
-                document
-                    .getElementById("newsDropZone")
-                    ?.classList.remove("hidden");
-            }
-
-            if (modalTitle) modalTitle.innerText = "Editar Publicación";
-            if (submitBtn) submitBtn.innerText = "Guardar Cambios";
-
+        openBtn?.addEventListener("click", () => {
+            newsIdInput.value = "";
+            if (modalTitle) modalTitle.innerText = "Nueva Publicación";
+            if (submitBtn) submitBtn.innerText = "Publicar Ahora";
             modal?.classList.remove("hidden");
             modal?.classList.add("flex");
             document.body.style.overflow = "hidden";
-        } catch (err) {
-            console.error("Error opening edit modal:", err);
-        }
-    });
+        });
 
-    // Slug Auto-generation
-    const titleInput = form?.querySelector(
-        'input[name="title"]',
-    ) as HTMLInputElement;
-    const slugInput = form?.querySelector(
-        'input[name="slug"]',
-    ) as HTMLInputElement;
-
-    titleInput?.addEventListener("input", (e) => {
-        if (newsIdInput.value) return; // Don't auto-slug when editing
-        const val = (e.target as HTMLInputElement).value;
-        slugInput.value = val
-            .toLowerCase()
-            .normalize("NFD")
-            .replace(/[\u0300-\u036f]/g, "")
-            .replace(/[^a-z0-9]+/g, "-")
-            .replace(/^-+|-+$/g, "");
-    });
-
-    // Image Upload Logic
-    const dropZone = document.getElementById("newsDropZone");
-    const fileInput = document.getElementById(
-        "newsFileInput",
-    ) as HTMLInputElement;
-    const previewContainer = document.getElementById(
-        "newsImagePreviewContainer",
-    );
-    const previewImg = document.getElementById(
-        "newsImagePreview",
-    ) as HTMLImageElement;
-    const progress = document.getElementById("newsUploadProgress");
-    const hiddenUrlInput = document.getElementById(
-        "newsFormImageUrl",
-    ) as HTMLInputElement;
-    const removeImgBtn = document.getElementById("removeNewsImage");
-
-    dropZone?.addEventListener("click", () => fileInput.click());
-
-    fileInput?.addEventListener("change", async (e) => {
-        const files = (e.target as HTMLInputElement).files;
-        if (!files || files.length === 0) return;
-
-        const file = files[0];
-        const fileExt = file.name.split(".").pop();
-        const fileName = `${Math.random()}.${fileExt}`;
-        const filePath = `news/${fileName}`;
-
-        try {
-            dropZone?.classList.add("hidden");
-            progress?.classList.remove("hidden");
-
-            const { error: uploadError } = await supabase.storage
-                .from("news")
-                .upload(filePath, file);
-
-            if (uploadError) throw uploadError;
-
-            const {
-                data: { publicUrl },
-            } = supabase.storage.from("news").getPublicUrl(filePath);
-
-            hiddenUrlInput.value = publicUrl;
-            previewImg.src = publicUrl;
-            previewContainer?.classList.remove("hidden");
-            window.showToast("Éxito", "Imagen subida correctamente", "success");
-        } catch (error) {
-            console.error("Full upload error:", error);
-            const errorMessage =
-                error instanceof Error ? error.message : "Error desconocido";
-            window.showToast(
-                "Error",
-                `Error al subir la imagen: ${errorMessage}`,
-                "error",
-            );
-            dropZone?.classList.remove("hidden");
-        } finally {
-            progress?.classList.add("hidden");
-        }
-    });
-
-    removeImgBtn?.addEventListener("click", () => {
-        hiddenUrlInput.value = "";
-        previewContainer?.classList.add("hidden");
-        dropZone?.classList.remove("hidden");
-        fileInput.value = "";
-    });
-
-    // Form Submission
-    form?.addEventListener("submit", async (e) => {
-        e.preventDefault();
-        submitBtn.disabled = true;
-        submitBtn.innerText = "Guardando...";
-
-        const formData = new FormData(form);
-        const id = formData.get("id");
-        const data: any = {
-            title: formData.get("title"),
-            slug: formData.get("slug"),
-            content: formData.get("content"),
-            image_url: formData.get("image_url"),
-            is_published: true,
+        const closeModal = () => {
+            modal?.classList.add("hidden");
+            modal?.classList.remove("flex");
+            document.body.style.overflow = "auto";
+            form?.reset();
+            document
+                .getElementById("newsImagePreviewContainer")
+                ?.classList.add("hidden");
+            document.getElementById("newsDropZone")?.classList.remove("hidden");
+            (
+                document.getElementById("newsFormImageUrl") as HTMLInputElement
+            ).value = "";
         };
 
-        try {
-            if (id) {
+        closeBtns.forEach((btn) => btn.addEventListener("click", closeModal));
+
+        // Edit Logic (Event Delegation)
+        document.addEventListener("click", (e) => {
+            const btn = (e.target as HTMLElement).closest(
+                ".edit-news-btn",
+            ) as HTMLButtonElement;
+            if (!btn) return;
+
+            try {
+                const dataAttr = btn.getAttribute("data-item");
+                if (!dataAttr) return;
+                const item = JSON.parse(dataAttr);
+
+                // Populate form
+                if (newsIdInput) newsIdInput.value = item.id;
+
+                const titleField = form.querySelector(
+                    'input[name="title"]',
+                ) as HTMLInputElement;
+                const slugField = form.querySelector(
+                    'input[name="slug"]',
+                ) as HTMLInputElement;
+                const contentField = form.querySelector(
+                    'textarea[name="content"]',
+                ) as HTMLTextAreaElement;
+                const imgUrlField = form.querySelector(
+                    'input[name="image_url"]',
+                ) as HTMLInputElement;
+
+                if (titleField) titleField.value = item.title;
+                if (slugField) slugField.value = item.slug;
+                if (contentField) contentField.value = item.content;
+                if (imgUrlField) imgUrlField.value = item.image_url || "";
+
+                if (item.image_url) {
+                    const previewImg = document.getElementById(
+                        "newsImagePreview",
+                    ) as HTMLImageElement;
+                    const previewContainer = document.getElementById(
+                        "newsImagePreviewContainer",
+                    );
+                    const dropZone = document.getElementById("newsDropZone");
+
+                    if (previewImg) previewImg.src = item.image_url;
+                    previewContainer?.classList.remove("hidden");
+                    dropZone?.classList.add("hidden");
+                } else {
+                    document
+                        .getElementById("newsImagePreviewContainer")
+                        ?.classList.add("hidden");
+                    document
+                        .getElementById("newsDropZone")
+                        ?.classList.remove("hidden");
+                }
+
+                if (modalTitle) modalTitle.innerText = "Editar Publicación";
+                if (submitBtn) submitBtn.innerText = "Guardar Cambios";
+
+                modal?.classList.remove("hidden");
+                modal?.classList.add("flex");
+                document.body.style.overflow = "hidden";
+            } catch (err) {
+                console.error("Error opening edit modal:", err);
+            }
+        });
+
+        // Slug Auto-generation
+        const titleInput = form?.querySelector(
+            'input[name="title"]',
+        ) as HTMLInputElement;
+        const slugInput = form?.querySelector(
+            'input[name="slug"]',
+        ) as HTMLInputElement;
+
+        titleInput?.addEventListener("input", (e) => {
+            if (newsIdInput.value) return; // Don't auto-slug when editing
+            const val = (e.target as HTMLInputElement).value;
+            slugInput.value = val
+                .toLowerCase()
+                .normalize("NFD")
+                .replace(/[\u0300-\u036f]/g, "")
+                .replace(/[^a-z0-9]+/g, "-")
+                .replace(/^-+|-+$/g, "");
+        });
+
+        // Image Upload Logic
+        const dropZone = document.getElementById("newsDropZone");
+        const fileInput = document.getElementById(
+            "newsFileInput",
+        ) as HTMLInputElement;
+        const previewContainer = document.getElementById(
+            "newsImagePreviewContainer",
+        );
+        const previewImg = document.getElementById(
+            "newsImagePreview",
+        ) as HTMLImageElement;
+        const progress = document.getElementById("newsUploadProgress");
+        const hiddenUrlInput = document.getElementById(
+            "newsFormImageUrl",
+        ) as HTMLInputElement;
+        const removeImgBtn = document.getElementById("removeNewsImage");
+
+        dropZone?.addEventListener("click", () => fileInput.click());
+
+        fileInput?.addEventListener("change", async (e) => {
+            const files = (e.target as HTMLInputElement).files;
+            if (!files || files.length === 0) return;
+
+            const file = files[0];
+            const fileExt = file.name.split(".").pop();
+            const fileName = `${Math.random()}.${fileExt}`;
+            const filePath = `news/${fileName}`;
+
+            try {
+                dropZone?.classList.add("hidden");
+                progress?.classList.remove("hidden");
+
+                const { error: uploadError } = await supabase.storage
+                    .from("news")
+                    .upload(filePath, file);
+
+                if (uploadError) throw uploadError;
+
+                const {
+                    data: { publicUrl },
+                } = supabase.storage.from("news").getPublicUrl(filePath);
+
+                hiddenUrlInput.value = publicUrl;
+                previewImg.src = publicUrl;
+                previewContainer?.classList.remove("hidden");
+                (window as any).showToast(
+                    "Éxito",
+                    "Imagen subida correctamente",
+                    "success",
+                );
+            } catch (error) {
+                console.error("Full upload error:", error);
+                const errorMessage =
+                    error instanceof Error
+                        ? error.message
+                        : "Error desconocido";
+                (window as any).showToast(
+                    "Error",
+                    `Error al subir la imagen: ${errorMessage}`,
+                    "error",
+                );
+                dropZone?.classList.remove("hidden");
+            } finally {
+                progress?.classList.add("hidden");
+            }
+        });
+
+        removeImgBtn?.addEventListener("click", () => {
+            hiddenUrlInput.value = "";
+            previewContainer?.classList.add("hidden");
+            dropZone?.classList.remove("hidden");
+            fileInput.value = "";
+        });
+
+        // Form Submission
+        form?.addEventListener("submit", async (e) => {
+            e.preventDefault();
+            submitBtn.disabled = true;
+            submitBtn.innerText = "Guardando...";
+
+            const formData = new FormData(form);
+            const id = formData.get("id");
+            const data: any = {
+                title: formData.get("title"),
+                slug: formData.get("slug"),
+                content: formData.get("content"),
+                image_url: formData.get("image_url"),
+                is_published: true,
+            };
+
+            try {
+                if (id) {
+                    const { error } = await supabase
+                        .from("news")
+                        .update(data)
+                        .eq("id", id);
+                    if (error) throw error;
+                } else {
+                    const { error } = await supabase
+                        .from("news")
+                        .insert([data]);
+                    if (error) throw error;
+                }
+                (window as any).showToast(
+                    "Éxito",
+                    "Noticia guardada correctamente",
+                    "success",
+                );
+                setTimeout(() => window.location.reload(), 1000);
+            } catch (error) {
+                console.error("Database Error:", error);
+                const errorMessage =
+                    error instanceof Error
+                        ? error.message
+                        : "Error desconocido";
+                (window as any).showToast(
+                    "Error",
+                    `Error al guardar: ${errorMessage}`,
+                    "error",
+                );
+                submitBtn.disabled = false;
+                submitBtn.innerText = id ? "Guardar Cambios" : "Publicar Ahora";
+            }
+        });
+
+        // Delete Logic (Stylish Modal)
+        const deleteModal = document.getElementById("deleteModal");
+        const confirmDeleteBtn = document.getElementById("confirmDeleteBtn");
+        const cancelDeleteBtn = document.getElementById("cancelDeleteBtn");
+        const deleteItemTitle = document.getElementById("deleteItemTitle");
+        let itemToDeleteId: string | null = null;
+
+        document.querySelectorAll(".delete-news-btn").forEach((btn) => {
+            btn.addEventListener("click", () => {
+                const id = btn.getAttribute("data-id");
+                const title = btn.getAttribute("data-title");
+                if (!id) return;
+
+                itemToDeleteId = id;
+                if (deleteItemTitle)
+                    deleteItemTitle.innerText = title || "esta noticia";
+
+                deleteModal?.classList.remove("hidden");
+                deleteModal?.classList.add("flex");
+                document.body.style.overflow = "hidden";
+            });
+        });
+
+        cancelDeleteBtn?.addEventListener("click", () => {
+            deleteModal?.classList.add("hidden");
+            deleteModal?.classList.remove("flex");
+            document.body.style.overflow = "auto";
+            itemToDeleteId = null;
+        });
+
+        confirmDeleteBtn?.addEventListener("click", async () => {
+            if (!itemToDeleteId) return;
+
+            const originalText = confirmDeleteBtn.innerText;
+            (confirmDeleteBtn as HTMLButtonElement).disabled = true;
+            confirmDeleteBtn.innerText = "Eliminando...";
+
+            try {
                 const { error } = await supabase
                     .from("news")
-                    .update(data)
-                    .eq("id", id);
+                    .delete()
+                    .eq("id", itemToDeleteId);
                 if (error) throw error;
-            } else {
-                const { error } = await supabase.from("news").insert([data]);
-                if (error) throw error;
+                (window as any).showToast(
+                    "Éxito",
+                    "Noticia eliminada correctamente",
+                    "success",
+                );
+                setTimeout(() => window.location.reload(), 1000);
+            } catch (error) {
+                console.error("Error deleting news:", error);
+                (window as any).showToast(
+                    "Error",
+                    "Error al eliminar la noticia",
+                    "error",
+                );
+                (confirmDeleteBtn as HTMLButtonElement).disabled = false;
+                confirmDeleteBtn.innerText = originalText;
             }
-            window.showToast(
-                "Éxito",
-                "Noticia guardada correctamente",
-                "success",
-            );
-            setTimeout(() => window.location.reload(), 1000);
-        } catch (error) {
-            console.error("Database Error:", error);
-            const errorMessage =
-                error instanceof Error ? error.message : "Error desconocido";
-            window.showToast(
-                "Error",
-                `Error al guardar: ${errorMessage}`,
-                "error",
-            );
-            submitBtn.disabled = false;
-            submitBtn.innerText = id ? "Guardar Cambios" : "Publicar Ahora";
-        }
-    });
-
-    // Delete Logic (Stylish Modal)
-    const deleteModal = document.getElementById("deleteModal");
-    const confirmDeleteBtn = document.getElementById("confirmDeleteBtn");
-    const cancelDeleteBtn = document.getElementById("cancelDeleteBtn");
-    const deleteItemTitle = document.getElementById("deleteItemTitle");
-    let itemToDeleteId: string | null = null;
-
-    document.querySelectorAll(".delete-news-btn").forEach((btn) => {
-        btn.addEventListener("click", () => {
-            const id = btn.getAttribute("data-id");
-            const title = btn.getAttribute("data-title");
-            if (!id) return;
-
-            itemToDeleteId = id;
-            if (deleteItemTitle)
-                deleteItemTitle.innerText = title || "esta noticia";
-
-            deleteModal?.classList.remove("hidden");
-            deleteModal?.classList.add("flex");
-            document.body.style.overflow = "hidden";
         });
-    });
-
-    cancelDeleteBtn?.addEventListener("click", () => {
-        deleteModal?.classList.add("hidden");
-        deleteModal?.classList.remove("flex");
-        document.body.style.overflow = "auto";
-        itemToDeleteId = null;
-    });
-
-    confirmDeleteBtn?.addEventListener("click", async () => {
-        if (!itemToDeleteId) return;
-
-        const originalText = confirmDeleteBtn.innerText;
-        (confirmDeleteBtn as HTMLButtonElement).disabled = true;
-        confirmDeleteBtn.innerText = "Eliminando...";
-
-        try {
-            const { error } = await supabase
-                .from("news")
-                .delete()
-                .eq("id", itemToDeleteId);
-            if (error) throw error;
-            window.showToast(
-                "Éxito",
-                "Noticia eliminada correctamente",
-                "success",
-            );
-            setTimeout(() => window.location.reload(), 1000);
-        } catch (error) {
-            console.error("Error deleting news:", error);
-            window.showToast("Error", "Error al eliminar la noticia", "error");
-            (confirmDeleteBtn as HTMLButtonElement).disabled = false;
-            confirmDeleteBtn.innerText = originalText;
-        }
-    });
-</script>
+    </script>
+</AdminLayout>

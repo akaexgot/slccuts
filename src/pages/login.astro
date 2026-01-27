@@ -177,6 +177,14 @@ import Layout from "../layouts/Layout.astro";
 
                         console.log("Sesión iniciada correctamente.");
 
+                        // Set cookies for SSR
+                        const session = data.session;
+                        if (session) {
+                            const maxAge = 60 * 60 * 24 * 7; // 7 days
+                            document.cookie = `sb-access-token=${session.access_token}; path=/; max-age=${maxAge}; SameSite=Lax; samesite=lax`;
+                            document.cookie = `sb-refresh-token=${session.refresh_token}; path=/; max-age=${maxAge}; SameSite=Lax; samesite=lax`;
+                        }
+
                         // Redirect based on role
                         if (profile?.role === "admin") {
                             window.location.href = "/admin";
