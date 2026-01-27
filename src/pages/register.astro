@@ -347,6 +347,12 @@ import Layout from "../layouts/Layout.astro";
                                 const host = window.location.host;
                                 const baseUrl = `${protocol}//${host}`;
 
+                                const {
+                                    welcomeTemplate,
+                                    welcomeText,
+                                    getTransactionalEmailHtml,
+                                } = await import("../lib/email-templates");
+
                                 const emailRes = await fetch(
                                     `${baseUrl}/api/emails/send`,
                                     {
@@ -358,9 +364,8 @@ import Layout from "../layouts/Layout.astro";
                                             to: email,
                                             subject: `¡Bienvenido a SLC CUTS! - Tu cuenta ha sido creada`,
                                             title: `¡Hola, ${firstName}!`,
-                                            html: `<p>Gracias por unirte a la familia SLC CUTS. Tu cuenta ha sido creada correctamente.</p>
-                                               <p>A partir de ahora podrás gestionar tus pedidos, ver tu historial de compras y acceder a ofertas exclusivas para miembros.</p>
-                                               <p>Esperamos verte pronto por nuestra tienda o barbería.</p>`,
+                                            html: welcomeTemplate(firstName),
+                                            text: welcomeText(firstName),
                                             ctaLink: `${baseUrl}/profile`,
                                             ctaText: "Ver mi Perfil",
                                         }),
