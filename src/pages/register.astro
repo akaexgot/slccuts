@@ -341,6 +341,35 @@ import Layout from "../layouts/Layout.astro";
                                 user_email: email,
                             });
 
+                            // 4. Send Welcome Email via Resend API
+                            try {
+                                const protocol = window.location.protocol;
+                                const host = window.location.host;
+                                const baseUrl = `${protocol}//${host}`;
+
+                                await fetch(`${baseUrl}/api/emails/send`, {
+                                    method: "POST",
+                                    headers: {
+                                        "Content-Type": "application/json",
+                                    },
+                                    body: JSON.stringify({
+                                        to: email,
+                                        subject: `¡Bienvenido a SLC CUTS! - Tu cuenta ha sido creada`,
+                                        title: `¡Hola, ${firstName}!`,
+                                        html: `<p>Gracias por unirte a la familia SLC CUTS. Tu cuenta ha sido creada correctamente.</p>
+                                               <p>A partir de ahora podrás gestionar tus pedidos, ver tu historial de compras y acceder a ofertas exclusivas para miembros.</p>
+                                               <p>Esperamos verte pronto por nuestra tienda o barbería.</p>`,
+                                        ctaLink: `${baseUrl}/profile`,
+                                        ctaText: "Ver mi Perfil",
+                                    }),
+                                });
+                            } catch (emailError) {
+                                console.error(
+                                    "Error sending welcome email:",
+                                    emailError,
+                                );
+                            }
+
                             if (successMessage)
                                 successMessage.classList.remove("hidden");
 
