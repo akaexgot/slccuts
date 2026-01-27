@@ -1,7 +1,7 @@
 import type { APIRoute } from 'astro';
 import { supabase } from '../../../lib/supabase';
 import { resend } from '../../../lib/resend';
-import { baseTemplate } from '../../../lib/email-templates';
+import { getTransactionalEmailHtml } from '../../../lib/email-templates';
 
 export const post: APIRoute = async ({ request }) => {
     try {
@@ -22,7 +22,10 @@ export const post: APIRoute = async ({ request }) => {
         }
 
         // 2. Prepare HTML with base template
-        const htmlContent = baseTemplate(content, subject);
+        const htmlContent = getTransactionalEmailHtml({
+            title: subject,
+            contentHtml: content
+        });
 
         // 3. Send emails
         // For simple implementation, we send them to all subscribers.
