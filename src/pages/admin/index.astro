@@ -381,13 +381,13 @@ const visitsValues = Object.values(visitsByDay);
         <div class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-4">
             <!-- News Toggle -->
             <div class="bg-gray-800 rounded-xl p-5">
-                <div class="flex items-center justify-between mb-3">
+                <div class="flex items-center justify-between gap-2 mb-3">
                     <span
-                        class="text-sm font-bold uppercase tracking-wider text-gray-300"
+                        class="text-sm font-bold uppercase tracking-wider text-gray-300 flex-1 truncate"
                         >Noticias</span
                     >
                     <button
-                        class="feature-toggle w-12 h-7 rounded-full transition-colors relative"
+                        class="feature-toggle w-12 h-7 rounded-full transition-colors relative shrink-0"
                         data-feature="news"
                         data-enabled={features.news}
                         style={`background-color: ${features.news ? "#22c55e" : "#374151"}`}
@@ -404,13 +404,13 @@ const visitsValues = Object.values(visitsByDay);
 
             <!-- Promos Toggle -->
             <div class="bg-gray-800 rounded-xl p-5">
-                <div class="flex items-center justify-between mb-3">
+                <div class="flex items-center justify-between gap-2 mb-3">
                     <span
-                        class="text-sm font-bold uppercase tracking-wider text-gray-300"
+                        class="text-sm font-bold uppercase tracking-wider text-gray-300 flex-1 truncate"
                         >Promociones</span
                     >
                     <button
-                        class="feature-toggle w-12 h-7 rounded-full transition-colors relative"
+                        class="feature-toggle w-12 h-7 rounded-full transition-colors relative shrink-0"
                         data-feature="promos"
                         data-enabled={features.promos}
                         style={`background-color: ${features.promos ? "#22c55e" : "#374151"}`}
@@ -427,13 +427,13 @@ const visitsValues = Object.values(visitsByDay);
 
             <!-- Gallery Toggle -->
             <div class="bg-gray-800 rounded-xl p-5">
-                <div class="flex items-center justify-between mb-3">
+                <div class="flex items-center justify-between gap-2 mb-3">
                     <span
-                        class="text-sm font-bold uppercase tracking-wider text-gray-300"
+                        class="text-sm font-bold uppercase tracking-wider text-gray-300 flex-1 truncate"
                         >Galería</span
                     >
                     <button
-                        class="feature-toggle w-12 h-7 rounded-full transition-colors relative"
+                        class="feature-toggle w-12 h-7 rounded-full transition-colors relative shrink-0"
                         data-feature="gallery"
                         data-enabled={features.gallery}
                         style={`background-color: ${features.gallery ? "#22c55e" : "#374151"}`}
@@ -450,13 +450,13 @@ const visitsValues = Object.values(visitsByDay);
 
             <!-- Popups Toggle -->
             <div class="bg-gray-800 rounded-xl p-5">
-                <div class="flex items-center justify-between mb-3">
+                <div class="flex items-center justify-between gap-2 mb-3">
                     <span
-                        class="text-sm font-bold uppercase tracking-wider text-gray-300"
+                        class="text-sm font-bold uppercase tracking-wider text-gray-300 flex-1 truncate"
                         >Pop-ups</span
                     >
                     <button
-                        class="feature-toggle w-12 h-7 rounded-full transition-colors relative"
+                        class="feature-toggle w-12 h-7 rounded-full transition-colors relative shrink-0"
                         data-feature="popups"
                         data-enabled={features.popups}
                         style={`background-color: ${features.popups ? "#22c55e" : "#374151"}`}
@@ -473,13 +473,13 @@ const visitsValues = Object.values(visitsByDay);
 
             <!-- Newsletter Toggle -->
             <div class="bg-gray-800 rounded-xl p-5">
-                <div class="flex items-center justify-between mb-3">
+                <div class="flex items-center justify-between gap-2 mb-3">
                     <span
-                        class="text-sm font-bold uppercase tracking-wider text-gray-300"
+                        class="text-sm font-bold uppercase tracking-wider text-gray-300 flex-1 truncate"
                         >Newsletter</span
                     >
                     <button
-                        class="feature-toggle w-12 h-7 rounded-full transition-colors relative"
+                        class="feature-toggle w-12 h-7 rounded-full transition-colors relative shrink-0"
                         data-feature="newsletter"
                         data-enabled={features.newsletter}
                         style={`background-color: ${features.newsletter ? "#22c55e" : "#374151"}`}
