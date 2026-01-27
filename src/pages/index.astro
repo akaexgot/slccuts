@@ -78,7 +78,7 @@ const galleryEnabled =
 
 		<!-- Hero Section -->
 		<div
-			class="relative h-[80vh] flex items-center justify-center overflow-hidden bg-black animate-on-scroll"
+			class="relative min-h-[80vh] flex items-center justify-center overflow-hidden bg-black animate-on-scroll"
 		>
 			<!-- Background Image with Overlay -->
 			<div class="absolute inset-0 z-0">
@@ -101,7 +101,7 @@ const galleryEnabled =
 			</div>
 
 			<!-- Hero Content -->
-			<div class="relative z-10 text-center text-white px-4">
+			<div class="relative z-10 text-center text-white px-4 py-20">
 				<!-- Using mix-blend-screen to ensure black background is transparent -->
 				<div class="animate-on-scroll mb-8">
 					<Image
@@ -110,18 +110,18 @@ const galleryEnabled =
 						width={250}
 						height={250}
 						format="webp"
-						class="h-48 w-auto mx-auto mix-blend-screen logo-diamond"
+						class="h-32 md:h-48 w-auto mx-auto mix-blend-screen logo-diamond"
 						loading="eager"
 					/>
 				</div>
 
 				<h1
-					class="text-6xl md:text-9xl mb-4 font-bebas tracking-[0.1em] uppercase animate-on-scroll"
+					class="text-5xl md:text-7xl lg:text-9xl mb-4 font-bebas tracking-[0.1em] uppercase animate-on-scroll break-words"
 				>
 					Maestría & Vanguardia
 				</h1>
 				<p
-					class="text-lg md:text-xl text-gray-300 mb-12 font-outfit tracking-[0.3em] font-light uppercase animate-on-scroll"
+					class="text-base md:text-xl text-gray-300 mb-12 font-outfit tracking-[0.2em] md:tracking-[0.3em] font-light uppercase animate-on-scroll max-w-2xl mx-auto"
 				>
 					Barbería de Autor • Cuidado Premium • Estética sin Límites
 				</p>
@@ -155,7 +155,7 @@ const galleryEnabled =
 					<div
 						class="absolute inset-0 opacity-[0.02] pointer-events-none z-0"
 						style="background-image: url('/logoblancotransparente.png'); background-size: 100px; background-repeat: repeat; filter: invert(1);"
-					></div>
+					/>
 
 					<div class="container mx-auto px-4 relative z-10">
 						<div class="flex flex-col md:flex-row items-center gap-12">

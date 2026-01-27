@@ -1,299 +1,145 @@
-/**
- * Elegant Email Templates for SLC CUTS
- * Styled with a premium barber shop aesthetic: Black, Gold, and White.
- */
 
-const colors = {
-    black: '#0a0a0a',
-    gold: '#d4af37',
-    grey: '#888888',
-    white: '#ffffff',
-    bg: '#f8f8f8'
-};
+interface EmailTemplateProps {
+    previewText?: string;
+    title: string;
+    contentHtml: string;
+    ctaLink?: string;
+    ctaText?: string;
+}
 
-export const baseTemplate = (content: string, title: string = 'SLC CUTS') => `
+export const getTransactionalEmailHtml = ({
+    previewText,
+    title,
+    contentHtml,
+    ctaLink,
+    ctaText,
+}: EmailTemplateProps) => {
+    const currentYear = new Date().getFullYear();
+
+    return `
 <!DOCTYPE html>
-<html>
+<html lang="es">
 <head>
-    <meta charset="utf-8">
+    <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="x-apple-disable-message-reformatting">
     <title>${title}</title>
+    <style>
+        body { 
+            font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif; 
+            line-height: 1.6; 
+            color: #333; 
+            margin: 0; 
+            padding: 0; 
+            background-color: #f4f4f4; 
+        }
+        .container { 
+            max-width: 600px; 
+            margin: 0 auto; 
+            background-color: #ffffff; 
+            border-radius: 8px; 
+            overflow: hidden; 
+            box-shadow: 0 4px 6px rgba(0,0,0,0.05); 
+        }
+        .header { 
+            background-color: #000000; 
+            padding: 30px 20px; 
+            text-align: center; 
+        }
+        .logo { 
+            color: #ffffff; 
+            font-size: 24px; 
+            font-weight: bold; 
+            letter-spacing: 4px; 
+            text-decoration: none; 
+            font-family: 'Georgia', serif; 
+        }
+        .content { 
+            padding: 40px 30px; 
+            background-color: #ffffff; 
+        }
+        .h1 { 
+            font-size: 24px; 
+            font-weight: bold; 
+            margin-bottom: 20px; 
+            color: #111; 
+            text-transform: uppercase; 
+            letter-spacing: 1px; 
+        }
+        .text { 
+            font-size: 16px; 
+            color: #555; 
+            margin-bottom: 20px; 
+        }
+        .button-container {
+            text-align: center;
+            margin: 30px 0;
+        }
+        .button {
+            display: inline-block;
+            background-color: #000000;
+            color: #ffffff !important;
+            padding: 14px 30px;
+            text-decoration: none;
+            border-radius: 4px;
+            font-weight: bold;
+            text-transform: uppercase;
+            letter-spacing: 2px;
+            font-size: 14px;
+        }
+        .footer { 
+            background-color: #f9f9f9; 
+            padding: 30px 20px; 
+            text-align: center; 
+            font-size: 12px; 
+            color: #999; 
+            border-top: 1px solid #eeeeee; 
+        }
+        .footer a { 
+            color: #999; 
+            text-decoration: underline; 
+        }
+    </style>
 </head>
-<body style="margin: 0; padding: 0; font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif; background-color: ${colors.bg}; color: ${colors.black};">
-    <table align="center" border="0" cellpadding="0" cellspacing="0" width="100%" style="max-width: 600px; margin: 20px auto; background-color: ${colors.white}; border: 1px solid #eeeeee;">
-        <!-- Header -->
-        <tr>
-            <td align="center" style="padding: 40px 0; background-color: ${colors.black};">
-                <h1 style="margin: 0; color: ${colors.white}; text-transform: uppercase; letter-spacing: 5px; font-weight: 900; font-style: italic;">SLC CUTS</h1>
-                <p style="margin: 5px 0 0; color: ${colors.gold}; text-transform: uppercase; font-size: 10px; font-weight: bold; letter-spacing: 3px;">The Premium Grooming Experience</p>
-            </td>
-        </tr>
-        
-        <!-- Content -->
-        <tr>
-            <td style="padding: 40px 30px;">
-                ${content}
-            </td>
-        </tr>
-        
-        <!-- Footer -->
-        <tr>
-            <td style="padding: 30px; background-color: #fcfcfc; border-top: 1px solid #eeeeee; text-align: center;">
-                <p style="margin: 0; color: ${colors.black}; font-size: 14px; font-weight: bold; text-transform: uppercase; letter-spacing: 1px;">SLC CUTS Barbería</p>
-                <p style="margin: 5px 0 15px; color: ${colors.grey}; font-size: 12px;">C. Miguel de Cervantes, 79, 11550 Chipiona, Cádiz</p>
+<body>
+    <div style="background-color: #f4f4f4; padding: 40px 0;">
+        <div class="container">
+            <!-- Header with Logo -->
+            <div class="header">
+                 <!-- You can replace text with an img tag if you have a hosted logo URL -->
+                <div class="logo">SLC CUTS</div>
+            </div>
+
+            <!-- Content -->
+            <div class="content">
+                <h1 class="h1">${title}</h1>
                 
-                <div style="margin-top: 20px;">
-                    <a href="https://instagram.com/slc.cuts" style="text-decoration: none; color: ${colors.gold}; font-weight: bold; font-size: 12px; margin: 0 10px; text-transform: uppercase;">Instagram</a>
-                    <a href="https://wa.me/34722108440" style="text-decoration: none; color: ${colors.gold}; font-weight: bold; font-size: 12px; margin: 0 10px; text-transform: uppercase;">WhatsApp</a>
+                <div class="text">
+                    ${contentHtml}
                 </div>
-                
-                <p style="margin-top: 30px; color: #cccccc; font-size: 10px; text-transform: uppercase; letter-spacing: 1px;">© ${new Date().getFullYear()} SLC CUTS. Todos los derechos reservados.</p>
-            </td>
-        </tr>
-    </table>
+
+                ${ctaLink && ctaText
+            ? `
+                <div class="button-container">
+                    <a href="${ctaLink}" class="button">${ctaText}</a>
+                </div>
+                `
+            : ""
+        }
+            </div>
+
+            <!-- Footer -->
+            <div class="footer">
+                <p>&copy; ${currentYear} SLC CUTS. Todos los derechos reservados.</p>
+                <p>Chipiona, Cádiz - España</p>
+                <p>
+                    <a href="https://slccuts.com">Visitar Web</a> | 
+                    <a href="mailto:slccuts1998@gmail.com">Contactar</a>
+                </p>
+            </div>
+        </div>
+    </div>
 </body>
 </html>
-`;
-
-export const orderConfirmationTemplate = (order: any) => {
-    const itemsHtml = order.order_items
-        .map((item: any) => `
-            <tr>
-                <td style="padding: 10px 0; font-size: 14px; border-bottom: 1px solid #f0f0f0;">
-                    <span style="font-weight: bold;">${item.quantity}x</span> ${item.product_name || item.product?.name}
-                </td>
-                <td align="right" style="padding: 10px 0; font-size: 14px; border-bottom: 1px solid #f0f0f0; font-weight: bold;">
-                    ${((item.price * item.quantity) / 100).toFixed(2)}€
-                </td>
-            </tr>
-        `).join('');
-
-    const subtotal = ((order.total_amount || order.total_price) / 100 / 1.21).toFixed(2);
-    const tax = ((order.total_amount || order.total_price) / 100 - parseFloat(subtotal)).toFixed(2);
-    const total = ((order.total_amount || order.total_price) / 100).toFixed(2);
-    const orderId = order.id.slice(0, 8).toUpperCase();
-    const date = new Date(order.created_at).toLocaleDateString("es-ES");
-
-    const orderContent = `
-        <h2 style="margin: 0 0 20px; font-weight: 900; text-transform: uppercase; font-style: italic; letter-spacing: 1px; color: ${colors.black};">Factura Simplificada</h2>
-        <p style="margin: 0 0 30px; font-size: 16px; line-height: 1.6; color: ${colors.grey};">
-            Hola, gracias por tu compra. Adjuntamos los detalles de tu pedido <strong style="color: ${colors.black};">#${orderId}</strong> que sirve como justificante de pago.
-        </p>
-
-        <div style="background-color: #fafafa; padding: 20px; border-radius: 5px; border: 1px solid #eeeeee; margin-bottom: 30px;">
-            <table width="100%" style="font-size: 12px; margin-bottom: 20px;">
-                <tr>
-                    <td valign="top" width="50%">
-                        <strong style="text-transform: uppercase;">SLC CUTS Barbería</strong><br>
-                        NIF: 722108440<br>
-                        C. Miguel de Cervantes, 79<br>
-                        11550 Chipiona, Cádiz
-                    </td>
-                    <td valign="top" width="50%" align="right">
-                        <strong>Factura Nº:</strong> ${orderId}<br>
-                        <strong>Fecha:</strong> ${date}
-                    </td>
-                </tr>
-            </table>
-            
-            <h3 style="margin: 0 0 15px; font-size: 12px; text-transform: uppercase; letter-spacing: 2px; color: ${colors.black}; border-bottom: 2px solid ${colors.gold}; padding-bottom: 5px;">Detalle</h3>
-            <table width="100%" cellpadding="0" cellspacing="0">
-                ${itemsHtml}
-                <tr>
-                    <td style="padding: 20px 0 0; font-size: 14px;">Base Imponible</td>
-                    <td align="right" style="padding: 20px 0 0; font-size: 14px;">${subtotal}€</td>
-                </tr>
-                <tr>
-                    <td style="padding: 5px 0 0; font-size: 14px;">IVA (21%)</td>
-                    <td align="right" style="padding: 5px 0 0; font-size: 14px;">${tax}€</td>
-                </tr>
-                <tr>
-                    <td style="padding: 10px 0 0; font-weight: bold; font-size: 16px; text-transform: uppercase;">Total</td>
-                    <td align="right" style="padding: 10px 0 0; font-weight: 900; font-size: 20px; color: ${colors.black};">${total}€</td>
-                </tr>
-            </table>
-        </div>
-        
-        <div style="margin-bottom: 30px;">
-            <p style="margin: 0; font-size: 14px; line-height: 1.6; color: ${colors.grey};">
-                ${order.shipping_method === 'pickup'
-            ? 'Tu pedido estará listo para recoger en nuestra tienda pronto. Te avisaremos cuando puedas pasar a por él.'
-            : 'Estamos preparando tu envío. Recibirás otro email con el número de seguimiento en cuanto el paquete salga del almacén.'}
-            </p>
-        </div>
-    `;
-
-    return baseTemplate(orderContent, `Factura Simplificada - Pedido #${orderId}`);
-};
-
-export const manualMessageTemplate = (message: string) => {
-    const content = `
-        <div style="font-size: 16px; line-height: 1.8; color: ${colors.black};">
-            ${message.split('\n').map(line => `<p style="margin: 0 0 15px;">${line}</p>`).join('')}
-        </div>
-    `;
-    return baseTemplate(content, 'SLC CUTS - Mensaje del equipo');
-};
-
-export const orderShippedTemplate = (order: any) => {
-    const orderId = order.id.slice(0, 8).toUpperCase();
-    const itemsHtml = order.order_items
-        .map((item: any) => `
-            <tr>
-                <td style="padding: 10px 0; font-size: 14px; border-bottom: 1px solid #f0f0f0;">
-                    <span style="font-weight: bold;">${item.quantity}x</span> ${item.product_name || item.product?.name}
-                </td>
-                <td align="right" style="padding: 10px 0; font-size: 14px; border-bottom: 1px solid #f0f0f0; font-weight: bold;">
-                    ${((item.price * item.quantity) / 100).toFixed(2)}€
-                </td>
-            </tr>
-        `).join('');
-
-    const content = `
-        <h2 style="margin: 0 0 20px; font-weight: 900; text-transform: uppercase; font-style: italic; letter-spacing: 1px; color: ${colors.black};">¡Tu pedido está en camino!</h2>
-        <p style="margin: 0 0 30px; font-size: 16px; line-height: 1.6; color: ${colors.grey};">
-            Hola, tenemos buenas noticias. Tu pedido <strong style="color: ${colors.black};">#${orderId}</strong> ha sido enviado y pronto llegará a tus manos.
-        </p>
-        
-        <div style="background-color: #fafafa; padding: 20px; border-radius: 5px; border-left: 4px solid ${colors.gold}; margin-bottom: 30px;">
-            <h3 style="margin: 0 0 15px; font-size: 12px; text-transform: uppercase; letter-spacing: 2px; color: ${colors.black};">Detalles del Envío</h3>
-            <table width="100%" cellpadding="0" cellspacing="0">
-                ${itemsHtml}
-            </table>
-        </div>
-        
-        <div style="margin-bottom: 30px; text-align: center;">
-            <p style="font-size: 14px; color: ${colors.grey}; margin-bottom: 20px;">
-                Si elegiste envío compartido o certificado, estate atento a tu buzón o teléfono.
-            </p>
-            <a href="https://www.correos.es/es/es/herramientas/localizador/envios" style="display: inline-block; background-color: ${colors.black}; color: ${colors.white}; padding: 15px 30px; text-decoration: none; font-weight: bold; text-transform: uppercase; letter-spacing: 2px; font-size: 12px; border-radius: 4px;">Seguir mi pedido</a>
-        </div>
-    `;
-    return baseTemplate(content, `Tu pedido #${orderId} ha sido enviado - SLC CUTS`);
-};
-
-export const adminOrderNotificationTemplate = (order: any) => {
-    const orderId = order.id.slice(0, 8).toUpperCase();
-    const contact = order.contact_info || {};
-    const address = typeof order.shipping_address === 'string' ? JSON.parse(order.shipping_address) : (order.shipping_address || {});
-
-    const itemsHtml = order.order_items
-        .map((item: any) => `
-            <tr>
-                <td style="padding: 10px 0; font-size: 14px; border-bottom: 1px solid #f0f0f0;">
-                    <span style="font-weight: bold;">${item.quantity}x</span> ${item.product_name || item.product?.name}
-                </td>
-                <td align="right" style="padding: 10px 0; font-size: 14px; border-bottom: 1px solid #f0f0f0; font-weight: bold;">
-                    ${((item.price * item.quantity) / 100).toFixed(2)}€
-                </td>
-            </tr>
-        `).join('');
-
-    const total = ((order.total_amount || order.total_price) / 100).toFixed(2);
-
-    const content = `
-        <h2 style="margin: 0 0 10px; font-weight: 900; text-transform: uppercase; color: ${colors.black};">¡NUEVO PEDIDO PAGADO!</h2>
-        <p style="margin: 0 0 20px; font-size: 14px; color: ${colors.grey};">El pedido #${orderId} ha sido recibido y pagado correctamente.</p>
-        
-        <div style="background-color: #fafafa; padding: 20px; border-radius: 5px; margin-bottom: 20px; border: 1px solid #eeeeee;">
-            <h3 style="margin: 0 0 10px; font-size: 12px; text-transform: uppercase; letter-spacing: 1px; color: ${colors.black};">Información del Cliente</h3>
-            <p style="margin: 0; font-size: 14px;"><strong>Nombre:</strong> ${contact.name || 'Invitado'}</p>
-            <p style="margin: 0; font-size: 14px;"><strong>Email:</strong> ${contact.email || order.guest_email}</p>
-            <p style="margin: 0; font-size: 14px;"><strong>Teléfono:</strong> ${contact.phone || 'No proporcionado'}</p>
-            <p style="margin: 10px 0 0; font-size: 14px;"><strong>Método:</strong> ${order.shipping_method === 'pickup' ? 'Recogida en Tienda' : 'Envio a Domicilio'}</p>
-        </div>
-
-        ${order.shipping_method !== 'pickup' ? `
-        <div style="background-color: #fafafa; padding: 20px; border-radius: 5px; margin-bottom: 20px; border: 1px solid #eeeeee;">
-            <h3 style="margin: 0 0 10px; font-size: 12px; text-transform: uppercase; letter-spacing: 1px; color: ${colors.black};">Dirección de Envío</h3>
-            <p style="margin: 0; font-size: 14px;">${address.address || ''}</p>
-            <p style="margin: 0; font-size: 14px;">${address.city || ''}, ${address.province || ''}</p>
-            <p style="margin: 0; font-size: 14px;">CP: ${address.zip || ''}</p>
-        </div>
-        ` : ''}
-        
-        <div style="background-color: #fafafa; padding: 20px; border-radius: 5px; margin-bottom: 20px; border: 1px solid #eeeeee;">
-            <h3 style="margin: 0 0 15px; font-size: 12px; text-transform: uppercase; letter-spacing: 1px; color: ${colors.black};">Productos</h3>
-            <table width="100%" cellpadding="0" cellspacing="0">
-                ${itemsHtml}
-                <tr>
-                    <td style="padding: 15px 0 0; font-weight: bold; font-size: 16px;">TOTAL</td>
-                    <td align="right" style="padding: 15px 0 0; font-weight: 900; font-size: 18px; color: ${colors.gold};">${total}€</td>
-                </tr>
-            </table>
-        </div>
-
-        <div style="text-align: center; margin-top: 30px;">
-            <a href="https://tienda-online-lac.vercel.app/admin/orders" style="display: inline-block; background-color: ${colors.gold}; color: ${colors.black}; padding: 12px 25px; text-decoration: none; font-weight: bold; text-transform: uppercase; font-size: 11px; border-radius: 4px;">Gestionar en el Panel</a>
-        </div>
-    `;
-    return baseTemplate(content, `NUEVO PEDIDO #${orderId} - SLC CUTS`);
-};
-
-export const orderShippedText = (order: any) => {
-    const orderId = order.id.slice(0, 8).toUpperCase();
-    return `
-¡Tu pedido está en camino!
-Pedido #${orderId}
-
-Hola, tu pedido ha sido enviado y pronto llegará a tus manos.
-
-¡Gracias por confiar en SLC CUTS!
-`;
-};
-
-export const adminOrderNotificationText = (order: any) => {
-    const orderId = order.id.slice(0, 8).toUpperCase();
-    const contact = order.contact_info || {};
-    return `
-NUEVO PEDIDO RECIBIDO #${orderId}
-Cliente: ${contact.name || 'Invitado'} (${contact.email || order.guest_email})
-Método: ${order.shipping_method}
-Total: ${((order.total_amount || order.total_price) / 100).toFixed(2)}€
-
-Gestiona este pedido en el panel de administración.
-`;
-};
-
-/**
- * Text-only versions for deliverability
- */
-
-export const orderConfirmationText = (order: any) => {
-    const orderId = order.id.slice(0, 8).toUpperCase();
-    const items = order.order_items
-        .map((item: any) => `- ${item.quantity}x ${item.product_name || item.product?.name}: ${((item.price * item.quantity) / 100).toFixed(2)}€`)
-        .join('\n');
-    const total = ((order.total_amount || order.total_price) / 100).toFixed(2);
-
-    return `
-¡Gracias por tu compra en SLC CUTS!
-Pedido #${orderId}
-
-Resumen:
-${items}
-
-Total: ${total}€
-
-Próximos pasos:
-${order.shipping_method === 'pickup'
-            ? 'Tu pedido estará listo para recoger en nuestra tienda pronto (C. Miguel de Cervantes, 79, Chipiona).'
-            : 'Estamos preparando tu envío. Recibirás el número de seguimiento pronto.'}
-
-Gracias por confiar en el equipo de SLC CUTS.
-`;
-};
-
-export const manualMessageText = (message: string) => {
-    return `
-SLC CUTS Barbería
------------------
-
-${message}
-
------------------
-C. Miguel de Cervantes, 79, 11550 Chipiona, Cádiz
-Instagram: https://instagram.com/slc.cuts
-WhatsApp: https://wa.me/34722108440
-`;
+  `;
 };

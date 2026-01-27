@@ -1,11 +1,12 @@
 import type { APIRoute } from 'astro';
 import { resend } from '../../../lib/resend';
+import { getTransactionalEmailHtml } from '../../../lib/email-templates';
 
 export const prerender = false;
 
 export const POST: APIRoute = async ({ request }) => {
     try {
-        const { to, subject, html, text } = await request.json();
+        const { to, subject, html, text, title, ctaLink, ctaText } = await request.json();
 
         if (!to || !subject || (!html && !text)) {
             return new Response(JSON.stringify({ error: 'Missing required fields' }), {
@@ -14,12 +15,22 @@ export const POST: APIRoute = async ({ request }) => {
             });
         }
 
+        // Generate professional HTML template
+        const finalHtml = getTransactionalEmailHtml({
+            title: title || subject, // Use title or fallback to subject
+            contentHtml: html || text, // Use HTML provided or fallback to text
+            ctaLink,
+            ctaText
+        });
+
         const { data, error } = await resend.emails.send({
+            // IMPORTANT: User must verify their domain in Resend for this to work without 'onboarding'
+            // Once verified, change to: 'SLC CUTS <info@slccuts.com>'
             from: 'SLC CUTS <onboarding@resend.dev>',
-            replyTo: 'no-reply@resend.dev', // Changed from replyToken
+            replyTo: 'slccuts1998@gmail.com',
             to: [to],
             subject: subject,
-            html: html,
+            html: finalHtml,
             text: text || html.replace(/<[^>]*>?/gm, ''), // Fallback if no text provided
         });
 

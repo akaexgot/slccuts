@@ -22,14 +22,69 @@ import MosaicBackground from "../components/ui/MosaicBackground.astro";
         <div
             class="bg-white rounded-[2.5rem] shadow-2xl border border-gray-100 min-h-[1500px]"
         >
-            <iframe
-                src="https://slccuts.setmore.com/"
-                width="100%"
-                height="1800"
-                frameborder="0"
-                scrolling="no"
-                class="w-full min-h-[1600px] md:min-h-[1800px] rounded-[2.5rem]"
-            ></iframe>
+            <!-- Desktop View: Embedded Iframe -->
+            <div class="hidden md:block min-h-[1600px]">
+                <iframe
+                    src="https://slccuts.setmore.com/"
+                    width="100%"
+                    height="1800"
+                    frameborder="0"
+                    scrolling="no"
+                    class="w-full min-h-[1600px] md:min-h-[1800px] rounded-[2.5rem]"
+                    title="Reservar Cita"></iframe>
+            </div>
+
+            <!-- Mobile View: Direct Link Button (Solves Cookie/Scroll issues) -->
+            <div
+                class="md:hidden flex flex-col items-center justify-center py-20 px-6 text-center space-y-8"
+            >
+                <div
+                    class="w-16 h-16 bg-black text-white rounded-full flex items-center justify-center mb-4 mx-auto"
+                >
+                    <svg
+                        xmlns="http://www.w3.org/2000/svg"
+                        width="32"
+                        height="32"
+                        viewBox="0 0 24 24"
+                        fill="none"
+                        stroke="currentColor"
+                        stroke-width="2"
+                        stroke-linecap="round"
+                        stroke-linejoin="round"
+                        class="lucide lucide-calendar-check"
+                        ><rect width="18" height="18" x="3" y="4" rx="2" ry="2"
+                        ></rect><line x1="16" x2="16" y1="2" y2="6"></line><line
+                            x1="8"
+                            x2="8"
+                            y1="2"
+                            y2="6"></line><line x1="3" x2="21" y1="10" y2="10"
+                        ></line><path d="m9 16 2 2 4-4"></path></svg
+                    >
+                </div>
+                <div>
+                    <h3
+                        class="text-2xl font-bold uppercase tracking-wider mb-2"
+                    >
+                        Reserva tu Cita
+                    </h3>
+                    <p class="text-gray-500 mb-8">
+                        Accede directamente a nuestra agenda para ver
+                        disponibilidad y reservar.
+                    </p>
+                </div>
+                <a
+                    href="https://slccuts.setmore.com/"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    class="w-full bg-black text-white py-4 px-8 rounded-xl font-bold uppercase tracking-widest hover:bg-gray-800 transition-all shadow-xl hover:shadow-2xl hover:-translate-y-1"
+                >
+                    Abrir Calendario de Reservas
+                </a>
+                <p class="text-xs text-gray-400 mt-4">
+                    Se abrirá en una nueva pestaña para asegurar la mejor
+                    experiencia.
+                </p>
+            </div>
         </div>
     </div>
 </Layout>
