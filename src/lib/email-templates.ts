@@ -398,3 +398,22 @@ export const contactAutoResponderText = (name: string) => {
     return `Hola ${name}, hemos recibido tu mensaje en SLC CUTS. Te responderemos en 24-48h laborables. ¡Gracias!`;
 };
 
+/**
+ * Mensaje de Bienvenida (Registro)
+ */
+export const welcomeTemplate = (firstName: string) => {
+    return `
+        <div style="text-align: center; padding: 10px 0;">
+            <p>¡Hola <strong>${firstName}</strong>!</p>
+            <p>Gracias por unirte a la familia <strong>SLC CUTS</strong>. Es un placer tenerte con nosotros.</p>
+            <p>A partir de ahora, tienes acceso exclusivo a nuestra tienda online de productos de autor y podrás gestionar tus pedidos con total comodidad.</p>
+            <p>Estamos aquí para ayudarte a mantener tu estilo siempre en la cima.</p>
+            <p style="margin-top: 20px; font-weight: bold; border-top: 1px solid #eee; pt-20">¡Bienvenido al club!</p>
+        </div>
+    `;
+};
+
+export const welcomeText = (firstName: string) => {
+    return `¡Bienvenido a SLC CUTS, ${firstName}! Tu cuenta ha sido creada correctamente. Explora nuestros productos premium en la web.`;
+};
+

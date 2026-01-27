@@ -103,6 +103,7 @@ if (sessionId && orderId) {
                                 (s: any) => s.quantity <= LOW_STOCK_THRESHOLD,
                             );
 
+                            // 4. Send low stock alerts (background)
                             for (const item of lowStockItems) {
                                 const {
                                     lowStockAdminTemplate,
@@ -129,6 +130,27 @@ if (sessionId && orderId) {
                                     }),
                                 });
                             }
+                        }
+
+                        // 5. Reset abandoned cart flag for the user
+                        try {
+                            const {
+                                data: { session },
+                            } = await supabase.auth.getSession();
+                            if (session?.user) {
+                                await supabase
+                                    .from("users")
+                                    .update({
+                                        abandoned_cart_email_sent: false,
+                                        cart_items: null,
+                                    })
+                                    .eq("id", session.user.id);
+                            }
+                        } catch (resetError) {
+                            console.error(
+                                "Error resetting cart automation flags:",
+                                resetError,
+                            );
                         }
                     } catch (stockAlertError) {
                         console.error(
