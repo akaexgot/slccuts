@@ -168,9 +168,9 @@ const formatDate = (dateString: string) => {
             </form>
         </div>
 
-        <!-- Status Filter Tabs -->
+        <!-- Status Filter Tabs (Desktop) -->
         <div
-            class="inline-flex p-1.5 bg-white/[0.04] backdrop-blur-2xl rounded-2xl border border-white/10 shadow-2xl overflow-x-auto scrollbar-hide shrink-0"
+            class="hidden md:inline-flex p-1.5 bg-white/[0.04] backdrop-blur-2xl rounded-2xl border border-white/10 shadow-2xl overflow-x-auto scrollbar-hide shrink-0"
         >
             {
                 [
@@ -203,6 +203,51 @@ const formatDate = (dateString: string) => {
                     </a>
                 ))
             }
+        </div>
+
+        <!-- Status Filter Dropdown (Mobile) -->
+        <div class="md:hidden w-full">
+            <div class="relative">
+                <select
+                    onchange="window.location.href=`/admin/orders?status=${this.value}`"
+                    class="w-full h-12 bg-white/5 border border-white/10 rounded-xl px-4 text-white text-sm font-bold uppercase tracking-wider appearance-none focus:outline-none focus:border-white/30"
+                >
+                    {
+                        [
+                            { value: "all", label: "Todos" },
+                            { value: "pending", label: "Pendientes" },
+                            { value: "paid", label: "Pagados" },
+                            { value: "shipped", label: "Enviados" },
+                            { value: "completed", label: "Listos" },
+                            { value: "cancelled", label: "Cancelados" },
+                        ].map((opt) => (
+                            <option
+                                value={opt.value}
+                                selected={currentStatus === opt.value}
+                                class="bg-gray-900 text-white"
+                            >
+                                {opt.label}
+                            </option>
+                        ))
+                    }
+                </select>
+                <div
+                    class="absolute inset-y-0 right-0 flex items-center px-4 pointer-events-none text-white"
+                >
+                    <svg
+                        xmlns="http://www.w3.org/2000/svg"
+                        width="16"
+                        height="16"
+                        viewBox="0 0 24 24"
+                        fill="none"
+                        stroke="currentColor"
+                        stroke-width="2"
+                        stroke-linecap="round"
+                        stroke-linejoin="round"
+                        ><polyline points="6 9 12 15 18 9"></polyline></svg
+                    >
+                </div>
+            </div>
         </div>
     </div>
 
