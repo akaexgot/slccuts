@@ -408,13 +408,49 @@ const galleryEnabled =
 			)
 		}
 	</main>
+
+	<script>
+		// Handle logo spin animation on click/touch
+		const logos = document.querySelectorAll(".logo-diamond");
+		logos.forEach((logo) => {
+			logo.addEventListener("click", () => {
+				logo.classList.remove("spin-active");
+				// Force reflow to allow re-triggering animation
+				void (logo as HTMLElement).offsetWidth;
+				logo.classList.add("spin-active");
+			});
+
+			logo.addEventListener("animationend", () => {
+				logo.classList.remove("spin-active");
+			});
+		});
+	</script>
+
 	<style>
 		.logo-diamond {
-			transition: transform 0.8s cubic-bezier(0.4, 0, 0.2, 1);
 			cursor: pointer;
+			transition: transform 0.8s cubic-bezier(0.4, 0, 0.2, 1);
 		}
-		.logo-diamond:hover {
-			transform: perspective(1000px) rotate3d(0, 1, 0, 360deg);
+
+		/* Keep hover for desktop */
+		@media (hover: hover) {
+			.logo-diamond:hover {
+				transform: perspective(1000px) rotate3d(0, 1, 0, 360deg);
+			}
+		}
+
+		/* Class for triggered animation (on click) */
+		.logo-diamond.spin-active {
+			animation: logo-spin 0.8s cubic-bezier(0.4, 0, 0.2, 1);
+		}
+
+		@keyframes logo-spin {
+			from {
+				transform: perspective(1000px) rotate3d(0, 1, 0, 0deg);
+			}
+			to {
+				transform: perspective(1000px) rotate3d(0, 1, 0, 360deg);
+			}
 		}
 	</style>
 </Layout>
