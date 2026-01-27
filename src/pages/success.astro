@@ -83,6 +83,59 @@ if (sessionId && orderId) {
                         .from("orders")
                         .update({ confirmation_email_sent: true })
                         .eq("id", orderId);
+
+                    // 3. CHECK FOR LOW STOCK (Automation 4)
+                    try {
+                        const { data: stockLevels, error: stockError } =
+                            await supabase
+                                .from("stock")
+                                .select("*, product:products(name)")
+                                .in(
+                                    "product_id",
+                                    order.order_items.map(
+                                        (item: any) => item.product_id,
+                                    ),
+                                );
+
+                        if (!stockError && stockLevels) {
+                            const LOW_STOCK_THRESHOLD = 5;
+                            const lowStockItems = stockLevels.filter(
+                                (s: any) => s.quantity <= LOW_STOCK_THRESHOLD,
+                            );
+
+                            for (const item of lowStockItems) {
+                                const {
+                                    lowStockAdminTemplate,
+                                    lowStockAdminText,
+                                } = await import("../lib/email-templates");
+
+                                await fetch(`${baseUrl}/api/emails/send`, {
+                                    method: "POST",
+                                    headers: {
+                                        "Content-Type": "application/json",
+                                    },
+                                    body: JSON.stringify({
+                                        to: "slccuts1998@gmail.com",
+                                        subject: `⚠️ ALERTA: Stock Bajo - ${item.product.name}`,
+                                        title: "Alerta de Inventario",
+                                        html: lowStockAdminTemplate({
+                                            name: item.product.name,
+                                            stock: item.quantity,
+                                        }),
+                                        text: lowStockAdminText({
+                                            name: item.product.name,
+                                            stock: item.quantity,
+                                        }),
+                                    }),
+                                });
+                            }
+                        }
+                    } catch (stockAlertError) {
+                        console.error(
+                            "Error in low stock automation:",
+                            stockAlertError,
+                        );
+                    }
                 } catch (emailError) {
                     console.error(
                         "Error sending automatic emails:",

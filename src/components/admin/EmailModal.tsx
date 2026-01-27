@@ -1,11 +1,15 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { manualMessageTemplate, manualMessageText } from '../../lib/email-templates';
+import {
+    manualMessageTemplate,
+    manualMessageText,
+    feedbackRequestTemplate,
+    feedbackRequestText
+} from '../../lib/email-templates';
 
 // Use a custom event to open this modal from anywhere
-// Use a custom event to open this modal from anywhere
-export const openEmailModal = (to: string, orderId: string, status: string = 'pending') => {
+export const openEmailModal = (to: string, orderId: string, status: string = 'pending', type: string = 'manual', firstName: string = 'Cliente') => {
     const event = new CustomEvent('open-email-modal', {
-        detail: { to, orderId, status }
+        detail: { to, orderId, status, type, firstName }
     });
     window.dispatchEvent(event);
 };
@@ -15,13 +19,17 @@ export default function EmailModal() {
     const [emailData, setEmailData] = useState({
         to: '',
         subject: '',
-        message: ''
+        message: '',
+        type: 'manual',
+        firstName: 'Cliente'
     });
     const [isSuccess, setIsSuccess] = useState(false);
     const [isSending, setIsSending] = useState(false);
     const modalRef = useRef<HTMLDivElement>(null);
 
-    const getSubjectByStatus = (status: string, orderId: string) => {
+    const getSubjectByStatus = (status: string, orderId: string, type: string = 'manual') => {
+        if (type === 'feedback') return '¿Qué te ha parecido tu pedido en SLC CUTS? ⭐';
+
         const id = orderId.slice(0, 8);
         switch (status) {
             case 'completed':
@@ -37,7 +45,11 @@ export default function EmailModal() {
         }
     };
 
-    const getMessageByStatus = (status: string) => {
+    const getMessageByStatus = (status: string, type: string = 'manual', firstName: string = 'Cliente') => {
+        if (type === 'feedback') {
+            return `Hola ${firstName},\n\nHace unos días que recibiste tu pedido y nos encantaría saber qué te ha parecido.\n\nTu opinión es muy importante para nosotros.\n\n¡Gracias por confiar en SLC CUTS!`;
+        }
+
         switch (status) {
             case 'completed':
                 return `Hola,\n\nTu pedido ha sido completado exitosamente. Esperamos que disfrutes de tu compra.\n\nGracias por confiar en SLC CUTS.`;
@@ -54,12 +66,14 @@ export default function EmailModal() {
 
     useEffect(() => {
         const handleOpen = (e: any) => {
-            const { to, orderId, status } = e.detail;
-            console.log('EmailModal: Received open-email-modal event', { to, orderId, status });
+            const { to, orderId, status, type, firstName } = e.detail;
+            console.log('EmailModal: Received open-email-modal event', { to, orderId, status, type });
             setEmailData({
                 to,
-                subject: getSubjectByStatus(status, orderId),
-                message: getMessageByStatus(status)
+                subject: getSubjectByStatus(status, orderId, type),
+                message: getMessageByStatus(status, type, firstName),
+                type: type || 'manual',
+                firstName: firstName || 'Cliente'
             });
             setIsOpen(true);
             setIsSuccess(false);
@@ -102,6 +116,14 @@ export default function EmailModal() {
         e.preventDefault();
         setIsSending(true);
 
+        const text = emailData.type === 'feedback'
+            ? feedbackRequestText(emailData.firstName)
+            : manualMessageText(emailData.message);
+
+        const html = emailData.type === 'feedback'
+            ? feedbackRequestTemplate(emailData.firstName)
+            : manualMessageTemplate(emailData.message);
+
         try {
             const response = await fetch('/api/emails/send', {
                 method: 'POST',
@@ -111,8 +133,9 @@ export default function EmailModal() {
                 body: JSON.stringify({
                     to: emailData.to,
                     subject: emailData.subject,
-                    text: manualMessageText(emailData.message),
-                    html: manualMessageTemplate(emailData.message),
+                    text: text,
+                    html: html,
+                    title: emailData.subject,
                 }),
             });
 

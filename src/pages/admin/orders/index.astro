@@ -509,7 +509,24 @@ const formatDate = (dateString: string) => {
                                                 order.guest_email
                                             }
                                             data-order-id={order.id}
+                                            data-first-name={
+                                                contact.name?.split(" ")[0] ||
+                                                "Cliente"
+                                            }
+                                            data-type="feedback"
+                                            class="email-btn flex-1 h-12 flex items-center justify-center rounded-2xl bg-white/5 hover:bg-yellow-500/20 text-white hover:text-yellow-500 transition-all duration-300 border border-white/5 text-xl shadow-lg hover:shadow-yellow-500/10 active:scale-95"
+                                            title="Solicitar Reseña"
+                                        >
+                                            ⭐
+                                        </button>
+                                        <button
+                                            data-email={
+                                                contact.email ||
+                                                order.guest_email
+                                            }
+                                            data-order-id={order.id}
                                             data-status={order.status}
+                                            data-type="manual"
                                             class="email-btn flex-1 h-12 flex items-center justify-center rounded-2xl bg-white/5 hover:bg-white text-white hover:text-black transition-all duration-300 border border-white/5 text-xl shadow-lg hover:shadow-white/10 active:scale-95"
                                             title="Enviar Email"
                                         >
@@ -560,16 +577,26 @@ const formatDate = (dateString: string) => {
             const email = btn.dataset.email;
             const orderId = btn.dataset.orderId;
             const status = btn.dataset.status;
+            const type = btn.dataset.type || "manual";
+            const firstName = btn.dataset.firstName || "Cliente";
 
             if (email && orderId) {
                 console.log("Dispatching open-email-modal event", {
                     email,
                     orderId,
                     status,
+                    type,
+                    firstName,
                 });
                 // Dispatch custom event directly instead of importing helper
                 const event = new CustomEvent("open-email-modal", {
-                    detail: { to: email, orderId, status: status || "pending" },
+                    detail: {
+                        to: email,
+                        orderId,
+                        status: status || "pending",
+                        type,
+                        firstName,
+                    },
                 });
                 window.dispatchEvent(event);
             } else {

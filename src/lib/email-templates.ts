@@ -232,3 +232,64 @@ export const manualMessageText = (message: string) => {
     return message;
 };
 
+// --- New Specialized Templates (Feedback, Low Stock, Abandoned Cart) ---
+
+/**
+ * Solicitud de Feedback (Post-venta)
+ */
+export const feedbackRequestTemplate = (firstName: string) => {
+    return `
+        <p>¡Hola ${firstName}!</p>
+        <p>Hace unos días que recibiste tu pedido de <strong>SLC CUTS</strong> y nos encantaría saber qué te ha parecido.</p>
+        <p>Tu opinión nos ayuda a seguir mejorando y a que otros clientes confíen en nuestra maestría y productos premium.</p>
+        <p>Además, si nos etiquetas en Instagram con una foto de tu pedido o tu nuevo estilo, ¡nos harás muy felices!</p>
+    `;
+};
+
+export const feedbackRequestText = (firstName: string) => {
+    return `Hola ${firstName}, ¿qué te han parecido tus productos de SLC CUTS? Nos encantaría conocer tu opinión.`;
+};
+
+/**
+ * Notificación de Stock Bajo (Para el Administrador)
+ */
+export const lowStockAdminTemplate = (product: any) => {
+    return `
+        <p>Atención Administrador,</p>
+        <p>El siguiente producto tiene existencias críticas:</p>
+        <div style="background: #fdf2f2; border: 1px solid #f87171; padding: 20px; border-radius: 8px; margin: 20px 0;">
+            <p style="margin: 0; font-weight: bold; color: #991b1b;">${product.name}</p>
+            <p style="margin: 5px 0 0; color: #b91c1c;">Quedan solo <strong>${product.stock}</strong> unidades disponibles.</p>
+        </div>
+        <p>Te recomendamos reponer el stock lo antes posible para no perder ventas.</p>
+    `;
+};
+
+export const lowStockAdminText = (product: any) => {
+    return `ALERTA DE STOCK: ${product.name} tiene solo ${product.stock} unidades.`;
+};
+
+/**
+ * Recuperación de Carrito Abandonado
+ */
+export const abandonedCartTemplate = (firstName: string, cartItems: any[]) => {
+    const itemsList = cartItems.map(item => `<li>${item.name}</li>`).join('');
+
+    return `
+        <p>¡Hola ${firstName}!</p>
+        <p>Hemos notado que dejaste algunos tesoros en tu carrito y no queremos que te quedes sin ellos.</p>
+        <p>En <strong>SLC CUTS</strong> los productos vuelan, por lo que te hemos guardado el carrito un poco más por si quieres terminar tu compra ahora.</p>
+        <div style="background: #f9fafb; padding: 20px; border-radius: 8px; margin: 20px 0;">
+            <p style="margin-bottom: 10px; font-weight: bold; text-transform: uppercase; font-size: 12px; color: #6b7280;">Te espera en tu carrito:</p>
+            <ul style="margin: 0; padding-left: 20px; color: #374151;">
+                ${itemsList}
+            </ul>
+        </div>
+        <p>Usa el botón de abajo para volver directamente donde lo dejaste.</p>
+    `;
+};
+
+export const abandonedCartText = (firstName: string) => {
+    return `¡Hola ${firstName}! Te has dejado algo en tu carrito de SLC CUTS. ¡Vuelve antes de que se agote!`;
+};
+

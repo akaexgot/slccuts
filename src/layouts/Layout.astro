@@ -6,6 +6,7 @@ import ProductModal from "../components/ui/ProductModal";
 import CartDrawer from "../components/cart/CartDrawer";
 import NewsletterPopup from "../components/shop/NewsletterPopup";
 import PromotionalPopup from "../components/shop/PromotionalPopup";
+import CartSync from "../components/cart/CartSync";
 
 interface Props {
     title: string;
@@ -507,6 +508,7 @@ if (popupsEnabled) {
 
         {newsletterEnabled && <NewsletterPopup client:load />}
         {popupsEnabled && <PromotionalPopup client:load popup={latestPopup} />}
+        <CartSync client:load />
     </body>
 
     <script>

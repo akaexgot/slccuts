@@ -1,0 +1,172 @@
+---
+import AdminLayout from "../../layouts/AdminLayout.astro";
+import { supabase } from "../../lib/supabase";
+
+export const prerender = false;
+
+// 1. Fetch users with items in their cart
+const { data: usersWithCarts, error } = await supabase
+    .from("users")
+    .select("*")
+    .not("cart_items", "is", null)
+    .order("last_cart_update", { ascending: false });
+
+const formatPrice = (price: number) => {
+    return new Intl.NumberFormat("es-ES", {
+        style: "currency",
+        currency: "EUR",
+    }).format(price / 100);
+};
+
+const formatDate = (dateString: string) => {
+    if (!dateString) return "Nunca";
+    return new Date(dateString).toLocaleDateString("es-ES", {
+        day: "2-digit",
+        month: "short",
+        hour: "2-digit",
+        minute: "2-digit",
+    });
+};
+---
+
+<AdminLayout title="Engagement" activeSection="engagement">
+    <div class="mb-10">
+        <h1
+            class="text-4xl font-black text-white tracking-tight mb-2 uppercase italic"
+        >
+            Marketing & <span class="text-white/40">Recuperación</span>
+        </h1>
+        <p
+            class="text-gray-500 font-medium uppercase tracking-widest text-[10px]"
+        >
+            Usuarios registrados que han dejado productos en su carrito
+        </p>
+    </div>
+
+    <div class="grid gap-6">
+        {
+            usersWithCarts?.length === 0 ? (
+                <div class="text-center py-20 bg-gray-900/30 rounded-[2rem] border border-dashed border-white/10">
+                    <p class="text-gray-500 font-bold uppercase tracking-widest text-sm">
+                        No hay carritos abandonados actualmente
+                    </p>
+                </div>
+            ) : (
+                usersWithCarts?.map((user) => {
+                    const cartItems = user.cart_items || [];
+                    const total = cartItems.reduce(
+                        (acc: number, item: any) =>
+                            acc + item.price * item.quantity,
+                        0,
+                    );
+
+                    return (
+                        <div class="group relative bg-[#0f1117] hover:bg-[#141721] rounded-3xl border border-white/[0.03] transition-all duration-300 p-8 flex flex-col lg:flex-row items-center justify-between gap-8">
+                            <div class="flex items-center gap-6 flex-1">
+                                <div class="w-16 h-16 rounded-2xl bg-white/5 border border-white/10 flex items-center justify-center text-2xl group-hover:bg-indigo-500/20 group-hover:border-indigo-500/30 transition-all">
+                                    🛒
+                                </div>
+                                <div>
+                                    <h3 class="text-white font-black text-xl mb-1 tracking-tight">
+                                        {user.first_name || "Usuario"}{" "}
+                                        {user.last_name || ""}
+                                    </h3>
+                                    <p class="text-gray-500 text-xs font-bold uppercase tracking-widest mb-2">
+                                        {user.email}
+                                    </p>
+                                    <p class="text-gray-600 text-[10px] font-black uppercase tracking-tighter">
+                                        Última actividad:{" "}
+                                        {formatDate(user.last_cart_update)}
+                                    </p>
+                                </div>
+                            </div>
+
+                            <div class="flex-1">
+                                <ul class="flex flex-wrap gap-2">
+                                    {cartItems.map((item: any) => (
+                                        <li class="px-3 py-1.5 bg-white/5 border border-white/5 rounded-lg text-[10px] font-bold text-gray-400">
+                                            {item.quantity}x {item.name}
+                                        </li>
+                                    ))}
+                                </ul>
+                            </div>
+
+                            <div class="text-right flex flex-col items-center lg:items-end gap-3 min-w-[150px]">
+                                <div>
+                                    <p class="text-gray-600 text-[9px] font-black uppercase tracking-widest leading-none mb-1">
+                                        Valor Total
+                                    </p>
+                                    <p class="text-2xl font-black text-white italic">
+                                        {formatPrice(total)}
+                                    </p>
+                                </div>
+                                <button
+                                    data-email={user.email}
+                                    data-first-name={
+                                        user.first_name || "Cliente"
+                                    }
+                                    data-cart={JSON.stringify(cartItems)}
+                                    class="recover-btn w-full bg-indigo-600 hover:bg-indigo-500 text-white font-black uppercase text-[10px] tracking-widest px-6 py-3 rounded-xl transition-all shadow-lg hover:shadow-indigo-500/20 active:scale-95"
+                                >
+                                    Enviar Recordatorio
+                                </button>
+                            </div>
+                        </div>
+                    );
+                })
+            )
+        }
+    </div>
+
+    <script>
+        document.querySelectorAll(".recover-btn").forEach((btn) => {
+            btn.addEventListener("click", async () => {
+                const target = btn as HTMLButtonElement;
+                const email = target.dataset.email;
+                const firstName = target.dataset.firstName;
+                const cart = JSON.parse(target.dataset.cart || "[]");
+
+                target.disabled = true;
+                target.innerText = "ENVIANDO...";
+
+                try {
+                    const response = await fetch("/api/emails/send", {
+                        method: "POST",
+                        headers: { "Content-Type": "application/json" },
+                        body: JSON.stringify({
+                            to: email,
+                            subject: `¿Te has olvidado algo? Tu carrito te espera en SLC CUTS 🛒`,
+                            type: "abandoned_cart", // Custom logic could be added in API if we wanted more helper
+                            // But we can just send the HTML directly if the API supports it
+                            // Wait, currently API uses getTransactionalEmailHtml.
+                            // I'll need to update the API to handle this or just pass the parts.
+                            title: `¡Hola ${firstName}!`,
+                            html: `<p>Hemos notado que dejaste algunos tesoros en tu carrito y no queremos que te quedes sin ellos.</p>
+                                   <p>En <strong>SLC CUTS</strong> los productos vuelan, por lo que te hemos guardado el carrito un poco más.</p>
+                                   <div style="background: #f9fafb; padding: 20px; border-radius: 8px; margin: 20px 0; color: #000;">
+                                       <p style="margin-bottom: 10px; font-weight: bold; text-transform: uppercase; font-size: 12px; color: #6b7280;">Te espera en tu carrito:</p>
+                                       <ul style="margin: 0; padding-left: 20px;">
+                                           ${cart.map((item: any) => `<li>${item.quantity}x ${item.name}</li>`).join("")}
+                                       </ul>
+                                   </div>`,
+                            ctaLink: `${window.location.origin}/cart`,
+                            ctaText: "VOLVER A MI CARRITO",
+                        }),
+                    });
+
+                    if (response.ok) {
+                        target.innerText = "¡ENVIADO!";
+                        target.classList.remove("bg-indigo-600");
+                        target.classList.add("bg-green-600");
+                    } else {
+                        throw new Error("Error al enviar");
+                    }
+                } catch (err) {
+                    console.error(err);
+                    target.innerText = "ERROR";
+                    target.disabled = false;
+                }
+            });
+        });
+    </script>
+</AdminLayout>
