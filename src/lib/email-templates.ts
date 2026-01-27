@@ -293,3 +293,20 @@ export const abandonedCartText = (firstName: string) => {
     return `¡Hola ${firstName}! Te has dejado algo en tu carrito de SLC CUTS. ¡Vuelve antes de que se agote!`;
 };
 
+/**
+ * Auto-respuesta de Contacto (Confirmación de recepción)
+ */
+export const contactAutoResponderTemplate = (name: string) => {
+    return `
+        <p>¡Hola ${name}!</p>
+        <p>Hemos recibido tu mensaje correctamente a través de nuestro formulario de contacto.</p>
+        <p>Nuestro equipo revisará tu consulta lo antes posible. Normalmente respondemos en un plazo de **24 a 48 horas laborables**.</p>
+        <p>Si tu consulta es urgente, recuerda que también puedes contactarnos directamente por WhatsApp o teléfono.</p>
+        <p>Gracias por contactar con <strong>SLC CUTS</strong>.</p>
+    `;
+};
+
+export const contactAutoResponderText = (name: string) => {
+    return `Hola ${name}, hemos recibido tu mensaje en SLC CUTS. Te responderemos en 24-48h laborables. ¡Gracias!`;
+};
+
