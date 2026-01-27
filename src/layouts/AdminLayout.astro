@@ -648,6 +648,43 @@ const filteredNavItems = navItems.filter((item) => {
                 link.addEventListener("click", closeSidebar);
             });
 
+            // Swipe Gesture for Mobile
+            let touchStartX = 0;
+            let touchEndX = 0;
+
+            document.addEventListener(
+                "touchstart",
+                (e) => {
+                    touchStartX = e.changedTouches[0].screenX;
+                },
+                false,
+            );
+
+            document.addEventListener(
+                "touchend",
+                (e) => {
+                    touchEndX = e.changedTouches[0].screenX;
+                    handleSwipe();
+                },
+                false,
+            );
+
+            function handleSwipe() {
+                // Minimum swipe distance to trigger
+                if (touchEndX - touchStartX > 100) {
+                    // Right swipe -> Open Sidebar
+                    // Check if swipe started from the left edge (optional, but good for UX)
+                    if (touchStartX < 50) {
+                        openSidebar();
+                    }
+                }
+
+                // Optional: Left swipe to close
+                if (touchStartX - touchEndX > 100) {
+                    closeSidebar();
+                }
+            }
+
             // Global Toast Notification Logic
             (window as any).showToast = (
                 title: string,
