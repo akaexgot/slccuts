@@ -1,7 +1,7 @@
 import type { APIRoute } from 'astro';
 import { supabase } from '../../../lib/supabase';
 import { resend } from '../../../lib/resend';
-import { baseTemplate } from '../../../lib/email-templates';
+import { getTransactionalEmailHtml } from '../../../lib/email-templates';
 
 export const post: APIRoute = async ({ request }) => {
     try {
@@ -38,9 +38,6 @@ export const post: APIRoute = async ({ request }) => {
                 <p style="font-size: 14px; color: #999;">
                     Aplica este código al finalizar tu compra para disfrutar del descuento.
                 </p>
-                <div style="margin-top: 40px;">
-                    <a href="https://tienda-online-lac.vercel.app/shop" style="display: inline-block; background: #d4af37; color: #000; padding: 15px 30px; text-decoration: none; font-weight: bold; text-transform: uppercase; border-radius: 4px; font-size: 12px;">Ir a la Tienda</a>
-                </div>
             </div>
         `;
 
@@ -48,7 +45,12 @@ export const post: APIRoute = async ({ request }) => {
             from: 'SLC CUTS <onboarding@resend.dev>', // Should use verified domain in production
             to: email,
             subject: '¡Bienvenido! Tu regalo de 10% descuento está aquí',
-            html: baseTemplate(emailContent, 'Bienvenido - SLC CUTS'),
+            html: getTransactionalEmailHtml({
+                title: 'Bienvenido - SLC CUTS',
+                contentHtml: emailContent,
+                ctaLink: 'https://slccuts.com/shop',
+                ctaText: 'IR A LA TIENDA'
+            }),
         });
 
         return new Response(JSON.stringify({ success: true }), { status: 200 });
