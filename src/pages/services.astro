@@ -1,6 +1,16 @@
 ---
+export const prerender = false;
 import Layout from "../layouts/Layout.astro";
 import MosaicBackground from "../components/ui/MosaicBackground.astro";
+
+// Mobile Detection (Simplified Regex)
+const ua = Astro.request.headers.get("user-agent") || "";
+const isMobile =
+    /iPhone|iPad|iPod|Android|webOS|BlackBerry|IEMobile|Opera Mini/i.test(ua);
+
+if (isMobile) {
+    return Astro.redirect("https://slccuts.setmore.com/");
+}
 ---
 
 <Layout title="Servicios | SLC CUTS">
