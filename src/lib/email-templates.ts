@@ -16,6 +16,8 @@ export const getTransactionalEmailHtml = ({
     ctaText,
 }: EmailTemplateProps) => {
     const currentYear = new Date().getFullYear();
+    // Using a clear, absolute URL for the logo. If hosted, replace with final URL.
+    const logoUrl = "https://fwecgvsfbxzzobjkklul.supabase.co/storage/v1/object/public/products/logo_black.png?t=2024-03-20T00:00:00.000Z";
 
     return `
 <!DOCTYPE html>
@@ -27,111 +29,156 @@ export const getTransactionalEmailHtml = ({
     <title>${title}</title>
     <style>
         body { 
-            font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif; 
+            font-family: 'Outfit', 'Helvetica Neue', Helvetica, Arial, sans-serif; 
             line-height: 1.6; 
-            color: #333; 
+            color: #1a1a1a; 
             margin: 0; 
             padding: 0; 
-            background-color: #f4f4f4; 
+            background-color: #f8f9fa; 
         }
         .container { 
             max-width: 600px; 
-            margin: 0 auto; 
+            margin: 20px auto; 
             background-color: #ffffff; 
-            border-radius: 8px; 
+            border-radius: 24px; 
             overflow: hidden; 
-            box-shadow: 0 4px 6px rgba(0,0,0,0.05); 
+            box-shadow: 0 20px 40px rgba(0,0,0,0.08); 
+            border: 1px solid #eeeeee;
         }
         .header { 
-            background-color: #000000; 
-            padding: 30px 20px; 
+            background-color: #ffffff; 
+            padding: 40px 20px; 
             text-align: center; 
+            border-bottom: 1px solid #f0f0f0;
         }
-        .logo { 
-            color: #ffffff; 
-            font-size: 24px; 
-            font-weight: bold; 
-            letter-spacing: 4px; 
-            text-decoration: none; 
-            font-family: 'Georgia', serif; 
+        .logo-img {
+            height: 60px;
+            width: auto;
+            display: block;
+            margin: 0 auto;
         }
         .content { 
-            padding: 40px 30px; 
+            padding: 50px 40px; 
             background-color: #ffffff; 
         }
         .h1 { 
-            font-size: 24px; 
-            font-weight: bold; 
-            margin-bottom: 20px; 
-            color: #111; 
+            font-size: 28px; 
+            font-weight: 900; 
+            margin-bottom: 24px; 
+            color: #000000; 
             text-transform: uppercase; 
-            letter-spacing: 1px; 
+            letter-spacing: -0.5px;
+            font-style: italic;
         }
         .text { 
             font-size: 16px; 
-            color: #555; 
-            margin-bottom: 20px; 
+            color: #4b5563; 
+            margin-bottom: 30px; 
+            line-height: 1.8;
         }
         .button-container {
             text-align: center;
-            margin: 30px 0;
+            margin: 40px 0 10px;
         }
         .button {
             display: inline-block;
             background-color: #000000;
             color: #ffffff !important;
-            padding: 14px 30px;
+            padding: 18px 40px;
             text-decoration: none;
-            border-radius: 4px;
-            font-weight: bold;
+            border-radius: 14px;
+            font-weight: 800;
             text-transform: uppercase;
             letter-spacing: 2px;
-            font-size: 14px;
+            font-size: 12px;
+            box-shadow: 0 10px 20px rgba(0,0,0,0.15);
+        }
+        .divider {
+            height: 1px;
+            background-color: #f0f0f0;
+            margin: 40px 0;
         }
         .footer { 
-            background-color: #f9f9f9; 
-            padding: 30px 20px; 
-            text-align: center; 
-            font-size: 12px; 
-            color: #999; 
-            border-top: 1px solid #eeeeee; 
+            background-color: #000000; 
+            padding: 60px 40px; 
+            text-align: left; 
+            font-size: 13px; 
+            color: #9ca3af; 
+        }
+        .footer-logo {
+            color: #ffffff;
+            font-size: 20px;
+            font-weight: 900;
+            margin-bottom: 25px;
+            display: block;
+            text-decoration: none;
+            letter-spacing: 2px;
+        }
+        .footer-info {
+            margin-bottom: 30px;
+        }
+        .info-row {
+            margin-bottom: 12px;
+            display: flex;
+            align-items: center;
+        }
+        .info-label {
+            color: #ffffff;
+            font-weight: bold;
+            text-transform: uppercase;
+            font-size: 10px;
+            letter-spacing: 1px;
+            margin-right: 10px;
         }
         .footer a { 
-            color: #999; 
-            text-decoration: underline; 
+            color: #ffffff; 
+            text-decoration: none; 
+            font-weight: bold;
+        }
+        .social-links {
+            margin-top: 30px;
+            padding-top: 30px;
+            border-top: 1px solid #374151;
         }
         .order-table {
             width: 100%;
             border-collapse: collapse;
-            margin: 20px 0;
+            margin: 30px 0;
+            background-color: #f9fafb;
+            border-radius: 16px;
+            overflow: hidden;
         }
         .order-table th {
             text-align: left;
-            border-bottom: 2px solid #000;
-            padding: 10px 0;
-            font-size: 12px;
+            background-color: #f3f4f6;
+            padding: 15px 20px;
+            font-size: 11px;
             text-transform: uppercase;
-            letter-spacing: 1px;
+            letter-spacing: 1.5px;
+            color: #6b7280;
         }
         .order-table td {
-            padding: 15px 0;
-            border-bottom: 1px solid #eee;
+            padding: 20px;
+            border-bottom: 1px solid #f0f0f0;
             font-size: 14px;
+            color: #1a1a1a;
         }
         .total-row td {
-            font-weight: bold;
+            font-weight: 900;
+            font-size: 18px;
+            color: #000000;
+            background-color: #ffffff;
             border-top: 2px solid #000;
-            border-bottom: none;
-            font-size: 16px;
-            padding-top: 20px;
         }
     </style>
 </head>
 <body>
-    <div style="background-color: #f4f4f4; padding: 40px 0;">
+    <div style="background-color: #f8f9fa; padding: 20px 0;">
         <div class="container">
             <div class="header">
-                <div class="logo">SLC CUTS</div>
+                <!-- If logo constant is configured in Resend, use it here. 
+                     Otherwise, a high-res text fallback or remote image -->
+                <h1 style="font-size: 28px; font-weight: 900; color: #000; margin:0; letter-spacing: 4px; text-transform:lowercase; font-style:italic;">@slc.cuts</h1>
             </div>
             <div class="content">
                 <h1 class="h1">${title}</h1>
@@ -144,12 +191,37 @@ export const getTransactionalEmailHtml = ({
                 </div>
                 ` : ""}
             </div>
+            
             <div class="footer">
-                <p>&copy; ${currentYear} SLC CUTS. Todos los derechos reservados.</p>
-                <p>Chipiona, Cádiz - España</p>
-                <p>
-                    <a href="https://slccuts.com">Visitar Web</a> | 
-                    <a href="mailto:slccuts1998@gmail.com">Contactar</a>
+                <a href="https://slccuts.com" class="footer-logo">@slc.cuts</a>
+                
+                <div class="footer-info">
+                    <div class="info-row">
+                        <span class="info-label">Ubicación:</span>
+                        <span>C. Miguel de Cervantes, 79, 11550 Chipiona, Cádiz</span>
+                    </div>
+                    <div class="info-row">
+                        <span class="info-label">Teléfono:</span>
+                        <a href="tel:+34722108440">+34 722 10 84 40</a>
+                    </div>
+                    <div class="info-row">
+                        <span class="info-label">Email:</span>
+                        <a href="mailto:slccuts1998@gmail.com">slccuts1998@gmail.com</a>
+                    </div>
+                    <div class="info-row">
+                        <span class="info-label">Horario:</span>
+                        <span>L-V: 10:00 - 20:00 | S: 10:00 - 14:00</span>
+                    </div>
+                </div>
+
+                <div class="social-links">
+                    <p style="margin-bottom: 15px;">Síguenos para más estilo:</p>
+                    <a href="https://instagram.com/slc.cuts" style="font-size: 11px; text-transform: uppercase; letter-spacing: 2px; border: 1px solid #ffffff; padding: 10px 20px; border-radius: 8px;">Instagram</a>
+                </div>
+
+                <p style="margin-top: 50px; opacity: 0.5; font-size: 11px;">
+                    &copy; ${currentYear} SLC CUTS - Barbería de Autor & Shop.<br>
+                    Estás recibiendo este correo como parte de tu actividad en nuestra tienda online.
                 </p>
             </div>
         </div>
@@ -164,32 +236,40 @@ export const getTransactionalEmailHtml = ({
 export const orderConfirmationTemplate = (order: any) => {
     const itemsHtml = order.order_items?.map((item: any) => `
         <tr>
-            <td>${item.product?.name || 'Producto'} x ${item.quantity}</td>
-            <td align="right">${(item.price * item.quantity).toFixed(2)}€</td>
+            <td style="font-weight: bold;">
+                ${item.product?.name || 'Producto'}
+                ${item.size ? `<br><span style="font-size: 11px; color: #6b7280; font-weight: normal;">Talla: ${item.size}</span>` : ''}
+            </td>
+            <td align="center" style="color: #6b7280;">x${item.quantity}</td>
+            <td align="right" style="font-weight: bold;">${(item.price * item.quantity / 100).toFixed(2)}€</td>
         </tr>
     `).join('') || '';
 
     return `
-        <p>¡Hola! Gracias por tu compra en SLC CUTS.</p>
-        <p>Tu pedido <strong>#${order.id.slice(0, 8).toUpperCase()}</strong> ha sido recibido y está siendo procesado.</p>
+        <p>¡Hola! Hemos recibido tu pedido y ya nos hemos puesto manos a la obra para prepararlo con la maestría que nos caracteriza.</p>
+        <p>Aquí tienes los detalles de tu compra <strong>#${order.id.slice(0, 8).toUpperCase()}</strong>:</p>
         
         <table class="order-table">
             <thead>
                 <tr>
                     <th>Producto</th>
+                    <th align="center">Cant.</th>
                     <th align="right">Total</th>
                 </tr>
             </thead>
             <tbody>
                 ${itemsHtml}
                 <tr class="total-row">
-                    <td>TOTAL</td>
-                    <td align="right">${order.total_amount?.toFixed(2)}€</td>
+                    <td colspan="2" align="right" style="padding-right: 20px;">TOTAL</td>
+                    <td align="right">${(order.total_amount / 100).toFixed(2)}€</td>
                 </tr>
             </tbody>
         </table>
 
-        <p>Recibirás otra actualización cuando tu pedido esté en camino.</p>
+        <div style="background-color: #f3f4f6; padding: 25px; border-radius: 12px; margin-top: 30px;">
+            <p style="margin: 0; font-weight: bold; font-size: 14px; text-transform: uppercase; letter-spacing: 1px;">Siguiente paso:</p>
+            <p style="margin: 10px 0 0; color: #4b5563; font-size: 14px;">Te avisaremos en cuanto tu pedido salga de nuestra barbería hacia tu casa.</p>
+        </div>
     `;
 };
 
@@ -199,10 +279,13 @@ export const orderConfirmationText = (order: any) => {
 
 export const orderShippedTemplate = (order: any) => {
     return `
-        <p>¡Buenas noticias!</p>
-        <p>Tu pedido <strong>#${order.id.slice(0, 8).toUpperCase()}</strong> ya ha salido de nuestro almacén y está en camino.</p>
-        <p>Pronto recibirás la información de seguimiento por parte de la empresa de transporte.</p>
-        <p>¡Gracias por elegir SLC CUTS!</p>
+        <div style="text-align: center; padding: 20px 0;">
+            <div style="font-size: 50px; margin-bottom: 20px;">🚚</div>
+            <p style="font-size: 18px; font-weight: bold; color: #000;">¡Tu estilo ya va de camino!</p>
+            <p>Tu pedido <strong>#${order.id.slice(0, 8).toUpperCase()}</strong> ha salido de nuestra barbería y está en manos del transportista.</p>
+            <p>En las próximas horas recibirás un email con el enlace de seguimiento para que puedas controlar la entrega.</p>
+            <p>¡Prepárate para disfrutar de tus productos premium!</p>
+        </div>
     `;
 };
 
@@ -273,19 +356,24 @@ export const lowStockAdminText = (product: any) => {
  * Recuperación de Carrito Abandonado
  */
 export const abandonedCartTemplate = (firstName: string, cartItems: any[]) => {
-    const itemsList = cartItems.map(item => `<li>${item.name}</li>`).join('');
+    const itemsList = cartItems.map(item => `
+        <div style="padding: 15px 0; border-bottom: 1px solid #f0f0f0; display: flex; justify-content: space-between; align-items: center;">
+            <span style="font-weight: bold; color: #111;">${item.name}</span>
+            <span style="color: #6b7280; font-size: 13px;">x${item.quantity}</span>
+        </div>
+    `).join('');
 
     return `
         <p>¡Hola ${firstName}!</p>
         <p>Hemos notado que dejaste algunos tesoros en tu carrito y no queremos que te quedes sin ellos.</p>
         <p>En <strong>SLC CUTS</strong> los productos vuelan, por lo que te hemos guardado el carrito un poco más por si quieres terminar tu compra ahora.</p>
-        <div style="background: #f9fafb; padding: 20px; border-radius: 8px; margin: 20px 0;">
-            <p style="margin-bottom: 10px; font-weight: bold; text-transform: uppercase; font-size: 12px; color: #6b7280;">Te espera en tu carrito:</p>
-            <ul style="margin: 0; padding-left: 20px; color: #374151;">
-                ${itemsList}
-            </ul>
+        
+        <div style="background: #ffffff; border: 1px solid #eeeeee; padding: 25px; border-radius: 20px; margin: 30px 0; box-shadow: 0 10px 25px rgba(0,0,0,0.05);">
+            <p style="margin: 0 0 15px; font-weight: bold; text-transform: uppercase; font-size: 11px; letter-spacing: 1px; color: #6b7280;">Te espera en tu carrito:</p>
+            ${itemsList}
         </div>
-        <p>Usa el botón de abajo para volver directamente donde lo dejaste.</p>
+        
+        <p>Pulsa el botón de abajo para recuperar tu selección y finalizar el pedido en un clic.</p>
     `;
 };
 
