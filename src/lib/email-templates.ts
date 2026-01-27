@@ -1,3 +1,4 @@
+// --- New Template System ---
 
 interface EmailTemplateProps {
     previewText?: string;
@@ -99,36 +100,50 @@ export const getTransactionalEmailHtml = ({
             color: #999; 
             text-decoration: underline; 
         }
+        .order-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin: 20px 0;
+        }
+        .order-table th {
+            text-align: left;
+            border-bottom: 2px solid #000;
+            padding: 10px 0;
+            font-size: 12px;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+        .order-table td {
+            padding: 15px 0;
+            border-bottom: 1px solid #eee;
+            font-size: 14px;
+        }
+        .total-row td {
+            font-weight: bold;
+            border-top: 2px solid #000;
+            border-bottom: none;
+            font-size: 16px;
+            padding-top: 20px;
+        }
     </style>
 </head>
 <body>
     <div style="background-color: #f4f4f4; padding: 40px 0;">
         <div class="container">
-            <!-- Header with Logo -->
             <div class="header">
-                 <!-- You can replace text with an img tag if you have a hosted logo URL -->
                 <div class="logo">SLC CUTS</div>
             </div>
-
-            <!-- Content -->
             <div class="content">
                 <h1 class="h1">${title}</h1>
-                
                 <div class="text">
                     ${contentHtml}
                 </div>
-
-                ${ctaLink && ctaText
-            ? `
+                ${ctaLink && ctaText ? `
                 <div class="button-container">
                     <a href="${ctaLink}" class="button">${ctaText}</a>
                 </div>
-                `
-            : ""
-        }
+                ` : ""}
             </div>
-
-            <!-- Footer -->
             <div class="footer">
                 <p>&copy; ${currentYear} SLC CUTS. Todos los derechos reservados.</p>
                 <p>Chipiona, Cádiz - España</p>
@@ -141,5 +156,79 @@ export const getTransactionalEmailHtml = ({
     </div>
 </body>
 </html>
-  `;
+    `;
 };
+
+// --- Specialized Template Helpers ---
+
+export const orderConfirmationTemplate = (order: any) => {
+    const itemsHtml = order.order_items?.map((item: any) => `
+        <tr>
+            <td>${item.product?.name || 'Producto'} x ${item.quantity}</td>
+            <td align="right">${(item.price * item.quantity).toFixed(2)}€</td>
+        </tr>
+    `).join('') || '';
+
+    return `
+        <p>¡Hola! Gracias por tu compra en SLC CUTS.</p>
+        <p>Tu pedido <strong>#${order.id.slice(0, 8).toUpperCase()}</strong> ha sido recibido y está siendo procesado.</p>
+        
+        <table class="order-table">
+            <thead>
+                <tr>
+                    <th>Producto</th>
+                    <th align="right">Total</th>
+                </tr>
+            </thead>
+            <tbody>
+                ${itemsHtml}
+                <tr class="total-row">
+                    <td>TOTAL</td>
+                    <td align="right">${order.total_amount?.toFixed(2)}€</td>
+                </tr>
+            </tbody>
+        </table>
+
+        <p>Recibirás otra actualización cuando tu pedido esté en camino.</p>
+    `;
+};
+
+export const orderConfirmationText = (order: any) => {
+    return `¡Gracias por tu compra! Tu pedido #${order.id.slice(0, 8).toUpperCase()} ha sido recibido. Total: ${order.total_amount?.toFixed(2)}€.`;
+};
+
+export const orderShippedTemplate = (order: any) => {
+    return `
+        <p>¡Buenas noticias!</p>
+        <p>Tu pedido <strong>#${order.id.slice(0, 8).toUpperCase()}</strong> ya ha salido de nuestro almacén y está en camino.</p>
+        <p>Pronto recibirás la información de seguimiento por parte de la empresa de transporte.</p>
+        <p>¡Gracias por elegir SLC CUTS!</p>
+    `;
+};
+
+export const orderShippedText = (order: any) => {
+    return `¡Tu pedido #${order.id.slice(0, 8).toUpperCase()} está en camino! SLC CUTS.`;
+};
+
+export const adminOrderNotificationTemplate = (order: any) => {
+    return `
+        <p>Se ha recibido un nuevo pedido pagado.</p>
+        <p><strong>Pedido:</strong> #${order.id.slice(0, 8).toUpperCase()}</p>
+        <p><strong>Total:</strong> ${order.total_amount?.toFixed(2)}€</p>
+        <p><strong>Cliente:</strong> ${order.guest_email || 'Cliente registrado'}</p>
+        <p>Revisa el panel de administración para ver todos los detalles y gestionar el envío.</p>
+    `;
+};
+
+export const adminOrderNotificationText = (order: any) => {
+    return `Nuevo pedido pagado: #${order.id.slice(0, 8).toUpperCase()}. Total: ${order.total_amount?.toFixed(2)}€`;
+};
+
+export const manualMessageTemplate = (message: string) => {
+    return `<div style="white-space: pre-wrap;">${message}</div>`;
+};
+
+export const manualMessageText = (message: string) => {
+    return message;
+};
+
