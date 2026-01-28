@@ -61,7 +61,7 @@ export default function CartDrawer() {
         <>
             {/* Backdrop */}
             <div
-                className={`fixed inset-0 bg-black/50 z-50 transition-opacity duration-300 ${isMounted && isCartOpen ? 'opacity-100 pointer-events-auto' : 'opacity-0 pointer-events-none'
+                className={`fixed inset-0 bg-black/50 z-[80] transition-opacity duration-300 ${isMounted && isCartOpen ? 'opacity-100 pointer-events-auto' : 'opacity-0 pointer-events-none'
                     }`}
                 onClick={handleBackdropClick}
             />
@@ -69,7 +69,7 @@ export default function CartDrawer() {
             {/* Drawer */}
             <div
                 ref={drawerRef}
-                className={`fixed top-0 right-0 h-full w-full max-w-md bg-white shadow-xl z-50 transform transition-transform duration-300 ease-in-out flex flex-col ${isMounted && isCartOpen ? 'translate-x-0' : 'translate-x-full'
+                className={`fixed top-0 right-0 h-full w-full max-w-md bg-white shadow-xl z-[90] transform transition-transform duration-300 ease-in-out flex flex-col ${isMounted && isCartOpen ? 'translate-x-0' : 'translate-x-full'
                     }`}
             >
                 {isMounted && (
@@ -93,9 +93,9 @@ export default function CartDrawer() {
                             {items.length === 0 ? (
                                 <div className="h-full flex flex-col items-center justify-center text-center text-gray-500 space-y-4">
                                     <svg xmlns="http://www.w3.org/2000/svg" width="64" height="64" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1" strokeLinecap="round" strokeLinejoin="round">
-                                        <path d="M6 2 3 6v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6l-3-4Z"></path>
-                                        <path d="M3 6h18"></path>
-                                        <path d="M16 10a4 4 0 0 1-8 0"></path>
+                                        <circle cx="8" cy="21" r="1"></circle>
+                                        <circle cx="19" cy="21" r="1"></circle>
+                                        <path d="M2.05 2.05h2l2.66 12.42a2 2 0 0 0 2 1.58h9.78a2 2 0 0 0 1.95-1.57l1.65-7.43H5.12"></path>
                                     </svg>
                                     <p className="text-lg">Tu carrito está vacío</p>
                                     <button
