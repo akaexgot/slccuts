@@ -82,7 +82,11 @@ if (popupsEnabled) {
             content={new URL("/logo.png", Astro.url)}
         />
 
-        <link rel="icon" type="image/png" href="/logo.png" />
+        <link rel="icon" type="image/png" sizes="32x32" href="/logo.png" />
+        <link rel="icon" type="image/png" sizes="16x16" href="/logo.png" />
+        <link rel="apple-touch-icon" sizes="180x180" href="/logo.png" />
+        <link rel="manifest" href="/site.webmanifest" />
+        <meta name="theme-color" content="#000000" />
         <link rel="preconnect" href="https://fonts.googleapis.com" />
         <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
         <link rel="preconnect" href="https://fonts.cdnfonts.com" crossorigin />
@@ -120,7 +124,81 @@ if (popupsEnabled) {
             }
         </style>
         <meta name="generator" content={Astro.generator} />
-        <title>{title}</title>
+        <title>{title} | Barbería en Chipiona</title>
+
+        <!-- Schema.org JSON-LD for LocalBusiness -->
+        <script
+            type="application/ld+json"
+            set:html={JSON.stringify({
+                "@context": "https://schema.org",
+                "@type": "HairSalon",
+                name: "SLC CUTS",
+                image: "https://slccuts.es/logo.png",
+                description:
+                    "Barbería de Autor & Tienda Online de Productos Premium. Estilo, maestría y vanguardia en Chipiona.",
+                address: {
+                    "@type": "PostalAddress",
+                    streetAddress: "Chipiona",
+                    addressLocality: "Chipiona",
+                    addressRegion: "Cádiz",
+                    postalCode: "11550",
+                    addressCountry: "ES",
+                },
+                geo: {
+                    "@type": "GeoCoordinates",
+                    latitude: 36.7394,
+                    longitude: -6.4394,
+                },
+                url: "https://slccuts.es",
+                telephone: "+34722108440",
+                priceRange: "€€",
+                openingHoursSpecification: [
+                    {
+                        "@type": "OpeningHoursSpecification",
+                        dayOfWeek: [
+                            "Monday",
+                            "Tuesday",
+                            "Wednesday",
+                            "Thursday",
+                            "Friday",
+                        ],
+                        opens: "10:00",
+                        closes: "20:00",
+                    },
+                    {
+                        "@type": "OpeningHoursSpecification",
+                        dayOfWeek: "Saturday",
+                        opens: "10:00",
+                        closes: "14:00",
+                    },
+                ],
+                sameAs: ["https://www.instagram.com/slc.cuts"],
+                hasOfferCatalog: {
+                    "@type": "OfferCatalog",
+                    name: "Servicios de Barbería",
+                    itemListElement: [
+                        {
+                            "@type": "Offer",
+                            itemOffered: {
+                                "@type": "Service",
+                                name: "Corte de Pelo",
+                                description:
+                                    "Corte de pelo profesional con técnicas modernas",
+                            },
+                        },
+                        {
+                            "@type": "Offer",
+                            itemOffered: {
+                                "@type": "Service",
+                                name: "Arreglo de Barba",
+                                description:
+                                    "Perfilado y cuidado profesional de barba",
+                            },
+                        },
+                    ],
+                },
+            })}
+        />
     </head>
     <body
         class="bg-gray-50 text-gray-900 font-sans antialiased min-h-screen flex flex-col relative overflow-x-hidden"
@@ -624,8 +702,8 @@ if (popupsEnabled) {
                         (event === "SIGNED_IN" || event === "TOKEN_REFRESHED")
                     ) {
                         const maxAge = 60 * 60 * 24 * 7;
-                        document.cookie = `sb-access-token=${session.access_token}; path=/; max-age=${maxAge}; samesite=lax`;
-                        document.cookie = `sb-refresh-token=${session.refresh_token}; path=/; max-age=${maxAge}; samesite=lax`;
+                        document.cookie = `sb-access-token=${session.access_token}; path=/; max-age=${maxAge}; SameSite=Lax; Secure`;
+                        document.cookie = `sb-refresh-token=${session.refresh_token}; path=/; max-age=${maxAge}; SameSite=Lax; Secure`;
                     } else if (event === "SIGNED_OUT") {
                         document.cookie =
                             "sb-access-token=; path=/; expires=Thu, 01 Jan 1970 00:00:00 UTC";

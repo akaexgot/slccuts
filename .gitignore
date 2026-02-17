@@ -11,7 +11,8 @@ npm-debug.log*
 yarn-debug.log*
 yarn-error.log*
 pnpm-debug.log*
-
+build_log*.txt
+dev_logs*.txt
 
 # environment variables
 .env
@@ -23,3 +24,6 @@ pnpm-debug.log*
 
 # jetbrains setting folder
 .idea/
+
+# debug files
+debug_*.ts

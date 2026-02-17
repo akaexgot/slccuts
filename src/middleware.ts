@@ -1,8 +1,37 @@
 import { defineMiddleware } from "astro:middleware";
 import { supabase } from "./lib/supabase";
 
+const ALLOWED_ORIGINS = [
+    "https://slccuts.es",
+    "https://www.slccuts.es",
+    "http://localhost:4321",
+    "http://localhost:3000",
+];
+
 export const onRequest = defineMiddleware(async (context, next) => {
     const { pathname } = context.url;
+    const origin = context.request.headers.get("Origin") || "";
+    const allowedOrigin = ALLOWED_ORIGINS.includes(origin) ? origin : ALLOWED_ORIGINS[0];
+
+    // --- CORS Configuration for API Routes ---
+    if (pathname.startsWith("/api/")) {
+        if (context.request.method === "OPTIONS") {
+            return new Response(null, {
+                status: 204,
+                headers: {
+                    "Access-Control-Allow-Origin": allowedOrigin,
+                    "Access-Control-Allow-Headers": "Content-Type, Authorization",
+                    "Access-Control-Allow-Methods": "GET, POST, PUT, DELETE, OPTIONS",
+                },
+            });
+        }
+
+        const response = await next();
+        response.headers.set("Access-Control-Allow-Origin", allowedOrigin);
+        response.headers.set("Access-Control-Allow-Headers", "Content-Type, Authorization");
+        response.headers.set("Access-Control-Allow-Methods", "GET, POST, PUT, DELETE, OPTIONS");
+        return response;
+    }
 
     // Check maintenance mode setting
     const { data: maintenanceSetting } = await supabase

@@ -193,7 +193,7 @@ export const getTransactionalEmailHtml = ({
             </div>
             
             <div class="footer">
-                <a href="https://slccuts.com" class="footer-logo">@slc.cuts</a>
+                <a href="https://slccuts.es" class="footer-logo">@slc.cuts</a>
                 
                 <div class="footer-info">
                     <div class="info-row">

@@ -1,11 +1,18 @@
 import type { APIRoute } from 'astro';
 import { supabase } from '../../../lib/supabase';
+import { verifyAdminSession, unauthorizedResponse } from '../../../lib/auth';
 
 export const prerender = false;
 
-export const POST: APIRoute = async ({ request }) => {
+export const POST: APIRoute = async (context) => {
+    // Verify admin session
+    const session = await verifyAdminSession(context);
+    if (!session) {
+        return unauthorizedResponse();
+    }
+
     try {
-        const data = await request.json();
+        const data = await context.request.json();
 
         const { name, slug, description, price, category_id, active, is_offer, stock, image_url } = data;
 

@@ -9,6 +9,7 @@ import {
     SHIPPING_THRESHOLD,
     SHIPPING_COST
 } from '../../store/cartStore';
+import CartTimer from './CartTimer';
 
 export default function CartDrawer() {
     const { items, isCartOpen } = useStore(cartStore);
@@ -90,6 +91,9 @@ export default function CartDrawer() {
 
                         {/* Items */}
                         <div className="flex-1 overflow-y-auto p-4 space-y-6">
+                            {/* Cart Timer */}
+                            <CartTimer />
+
                             {items.length === 0 ? (
                                 <div className="h-full flex flex-col items-center justify-center text-center text-gray-500 space-y-4">
                                     <svg xmlns="http://www.w3.org/2000/svg" width="64" height="64" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1" strokeLinecap="round" strokeLinejoin="round">
@@ -122,6 +126,11 @@ export default function CartDrawer() {
                                                     {item.size && (
                                                         <p className="text-sm text-gray-500 mt-1">Talla: {item.size}</p>
                                                     )}
+                                                    {item.maxStock !== undefined && item.quantity >= item.maxStock && (
+                                                        <p className="text-xs text-orange-600 mt-1 font-medium">
+                                                            ⚠️ Stock máximo alcanzado
+                                                        </p>
+                                                    )}
                                                 </div>
                                                 <button
                                                     onClick={() => removeFromCart(item.id, item.size)}
@@ -139,7 +148,7 @@ export default function CartDrawer() {
                                                 <div className="flex items-center border border-gray-200 rounded-lg">
                                                     <button
                                                         onClick={() => updateQuantity(item.id, item.quantity - 1, item.size)}
-                                                        className="px-3 py-1 hover:bg-gray-100 transition-colors text-gray-600"
+                                                        className="px-3 py-1 hover:bg-gray-100 transition-colors text-gray-600 disabled:opacity-50 disabled:cursor-not-allowed"
                                                         disabled={item.quantity <= 1}
                                                     >
                                                         -
@@ -147,7 +156,9 @@ export default function CartDrawer() {
                                                     <span className="w-8 text-center text-sm font-medium">{item.quantity}</span>
                                                     <button
                                                         onClick={() => updateQuantity(item.id, item.quantity + 1, item.size)}
-                                                        className="px-3 py-1 hover:bg-gray-100 transition-colors text-gray-600"
+                                                        className="px-3 py-1 hover:bg-gray-100 transition-colors text-gray-600 disabled:opacity-50 disabled:cursor-not-allowed"
+                                                        disabled={item.maxStock !== undefined && item.quantity >= item.maxStock}
+                                                        title={item.maxStock !== undefined && item.quantity >= item.maxStock ? `Stock máximo: ${item.maxStock}` : ''}
                                                     >
                                                         +
                                                     </button>

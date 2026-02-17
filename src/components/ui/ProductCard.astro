@@ -176,14 +176,8 @@ const formatPrice = (price: number) => {
         ) as NodeListOf<HTMLElement>;
 
         cards.forEach((card) => {
-            // Remove old listeners ideally, or just robustly add new ones.
-            // In vanilla JS without framework support for cleanup, we rely on page reloads/transitions.
-            // But to be safe against double-binding if re-run:
-            const newCard = card.cloneNode(true);
-            // Actually cloning destroys event listeners but might be heavy.
-            // Let's just trust that this script runs once per component instance initialization or use a data-attribute to mark initialized.
-
-            if (card.dataset.initialized) return;
+            // Skip if already initialized (to prevent double-binding on same elements)
+            if (card.dataset.initialized === "true") return;
             card.dataset.initialized = "true";
 
             card.addEventListener("click", (e) => {
@@ -206,4 +200,7 @@ const formatPrice = (price: number) => {
 
     // Support Astro View Transitions if enabled
     document.addEventListener("astro:page-load", setupProductCards);
+
+    // Listen for custom event from SidebarFilter when content is dynamically updated
+    document.addEventListener("reinit-product-cards", setupProductCards);
 </script>

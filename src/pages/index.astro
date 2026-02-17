@@ -6,6 +6,7 @@ import Marquee from "../components/ui/Marquee.astro";
 import { supabase } from "../lib/supabase";
 import ProductCard from "../components/ui/ProductCard.astro";
 import MosaicBackground from "../components/ui/MosaicBackground.astro";
+import NewsletterSubscriptionBanner from "../components/shop/NewsletterSubscriptionBanner";
 import { Image } from "astro:assets";
 
 const cleanUrl = (url: string) => {
@@ -64,7 +65,7 @@ const galleryEnabled =
 		?.value ?? true;
 ---
 
-<Layout title="SLC CUTS | Barbería & Productos">
+<Layout title="SLC CUTS">
 	<main class="flex-1">
 		<!-- Marquee Section (Below Menu) -->
 		<Marquee
@@ -143,6 +144,9 @@ const galleryEnabled =
 				</div>
 			</div>
 		</div>
+
+		{/* Newsletter Subscription Banner - Only for logged-in users */}
+		<NewsletterSubscriptionBanner client:load />
 
 		{/* About Section - Only show if gallery is enabled */}
 		{

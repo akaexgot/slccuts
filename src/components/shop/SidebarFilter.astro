@@ -207,6 +207,8 @@ const priceRanges = [
                 }
                 // Re-initialize listeners since we replaced the innerHTML
                 initListeners();
+                // Re-initialize product card click handlers
+                reinitializeProductCards();
             }
         } catch (error) {
             console.error("Error fetching shop content:", error);
@@ -257,8 +259,15 @@ const priceRanges = [
         });
     }
 
+    function reinitializeProductCards() {
+        // Import and call the setupProductCards function from ProductCard
+        const event = new CustomEvent("reinit-product-cards");
+        document.dispatchEvent(event);
+    }
+
     // Initialize on first load
     initListeners();
+    reinitializeProductCards();
 
     // Handle back/forward browser buttons
     window.addEventListener("popstate", () => {

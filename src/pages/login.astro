@@ -181,8 +181,8 @@ import Layout from "../layouts/Layout.astro";
                         const session = data.session;
                         if (session) {
                             const maxAge = 60 * 60 * 24 * 7; // 7 days
-                            document.cookie = `sb-access-token=${session.access_token}; path=/; max-age=${maxAge}; SameSite=Lax; samesite=lax`;
-                            document.cookie = `sb-refresh-token=${session.refresh_token}; path=/; max-age=${maxAge}; SameSite=Lax; samesite=lax`;
+                            document.cookie = `sb-access-token=${session.access_token}; path=/; max-age=${maxAge}; SameSite=Lax; Secure`;
+                            document.cookie = `sb-refresh-token=${session.refresh_token}; path=/; max-age=${maxAge}; SameSite=Lax; Secure`;
                         }
 
                         // Redirect based on role

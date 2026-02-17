@@ -2,6 +2,8 @@
 import AdminLayout from "../../../layouts/AdminLayout.astro";
 import { supabase, getSupabasePageClient } from "../../../lib/supabase";
 
+export const prerender = false; // Enable server-side rendering
+
 // Get authenticated client for this request
 const supabaseClient = await getSupabasePageClient(Astro.cookies);
 
@@ -11,9 +13,11 @@ const { data: subscribers, error } = await supabaseClient
     .select("*")
     .order("created_at", { ascending: false });
 
-// Settings fetching removed
-// const { data: settings } = await supabase.from("settings").select("*");
-// const newsletterEnabled = parseBoolSetting("newsletter_enabled", true);
+if (error) {
+    console.error("[Admin Newsletter] Error fetching subscribers:", error);
+}
+
+console.log("[Admin Newsletter] Subscribers count:", subscribers?.length || 0);
 
 const formatDate = (dateString: string) => {
     return new Date(dateString).toLocaleDateString("es-ES", {
@@ -176,22 +180,125 @@ const formatDate = (dateString: string) => {
             </div>
         </div>
     </div>
+
+    <!-- Custom Confirmation Modal -->
+    <div
+        id="confirmModal"
+        class="fixed inset-0 z-50 hidden items-center justify-center p-4"
+    >
+        <div
+            class="absolute inset-0 bg-black/60 backdrop-blur-sm"
+            id="modalBackdrop"
+        >
+        </div>
+        <div
+            class="relative bg-gradient-to-br from-gray-900 to-black border border-white/10 rounded-3xl p-8 max-w-md w-full shadow-2xl transform transition-all scale-95 opacity-0"
+            id="modalContent"
+        >
+            <div class="flex items-center gap-3 mb-4">
+                <span class="text-3xl" id="modalIcon">⚠️</span>
+                <h3
+                    class="text-xl font-black text-white italic uppercase"
+                    id="modalTitle"
+                >
+                    Confirmar
+                </h3>
+            </div>
+            <p class="text-gray-300 mb-6" id="modalMessage">¿Estás seguro?</p>
+            <div class="flex gap-3 justify-end">
+                <button
+                    id="modalCancelBtn"
+                    class="px-6 py-3 bg-white/5 hover:bg-white/10 text-white rounded-xl font-bold transition-all"
+                >
+                    Cancelar
+                </button>
+                <button
+                    id="modalConfirmBtn"
+                    class="px-6 py-3 bg-red-500 hover:bg-red-600 text-white rounded-xl font-bold transition-all"
+                >
+                    Confirmar
+                </button>
+            </div>
+        </div>
+    </div>
 </AdminLayout>
 
 <script>
     import { supabase } from "../../../lib/supabase";
 
-    // Toggle Newsletter removed
+    // Custom Modal Functions
+    function showConfirmModal(
+        title: string,
+        message: string,
+        icon: string = "⚠️",
+    ): Promise<boolean> {
+        return new Promise((resolve) => {
+            const modal = document.getElementById("confirmModal");
+            const modalContent = document.getElementById("modalContent");
+            const modalTitle = document.getElementById("modalTitle");
+            const modalMessage = document.getElementById("modalMessage");
+            const modalIcon = document.getElementById("modalIcon");
+            const confirmBtn = document.getElementById("modalConfirmBtn");
+            const cancelBtn = document.getElementById("modalCancelBtn");
+            const backdrop = document.getElementById("modalBackdrop");
+
+            if (!modal || !modalContent) return resolve(false);
+
+            // Set content
+            if (modalTitle) modalTitle.textContent = title;
+            if (modalMessage) modalMessage.textContent = message;
+            if (modalIcon) modalIcon.textContent = icon;
+
+            // Show modal with animation
+            modal.classList.remove("hidden");
+            modal.classList.add("flex");
+            setTimeout(() => {
+                modalContent?.classList.remove("scale-95", "opacity-0");
+                modalContent?.classList.add("scale-100", "opacity-100");
+            }, 10);
+
+            // Handle confirm
+            const handleConfirm = () => {
+                cleanup();
+                resolve(true);
+            };
+
+            // Handle cancel
+            const handleCancel = () => {
+                cleanup();
+                resolve(false);
+            };
+
+            // Cleanup function
+            const cleanup = () => {
+                modalContent?.classList.add("scale-95", "opacity-0");
+                modalContent?.classList.remove("scale-100", "opacity-100");
+                setTimeout(() => {
+                    modal.classList.add("hidden");
+                    modal.classList.remove("flex");
+                }, 200);
+                confirmBtn?.removeEventListener("click", handleConfirm);
+                cancelBtn?.removeEventListener("click", handleCancel);
+                backdrop?.removeEventListener("click", handleCancel);
+            };
+
+            // Add event listeners
+            confirmBtn?.addEventListener("click", handleConfirm);
+            cancelBtn?.addEventListener("click", handleCancel);
+            backdrop?.addEventListener("click", handleCancel);
+        });
+    }
 
     // Delete Subscriber
     document.querySelectorAll(".delete-subscriber").forEach((btn) => {
         btn.addEventListener("click", async () => {
-            if (
-                !confirm(
-                    "¿Estás seguro de que quieres eliminar este suscriptor?",
-                )
-            )
-                return;
+            const confirmed = await showConfirmModal(
+                "Eliminar Suscriptor",
+                "¿Estás seguro de que quieres eliminar este suscriptor? Esta acción no se puede deshacer.",
+                "🗑️",
+            );
+
+            if (!confirmed) return;
 
             const id = btn.getAttribute("data-id");
             const { error } = await supabase

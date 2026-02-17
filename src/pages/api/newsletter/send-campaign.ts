@@ -32,12 +32,12 @@ export const post: APIRoute = async ({ request }) => {
         // Resend allows batch sending with certain limits. 
         // Here we'll send them to everyone in the BCC or individually depending on the count.
 
-        const emails = subscribers.map(s => s.email);
+        const emails = subscribers.map((s: any) => s.email);
 
         // Resend batch sending (if less than 100 for safety in this demo)
         await resend.emails.send({
-            from: 'SLC CUTS <newsletter@resend.dev>', // Should be verified domain
-            to: 'newsletter@slccuts.com', // Placeholder
+            from: 'SLC CUTS <no-reply@slccuts.es>',
+            to: 'soporte@slccuts.es',
             bcc: emails, // Send as BCC to protect privacy
             subject: subject,
             html: htmlContent,

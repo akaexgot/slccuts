@@ -1,0 +1,47 @@
+---
+interface Props {
+    product: {
+        name: string;
+        description?: string;
+        price: number;
+        image_url?: string;
+        slug: string;
+        category?: {
+            name: string;
+        };
+    };
+}
+
+const { product } = Astro.props;
+
+const schema = {
+    "@context": "https://schema.org",
+    "@type": "Product",
+    name: product.name,
+    description:
+        product.description || `${product.name} - Producto premium de barbería`,
+    image: product.image_url || "https://slccuts.es/logo.png",
+    url: `https://slccuts.es/product/${product.slug}`,
+    brand: {
+        "@type": "Brand",
+        name: "SLC CUTS",
+    },
+    offers: {
+        "@type": "Offer",
+        url: `https://slccuts.es/product/${product.slug}`,
+        priceCurrency: "EUR",
+        price: product.price.toFixed(2),
+        availability: "https://schema.org/InStock",
+        seller: {
+            "@type": "Organization",
+            name: "SLC CUTS",
+        },
+    },
+};
+
+if (product.category) {
+    schema["category"] = product.category.name;
+}
+---
+
+<script type="application/ld+json" set:html={JSON.stringify(schema)} />

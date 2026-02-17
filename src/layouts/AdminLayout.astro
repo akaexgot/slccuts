@@ -524,8 +524,8 @@ const filteredNavItems = navItems.filter((item) => {
                 if (!document.cookie.includes("sb-access-token")) {
                     console.log("Restoring SSR cookies...");
                     const maxAge = 60 * 60 * 24 * 7;
-                    document.cookie = `sb-access-token=${session.access_token}; path=/; max-age=${maxAge}; samesite=lax`;
-                    document.cookie = `sb-refresh-token=${session.refresh_token}; path=/; max-age=${maxAge}; samesite=lax`;
+                    document.cookie = `sb-access-token=${session.access_token}; path=/; max-age=${maxAge}; SameSite=Lax; Secure`;
+                    document.cookie = `sb-refresh-token=${session.refresh_token}; path=/; max-age=${maxAge}; SameSite=Lax; Secure`;
                     // Redirect to self to trigger SSR with cookies
                     window.location.reload();
                     return;
@@ -606,8 +606,8 @@ const filteredNavItems = navItems.filter((item) => {
                     (event === "SIGNED_IN" || event === "TOKEN_REFRESHED")
                 ) {
                     const maxAge = 60 * 60 * 24 * 7;
-                    document.cookie = `sb-access-token=${session.access_token}; path=/; max-age=${maxAge}; samesite=lax`;
-                    document.cookie = `sb-refresh-token=${session.refresh_token}; path=/; max-age=${maxAge}; samesite=lax`;
+                    document.cookie = `sb-access-token=${session.access_token}; path=/; max-age=${maxAge}; SameSite=Lax; Secure`;
+                    document.cookie = `sb-refresh-token=${session.refresh_token}; path=/; max-age=${maxAge}; SameSite=Lax; Secure`;
                 } else if (event === "SIGNED_OUT") {
                     document.cookie =
                         "sb-access-token=; path=/; expires=Thu, 01 Jan 1970 00:00:00 UTC";

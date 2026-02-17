@@ -13,6 +13,7 @@ export default defineConfig({
   vite: {
     plugins: [tailwindcss()]
   },
+  site: "https://slccuts.es",
 
   adapter: node({
     mode: 'standalone'
@@ -23,6 +24,6 @@ export default defineConfig({
     domains: ["images.unsplash.com", "fwecgvsfbxzzobjkklul.supabase.co"]
   },
   security: {
-    checkOrigin: false
+    checkOrigin: true
   }
 });

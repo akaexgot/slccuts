@@ -1,10 +1,11 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { useStore } from '@nanostores/react';
 import { modalStore, closeModal } from '../../store/modalStore';
-import { addToCart } from '../../store/cartStore';
+import { addToCart, cartStore } from '../../store/cartStore';
 
 export default function ProductModal() {
     const { isOpen, product } = useStore(modalStore);
+    const cart = useStore(cartStore);
     const modalRef = useRef<HTMLDivElement>(null);
     const [quantity, setQuantity] = useState<number>(1);
 
@@ -39,7 +40,14 @@ export default function ProductModal() {
 
     const s = product.stock;
     const stockQuantity = (Array.isArray(s) ? s[0]?.quantity : s?.quantity) ?? 0;
-    const hasStock = stockQuantity > 0;
+
+    // Check how many of this product are already in the cart
+    const existingCartItem = cart.items.find(item => item.id === product.id.toString());
+    const quantityInCart = existingCartItem?.quantity ?? 0;
+
+    // Calculate available stock (total stock minus what's already in cart)
+    const availableStock = Math.max(0, stockQuantity - quantityInCart);
+    const hasStock = availableStock > 0;
 
     const handleAddToCart = () => {
         if (!product || !hasStock) return;
@@ -49,7 +57,8 @@ export default function ProductModal() {
             name: product.name,
             price: product.price,
             image: product.image_url || "https://images.unsplash.com/photo-1620916566398-39f1143ab7be?q=80&w=800&auto=format&fit=crop",
-            quantity: quantity
+            quantity: quantity,
+            maxStock: stockQuantity
         });
 
         closeModal();
@@ -132,16 +141,23 @@ export default function ProductModal() {
                                 </button>
                                 <span className="text-xl font-medium w-8 text-center">{quantity}</span>
                                 <button
-                                    onClick={() => setQuantity(Math.min(stockQuantity, quantity + 1))}
+                                    onClick={() => setQuantity(Math.min(availableStock, quantity + 1))}
                                     className="w-10 h-10 border border-gray-200 rounded-md flex items-center justify-center hover:bg-gray-100 disabled:opacity-50"
-                                    disabled={quantity >= stockQuantity || !hasStock}
+                                    disabled={quantity >= availableStock || !hasStock}
                                 >
                                     +
                                 </button>
                                 {hasStock && (
-                                    <span className="text-xs text-gray-400">
-                                        {stockQuantity} unidades disponibles
-                                    </span>
+                                    <div className="flex flex-col">
+                                        <span className="text-xs text-gray-400">
+                                            {availableStock} unidades disponibles
+                                        </span>
+                                        {quantityInCart > 0 && (
+                                            <span className="text-xs text-blue-600">
+                                                ({quantityInCart} ya en el carrito)
+                                            </span>
+                                        )}
+                                    </div>
                                 )}
                             </div>
                         </div>
@@ -152,8 +168,8 @@ export default function ProductModal() {
                             onClick={handleAddToCart}
                             disabled={!hasStock}
                             className={`w-full font-bold py-4 rounded-lg transition-all active:scale-95 flex items-center justify-center gap-2 ${hasStock
-                                    ? "bg-black text-white hover:bg-gray-800"
-                                    : "bg-gray-200 text-gray-400 cursor-not-allowed"
+                                ? "bg-black text-white hover:bg-gray-800"
+                                : "bg-gray-200 text-gray-400 cursor-not-allowed"
                                 }`}
                         >
                             {hasStock && (

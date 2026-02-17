@@ -1,12 +1,16 @@
 import type { APIRoute } from 'astro';
 import { supabase } from '../../../lib/supabase';
 import { uploadToCloudinary } from '../../../lib/cloudinary';
+import { verifyAdminSession, unauthorizedResponse } from '../../../lib/auth';
 
 export const prerender = false;
 
-export const POST: APIRoute = async ({ request }) => {
+export const POST: APIRoute = async (context) => {
+    const session = await verifyAdminSession(context);
+    if (!session) return unauthorizedResponse();
+
     try {
-        const formData = await request.formData();
+        const formData = await context.request.formData();
         const file = formData.get('file') as File;
 
         if (!file) {
