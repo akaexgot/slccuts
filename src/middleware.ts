@@ -42,55 +42,61 @@ export const onRequest = defineMiddleware(async (context, next) => {
 
     const isMaintenanceMode = maintenanceSetting?.value ?? false;
 
-    // Define routes that should be accessible during maintenance
-    const adminRoutes = ["/admin", "/login", "/api", "/reset-password", "/forgot-password"];
-    const publicAssets = ["/fonts", "/logo", "/logoblanco", "/_astro", "/favicon"];
-    const maintenancePage = "/maintenance";
+    // --- ADMIN ROUTE PROTECTION (ALWAYS ACTIVE) ---
+    const isAdminRoute = pathname.startsWith("/admin");
 
-    const isAdminRoute = adminRoutes.some((route) => pathname.startsWith(route));
-    const isAsset = publicAssets.some((asset) => pathname.includes(asset));
-    const isMaintenancePage = pathname === maintenancePage;
-
-    if (isMaintenanceMode) {
-        // Always allow admin routes, assets, and maintenance page
-        if (isAdminRoute || isAsset || isMaintenancePage) {
-            return next();
-        }
-
-        // Check if user is logged in and has admin role
+    if (isAdminRoute) {
         try {
-            // Get session from cookie
             const accessToken = context.cookies.get("sb-access-token")?.value;
             const refreshToken = context.cookies.get("sb-refresh-token")?.value;
 
-            if (accessToken && refreshToken) {
-                // Set session
-                const { data: { user } } = await supabase.auth.getUser(accessToken);
-
-                if (user) {
-                    // Check if user has admin role
-                    const { data: profile } = await supabase
-                        .from("users")
-                        .select("role")
-                        .eq("id", user.id)
-                        .single();
-
-                    // If user is admin, allow full access
-                    if (profile?.role === "admin") {
-                        return next();
-                    }
-                }
+            if (!accessToken || !refreshToken) {
+                return context.redirect("/login");
             }
+
+            const { data: { user }, error } = await supabase.auth.getUser(accessToken);
+
+            if (error || !user) {
+                return context.redirect("/login");
+            }
+
+            // Check role
+            const { data: profile } = await supabase
+                .from("users")
+                .select("role")
+                .eq("id", user.id)
+                .single();
+
+            if (profile?.role !== "admin") {
+                return context.redirect("/"); // Or unauthorized page
+            }
+
+            // If protected and authorized, allow access
+            return next();
+
         } catch (error) {
-            // If there's an error checking auth, continue with maintenance redirect
-            console.error("Error checking user session:", error);
+            console.error("Auth middleware error:", error);
+            return context.redirect("/login");
+        }
+    }
+
+    // --- MAINTENANCE MODE CHECK ---
+    if (isMaintenanceMode) {
+        const adminRoutes = ["/admin", "/login", "/api", "/reset-password", "/forgot-password"];
+        const publicAssets = ["/fonts", "/logo", "/logoblanco", "/_astro", "/favicon"];
+        const maintenancePage = "/maintenance";
+
+        const isAllowedRoute = adminRoutes.some((route) => pathname.startsWith(route));
+        const isAsset = publicAssets.some((asset) => pathname.includes(asset));
+        const isMaintenancePage = pathname === maintenancePage;
+
+        if (isAllowedRoute || isAsset || isMaintenancePage) {
+            return next();
         }
 
-        // Redirect all other routes to maintenance
         return context.redirect(maintenancePage);
     } else {
-        // If not in maintenance mode, redirect maintenance page to home
-        if (isMaintenancePage) {
+        if (pathname === "/maintenance") {
             return context.redirect("/");
         }
         return next();
