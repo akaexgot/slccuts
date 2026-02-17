@@ -315,25 +315,8 @@ import Layout from "../layouts/Layout.astro";
                         }
 
                         if (authData.user) {
-                            // 2. Upsert into users table
-                            const { error: dbError } = await supabase
-                                .from("users")
-                                .upsert([
-                                    {
-                                        id: authData.user.id,
-                                        email: email,
-                                        first_name: firstName,
-                                        last_name: lastName,
-                                        phone: phone,
-                                        role: "client",
-                                    },
-                                ]);
-
-                            if (dbError)
-                                throw new Error(
-                                    "Error creando el perfil: " +
-                                        dbError.message,
-                                );
+                            // 2. Profile creation handled by DB Trigger
+                            // We do not need to manually create the profile here anymore.
 
                             // 3. Associate previous guest orders if any
                             await supabase.rpc("associate_user_orders", {
