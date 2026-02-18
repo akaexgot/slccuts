@@ -261,7 +261,7 @@ export const orderConfirmationTemplate = (order: any) => {
                 ${itemsHtml}
                 <tr class="total-row">
                     <td colspan="2" align="right" style="padding-right: 20px;">TOTAL</td>
-                    <td align="right">${(order.total_amount / 100).toFixed(2)}€</td>
+                    <td align="right">${((order.total_amount || order.total_price || 0) / 100).toFixed(2)}€</td>
                 </tr>
             </tbody>
         </table>
@@ -274,7 +274,7 @@ export const orderConfirmationTemplate = (order: any) => {
 };
 
 export const orderConfirmationText = (order: any) => {
-    return `¡Gracias por tu compra! Tu pedido #${order.id.slice(0, 8).toUpperCase()} ha sido recibido. Total: ${order.total_amount?.toFixed(2)}€.`;
+    return `¡Gracias por tu compra! Tu pedido #${order.id.slice(0, 8).toUpperCase()} ha sido recibido. Total: ${((order.total_amount || order.total_price || 0) / 100).toFixed(2)}€.`;
 };
 
 export const orderShippedTemplate = (order: any) => {
@@ -349,14 +349,14 @@ export const adminOrderNotificationTemplate = (order: any) => {
     return `
         <p>Se ha recibido un nuevo pedido pagado.</p>
         <p><strong>Pedido:</strong> #${order.id.slice(0, 8).toUpperCase()}</p>
-        <p><strong>Total:</strong> ${order.total_amount?.toFixed(2)}€</p>
+        <p><strong>Total:</strong> ${((order.total_amount || order.total_price || 0) / 100).toFixed(2)}€</p>
         <p><strong>Cliente:</strong> ${order.guest_email || 'Cliente registrado'}</p>
         <p>Revisa el panel de administración para ver todos los detalles y gestionar el envío.</p>
     `;
 };
 
 export const adminOrderNotificationText = (order: any) => {
-    return `Nuevo pedido pagado: #${order.id.slice(0, 8).toUpperCase()}. Total: ${order.total_amount?.toFixed(2)}€`;
+    return `Nuevo pedido pagado: #${order.id.slice(0, 8).toUpperCase()}. Total: ${((order.total_amount || order.total_price || 0) / 100).toFixed(2)}€`;
 };
 
 export const manualMessageTemplate = (message: string) => {
