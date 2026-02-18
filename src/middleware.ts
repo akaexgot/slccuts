@@ -54,7 +54,12 @@ export const onRequest = defineMiddleware(async (context, next) => {
                 return context.redirect("/login");
             }
 
-            const { data: { user }, error } = await supabase.auth.getUser(accessToken);
+            // Use the helper to get an authenticated client (respecting RLS)
+            const { getSupabasePageClient } = await import("./lib/supabase");
+            const supabase = await getSupabasePageClient(context.cookies);
+
+            // Verify user is logged in
+            const { data: { user }, error } = await supabase.auth.getUser();
 
             if (error || !user) {
                 return context.redirect("/login");
