@@ -400,21 +400,20 @@ import MosaicBackground from "../../components/ui/MosaicBackground.astro";
                             cancelBtn.onclick = () =>
                                 showActionModal("cancel", order.id);
                             buttonsFlex.appendChild(cancelBtn);
-                        } else if (order.status === "delivered") {
-                            const returnBtn = document.createElement("button");
-                            returnBtn.className =
-                                "text-[10px] font-black uppercase tracking-[0.2em] text-black border-2 border-black bg-white px-6 py-3 rounded-xl hover:bg-black hover:text-white transition-all transform hover:-translate-y-0.5 shadow-lg shadow-black/5 active:scale-95";
-                            returnBtn.textContent = "Devolver Producto";
-                            returnBtn.onclick = () =>
-                                showActionModal("return", order.id);
-                            buttonsFlex.appendChild(returnBtn);
-                        } else {
-                            const actionsContainer =
-                                clone.querySelector(".actions-container");
-                            if (actionsContainer)
-                                (actionsContainer as HTMLElement).classList.add(
-                                    "hidden",
-                                );
+                        }
+
+                        // NEW: Return button for shipped/completed orders
+                        if (
+                            order.status === "shipped" ||
+                            order.status === "delivered" ||
+                            order.status === "completed"
+                        ) {
+                            const returnLink = document.createElement("a");
+                            returnLink.href = "/devoluciones";
+                            returnLink.className =
+                                "text-[10px] font-black uppercase tracking-[0.2em] text-black border-2 border-black bg-white px-6 py-3 rounded-xl hover:bg-black hover:text-white transition-all transform hover:-translate-y-0.5 shadow-lg shadow-black/5 active:scale-95 inline-flex items-center justify-center";
+                            returnLink.textContent = "Devolver Pedido";
+                            buttonsFlex.appendChild(returnLink);
                         }
                     }
 

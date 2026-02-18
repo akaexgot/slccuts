@@ -1,6 +1,17 @@
 import type { APIRoute } from 'astro';
 import { supabase } from '../../../lib/supabase';
-import { orderShippedTemplate, orderShippedText } from '../../../lib/email-templates';
+import {
+    orderShippedTemplate,
+    orderShippedText,
+    orderCompletedTemplate,
+    orderCompletedText,
+    orderReadyForPickupTemplate,
+    orderReadyForPickupText,
+    orderCancelledTemplate,
+    orderCancelledText,
+    getTransactionalEmailHtml
+} from '../../../lib/email-templates';
+import { resend } from '../../../lib/resend';
 
 export const prerender = false;
 
@@ -32,29 +43,62 @@ export const POST: APIRoute = async ({ request }) => {
         }
 
         // 2. If status is "shipped", send email
-        if (status === 'shipped' && order) {
+        // 2. Send email notification based on status
+        if (order) {
             const contact = order.contact_info || {};
             const email = contact.email || order.guest_email;
 
             if (email) {
-                try {
-                    const protocol = new URL(request.url).protocol;
-                    const host = new URL(request.url).host;
-                    const baseUrl = `${protocol}//${host}`;
+                let subject = '';
+                let htmlContent = '';
+                let textContent = '';
+                let shouldSend = false;
 
-                    await fetch(`${baseUrl}/api/emails/send`, {
-                        method: 'POST',
-                        headers: { 'Content-Type': 'application/json' },
-                        body: JSON.stringify({
-                            to: email,
-                            subject: `Tu pedido #${order.id.slice(0, 8).toUpperCase()} está en camino - SLC CUTS`,
-                            html: orderShippedTemplate(order),
-                            text: orderShippedText(order),
-                        }),
-                    });
-                } catch (emailError) {
-                    console.error('Error triggering shipping email:', emailError);
-                    // We don't return 500 here because the status update WAS successful
+                switch (status) {
+                    case 'shipped':
+                        subject = `Tu pedido #${order.id.slice(0, 8).toUpperCase()} está en camino - SLC CUTS`;
+                        htmlContent = orderShippedTemplate(order);
+                        textContent = orderShippedText(order);
+                        shouldSend = true;
+                        break;
+                    case 'completed':
+                        if (order.shipping_method === 'pickup') {
+                            subject = `¡Tu pedido #${order.id.slice(0, 8).toUpperCase()} está listo! - SLC CUTS`;
+                            htmlContent = orderReadyForPickupTemplate(order);
+                            textContent = orderReadyForPickupText(order);
+                        } else {
+                            subject = `¡Pedido #${order.id.slice(0, 8).toUpperCase()} Entregado! - SLC CUTS`;
+                            htmlContent = orderCompletedTemplate(order);
+                            textContent = orderCompletedText(order);
+                        }
+                        shouldSend = true;
+                        break;
+                    case 'cancelled':
+                        subject = `Pedido #${order.id.slice(0, 8).toUpperCase()} Cancelado - SLC CUTS`;
+                        htmlContent = orderCancelledTemplate(order);
+                        textContent = orderCancelledText(order);
+                        shouldSend = true;
+                        break;
+                }
+
+                if (shouldSend) {
+                    try {
+                        const finalHtml = getTransactionalEmailHtml({
+                            title: subject,
+                            contentHtml: htmlContent,
+                        });
+
+                        await resend.emails.send({
+                            from: 'SLC CUTS <no-reply@slccuts.es>',
+                            replyTo: 'soporte@slccuts.es',
+                            to: [email],
+                            subject: subject,
+                            html: finalHtml,
+                            text: textContent,
+                        });
+                    } catch (emailError) {
+                        console.error(`Error sending ${status} email:`, emailError);
+                    }
                 }
             }
         }

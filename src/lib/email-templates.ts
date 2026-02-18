@@ -293,6 +293,58 @@ export const orderShippedText = (order: any) => {
     return `¡Tu pedido #${order.id.slice(0, 8).toUpperCase()} está en camino! SLC CUTS.`;
 };
 
+export const orderCompletedTemplate = (order: any) => {
+    return `
+        <div style="text-align: center; padding: 20px 0;">
+            <div style="font-size: 50px; margin-bottom: 20px;">✅</div>
+            <p style="font-size: 18px; font-weight: bold; color: #000;">¡Pedido Entregado!</p>
+            <p>Tu pedido <strong>#${order.id.slice(0, 8).toUpperCase()}</strong> ha sido marcado como entregado.</p>
+            <p>Esperamos que disfrutes de tus nuevos productos SLC CUTS tanto como nosotros disfrutamos preparándolos.</p>
+            <p>¡Gracias por confiar en nosotros!</p>
+        </div>
+    `;
+};
+
+export const orderCompletedText = (order: any) => {
+    return `¡Tu pedido #${order.id.slice(0, 8).toUpperCase()} ha sido entregado! Gracias por confiar en SLC CUTS.`;
+};
+
+export const orderReadyForPickupTemplate = (order: any) => {
+    return `
+        <div style="text-align: center; padding: 20px 0;">
+            <div style="font-size: 50px; margin-bottom: 20px;">🏪</div>
+            <p style="font-size: 18px; font-weight: bold; color: #000;">¡Tu pedido está listo!</p>
+            <p>Ya puedes pasar a recoger tu pedido <strong>#${order.id.slice(0, 8).toUpperCase()}</strong> por nuestra barbería.</p>
+            <div style="background-color: #f3f4f6; padding: 20px; border-radius: 12px; margin: 20px 0; text-align: left; display: inline-block;">
+                <p style="margin: 0 0 5px; font-weight: bold;">SLC CUTS Barbería</p>
+                <p style="margin: 0 0 5px;">C. Miguel de Cervantes, 79</p>
+                <p style="margin: 0;">11550 Chipiona, Cádiz</p>
+            </div>
+            <p>Te esperamos para entregarte tus productos.</p>
+        </div>
+    `;
+};
+
+export const orderReadyForPickupText = (order: any) => {
+    return `¡Tu pedido #${order.id.slice(0, 8).toUpperCase()} está listo para recoger en tienda! SLC CUTS.`;
+};
+
+export const orderCancelledTemplate = (order: any) => {
+    return `
+        <div style="text-align: center; padding: 20px 0;">
+            <div style="font-size: 50px; margin-bottom: 20px;">❌</div>
+            <p style="font-size: 18px; font-weight: bold; color: #000;">Pedido Cancelado</p>
+            <p>El pedido <strong>#${order.id.slice(0, 8).toUpperCase()}</strong> ha sido cancelado.</p>
+            <p>Si ya habías realizado el pago, el reembolso se procesará automáticamente en los próximos días.</p>
+            <p>Si tienes alguna duda o crees que se trata de un error, por favor contáctanos respondiendo a este correo.</p>
+        </div>
+    `;
+};
+
+export const orderCancelledText = (order: any) => {
+    return `Tu pedido #${order.id.slice(0, 8).toUpperCase()} ha sido cancelado. Contacta con nosotros para más información.`;
+};
+
 export const adminOrderNotificationTemplate = (order: any) => {
     return `
         <p>Se ha recibido un nuevo pedido pagado.</p>

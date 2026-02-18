@@ -8,7 +8,9 @@ import { supabase } from "../lib/supabase";
 import {
     orderConfirmationTemplate,
     orderConfirmationText,
+    getTransactionalEmailHtml,
 } from "../lib/email-templates";
+import { resend } from "../lib/resend";
 
 const method = Astro.url.searchParams.get("method") || "delivery";
 const isPickup = method === "pickup";
@@ -42,15 +44,22 @@ if (sessionId && orderId) {
 
                     // 1. Send customer confirmation email
                     if (email) {
-                        await fetch(`${baseUrl}/api/emails/send`, {
-                            method: "POST",
-                            headers: { "Content-Type": "application/json" },
-                            body: JSON.stringify({
-                                to: email,
-                                subject: `Confirmación de tu pedido #${order.id.slice(0, 8)} - SLC CUTS`,
-                                html: orderConfirmationTemplate(order),
-                                text: orderConfirmationText(order),
-                            }),
+                        const subject = `Confirmación de tu pedido #${order.id.slice(0, 8)} - SLC CUTS`;
+                        const htmlContent = orderConfirmationTemplate(order);
+
+                        // Generate full email template
+                        const finalHtml = getTransactionalEmailHtml({
+                            title: subject,
+                            contentHtml: htmlContent,
+                        });
+
+                        await resend.emails.send({
+                            from: "SLC CUTS <no-reply@slccuts.es>",
+                            replyTo: "soporte@slccuts.es",
+                            to: [email],
+                            subject: subject,
+                            html: finalHtml,
+                            text: orderConfirmationText(order),
                         });
                     }
 
@@ -61,15 +70,20 @@ if (sessionId && orderId) {
                             adminOrderNotificationText,
                         } = await import("../lib/email-templates");
 
-                        await fetch(`${baseUrl}/api/emails/send`, {
-                            method: "POST",
-                            headers: { "Content-Type": "application/json" },
-                            body: JSON.stringify({
-                                to: "slccuts1998@gmail.com",
-                                subject: `🔥 NUEVO PEDIDO PAGADO #${order.id.slice(0, 8).toUpperCase()}`,
-                                html: adminOrderNotificationTemplate(order),
-                                text: adminOrderNotificationText(order),
-                            }),
+                        const subjectAdmin = `🔥 NUEVO PEDIDO PAGADO #${order.id.slice(0, 8).toUpperCase()}`;
+                        const htmlAdmin = adminOrderNotificationTemplate(order);
+
+                        const finalHtmlAdmin = getTransactionalEmailHtml({
+                            title: subjectAdmin,
+                            contentHtml: htmlAdmin,
+                        });
+
+                        await resend.emails.send({
+                            from: "SLC CUTS <no-reply@slccuts.es>",
+                            to: ["slccuts1998@gmail.com"],
+                            subject: subjectAdmin,
+                            html: finalHtmlAdmin,
+                            text: adminOrderNotificationText(order),
                         });
                     } catch (adminEmailError) {
                         console.error(
@@ -106,27 +120,30 @@ if (sessionId && orderId) {
                             // 4. Send low stock alerts (background)
                             for (const item of lowStockItems) {
                                 const {
-                                    lowStockAdminTemplate,
+                                    lowStockAdminTemplate, // fixed import name
                                     lowStockAdminText,
                                 } = await import("../lib/email-templates");
 
-                                await fetch(`${baseUrl}/api/emails/send`, {
-                                    method: "POST",
-                                    headers: {
-                                        "Content-Type": "application/json",
-                                    },
-                                    body: JSON.stringify({
-                                        to: "slccuts1998@gmail.com",
-                                        subject: `⚠️ ALERTA: Stock Bajo - ${item.product.name}`,
+                                const subjectLowStock = `⚠️ ALERTA: Stock Bajo - ${item.product.name}`;
+                                const htmlLowStock = lowStockAdminTemplate({
+                                    name: item.product.name,
+                                    stock: item.quantity,
+                                });
+
+                                const finalHtmlLowStock =
+                                    getTransactionalEmailHtml({
                                         title: "Alerta de Inventario",
-                                        html: lowStockAdminTemplate({
-                                            name: item.product.name,
-                                            stock: item.quantity,
-                                        }),
-                                        text: lowStockAdminText({
-                                            name: item.product.name,
-                                            stock: item.quantity,
-                                        }),
+                                        contentHtml: htmlLowStock,
+                                    });
+
+                                await resend.emails.send({
+                                    from: "SLC CUTS <no-reply@slccuts.es>",
+                                    to: ["slccuts1998@gmail.com"],
+                                    subject: subjectLowStock,
+                                    html: finalHtmlLowStock,
+                                    text: lowStockAdminText({
+                                        name: item.product.name,
+                                        stock: item.quantity,
                                     }),
                                 });
                             }
