@@ -6,13 +6,8 @@ import type { APIContext } from 'astro';
  * Returns the user session if admin, null otherwise
  */
 export async function verifyAdminSession(context: APIContext) {
-    // Get session from cookies
-    const accessToken = context.cookies.get('sb-access-token')?.value;
-    const refreshToken = context.cookies.get('sb-refresh-token')?.value;
-
-    if (!accessToken) {
-        return null;
-    }
+    const { getSupabasePageClient } = await import('./supabase');
+    const supabase = await getSupabasePageClient(context.cookies);
 
     // Verify session with Supabase
     const { data: { session }, error: sessionError } = await supabase.auth.getSession();

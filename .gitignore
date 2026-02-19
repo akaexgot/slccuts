@@ -27,3 +27,9 @@ dev_logs*.txt
 
 # debug files
 debug_*.ts
+
+# Agent folders
+.agent/
+.agents/
+.claude/
+skills/

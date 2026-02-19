@@ -1,5 +1,6 @@
 import type { APIRoute } from 'astro';
-import { supabase } from '../../../lib/supabase';
+import { getSupabasePageClient } from '../../../lib/supabase';
+import { verifyAdminSession, unauthorizedResponse } from '../../../lib/auth';
 import {
     orderShippedTemplate,
     orderShippedText,
@@ -15,9 +16,17 @@ import { resend } from '../../../lib/resend';
 
 export const prerender = false;
 
-export const POST: APIRoute = async ({ request }) => {
+export const POST: APIRoute = async (context) => {
+    // Verify admin session
+    const session = await verifyAdminSession(context);
+    if (!session) {
+        return unauthorizedResponse();
+    }
+
+    const supabase = await getSupabasePageClient(context.cookies);
+
     try {
-        const { orderId, status } = await request.json();
+        const { orderId, status } = await context.request.json();
 
         if (!orderId || !status) {
             return new Response(JSON.stringify({ error: 'Faltan campos obligatorios' }), {

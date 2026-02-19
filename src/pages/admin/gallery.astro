@@ -531,14 +531,19 @@ if (Astro.request.method === "POST") {
 
                     const result = await response.json();
 
-                    if (result.success) {
+                    if (response.ok && result.success) {
                         uploaded++;
                         addImageToGrid(result.url);
                     } else {
                         console.error("Upload failed:", result.error);
+                        showToast(
+                            result.error || "Error al subir una imagen",
+                            true,
+                        );
                     }
                 } catch (error) {
                     console.error("Upload error:", error);
+                    showToast("Error de conexión al subir", true);
                 }
             }
 

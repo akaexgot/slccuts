@@ -1,5 +1,5 @@
 import type { APIRoute } from 'astro';
-import { supabase } from '../../../lib/supabase';
+import { getSupabasePageClient } from '../../../lib/supabase';
 import { uploadToCloudinary } from '../../../lib/cloudinary';
 import { verifyAdminSession, unauthorizedResponse } from '../../../lib/auth';
 
@@ -8,6 +8,8 @@ export const prerender = false;
 export const POST: APIRoute = async (context) => {
     const session = await verifyAdminSession(context);
     if (!session) return unauthorizedResponse();
+
+    const supabase = await getSupabasePageClient(context.cookies);
 
     try {
         const formData = await context.request.formData();
