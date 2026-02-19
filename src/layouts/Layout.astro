@@ -15,7 +15,7 @@ interface Props {
 
 const {
     title,
-    description = "SLC CUTS - Barbería de Autor & Tienda Online de Productos Premium. Estilo, maestría y vanguardia en Chipiona.",
+    description = "Barbería y peluquería en Chipiona. Cortes modernos, afeitados clásicos y estilo profesional. Reserva tu cita y luce tu mejor look hoy.",
 } = Astro.props;
 
 const { data: settings } = await supabase.from("settings").select("key, value");
@@ -135,7 +135,7 @@ if (popupsEnabled) {
                 name: "SLC CUTS",
                 image: "https://slccuts.es/logo.png",
                 description:
-                    "Barbería de Autor & Tienda Online de Productos Premium. Estilo, maestría y vanguardia en Chipiona.",
+                    "Barbería y peluquería en Chipiona. Cortes modernos, afeitados clásicos y estilo profesional. Reserva tu cita y luce tu mejor look hoy.",
                 address: {
                     "@type": "PostalAddress",
                     streetAddress: "Chipiona",
