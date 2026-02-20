@@ -11,6 +11,7 @@ import {
     getTransactionalEmailHtml,
 } from "../lib/email-templates";
 import { resend } from "../lib/resend";
+import { generateInvoicePDF } from "../lib/invoice";
 
 const method = Astro.url.searchParams.get("method") || "delivery";
 const isPickup = method === "pickup";
@@ -53,6 +54,9 @@ if (sessionId && orderId) {
                             contentHtml: htmlContent,
                         });
 
+                        // Generate PDF Invoice
+                        const pdfBuffer = await generateInvoicePDF(order);
+
                         await resend.emails.send({
                             from: "SLC CUTS <no-reply@slccuts.es>",
                             replyTo: "soporte@slccuts.es",
@@ -60,6 +64,12 @@ if (sessionId && orderId) {
                             subject: subject,
                             html: finalHtml,
                             text: orderConfirmationText(order),
+                            attachments: [
+                                {
+                                    filename: `Factura-SLCCUTS-${order.id.slice(0, 8).toUpperCase()}.pdf`,
+                                    content: Buffer.from(pdfBuffer),
+                                },
+                            ],
                         });
                     }
 
