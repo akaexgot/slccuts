@@ -45,32 +45,64 @@ if (sessionId && orderId) {
 
                     // 1. Send customer confirmation email
                     if (email) {
-                        const subject = `Confirmación de tu pedido #${order.id.slice(0, 8)} - SLC CUTS`;
-                        const htmlContent = orderConfirmationTemplate(order);
+                        try {
+                            const subject = `Confirmación de tu pedido #${order.id.slice(0, 8)} - SLC CUTS`;
+                            const htmlContent =
+                                orderConfirmationTemplate(order);
 
-                        // Generate full email template
-                        const finalHtml = getTransactionalEmailHtml({
-                            title: subject,
-                            contentHtml: htmlContent,
-                        });
+                            // Generate full email template
+                            const finalHtml = getTransactionalEmailHtml({
+                                title: subject,
+                                contentHtml: htmlContent,
+                            });
 
-                        // Generate PDF Invoice
-                        const pdfBuffer = await generateInvoicePDF(order);
+                            let attachments: any[] = [];
+                            try {
+                                // Generate PDF Invoice
+                                console.log(
+                                    "Generando factura PDF para pedido:",
+                                    order.id,
+                                );
+                                const pdfBuffer =
+                                    await generateInvoicePDF(order);
+                                attachments = [
+                                    {
+                                        filename: `Factura-SLCCUTS-${order.id.slice(0, 8).toUpperCase()}.pdf`,
+                                        content: Buffer.from(pdfBuffer),
+                                    },
+                                ];
+                                console.log("PDF generado con éxito.");
+                            } catch (pdfError) {
+                                console.error(
+                                    "Error al generar el PDF de la factura:",
+                                    pdfError,
+                                );
+                                // Continuamos sin adjunto si falla la generación
+                            }
 
-                        await resend.emails.send({
-                            from: "SLC CUTS <no-reply@slccuts.es>",
-                            replyTo: "soporte@slccuts.es",
-                            to: [email],
-                            subject: subject,
-                            html: finalHtml,
-                            text: orderConfirmationText(order),
-                            attachments: [
-                                {
-                                    filename: `Factura-SLCCUTS-${order.id.slice(0, 8).toUpperCase()}.pdf`,
-                                    content: Buffer.from(pdfBuffer),
-                                },
-                            ],
-                        });
+                            console.log(
+                                "Enviando email de confirmación a:",
+                                email,
+                            );
+                            const emailResult = await resend.emails.send({
+                                from: "SLC CUTS <no-reply@slccuts.es>",
+                                replyTo: "soporte@slccuts.es",
+                                to: [email],
+                                subject: subject,
+                                html: finalHtml,
+                                text: orderConfirmationText(order),
+                                attachments: attachments,
+                            });
+                            console.log(
+                                "Resultado envío email cliente:",
+                                emailResult,
+                            );
+                        } catch (customerEmailError) {
+                            console.error(
+                                "Error crítico enviando email al cliente:",
+                                customerEmailError,
+                            );
+                        }
                     }
 
                     // 2. Send ADMIN notification email

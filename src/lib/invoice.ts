@@ -1,13 +1,10 @@
 import { jsPDF } from "jspdf";
-import "jspdf-autotable";
-
-// Extend jsPDF with autoTable type
-interface jsPDFWithPlugin extends jsPDF {
-    autoTable: (options: any) => jsPDF;
-}
+import autoTable from "jspdf-autotable";
 
 export const generateInvoicePDF = async (order: any) => {
-    const doc = new jsPDF() as jsPDFWithPlugin;
+    if (!order) throw new Error("Order data is required to generate invoice");
+
+    const doc = new jsPDF();
     const pageWidth = doc.internal.pageSize.getWidth();
 
     // --- Styles ---
@@ -48,7 +45,7 @@ export const generateInvoicePDF = async (order: any) => {
     doc.setTextColor(0, 0, 0);
     doc.text("SLC CUTS Barbería", 20, 71);
     doc.setFont("helvetica", "normal");
-    doc.text("Joaquin Rivera Tirado", 20, 76);
+    doc.text("Santiago", 20, 76);
     doc.text("NIF: 722108440", 20, 81);
     doc.text("C. Miguel de Cervantes, 79", 20, 86);
     doc.text("11550 Chipiona, Cádiz", 20, 91);
@@ -92,7 +89,7 @@ export const generateInvoicePDF = async (order: any) => {
         `${(item.price * item.quantity / 100).toFixed(2)}€`
     ]);
 
-    doc.autoTable({
+    autoTable(doc, {
         startY: 105,
         head: [['Concepto', 'Cant.', 'Precio Unit.', 'Total']],
         body: tableData,
