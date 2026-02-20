@@ -46,7 +46,7 @@ export const generateInvoicePDF = async (order: any) => {
     doc.text("SLC CUTS Barbería", 20, 71);
     doc.setFont("helvetica", "normal");
     doc.text("Santiago", 20, 76);
-    doc.text("NIF: 722108440", 20, 81);
+    doc.text("Tel: 722108440", 20, 81);
     doc.text("C. Miguel de Cervantes, 79", 20, 86);
     doc.text("11550 Chipiona, Cádiz", 20, 91);
 

@@ -234,6 +234,7 @@ export const getTransactionalEmailHtml = ({
 // --- Specialized Template Helpers ---
 
 export const orderConfirmationTemplate = (order: any) => {
+    const itemsSubtotal = order.order_items?.reduce((acc: number, item: any) => acc + (item.price * item.quantity), 0) || 0;
     const itemsHtml = order.order_items?.map((item: any) => `
         <tr>
             <td style="font-weight: bold;">
@@ -259,6 +260,16 @@ export const orderConfirmationTemplate = (order: any) => {
             </thead>
             <tbody>
                 ${itemsHtml}
+                <tr style="border-top: 1px solid #f0f0f0;">
+                    <td colspan="2" align="right" style="padding: 20px 20px 10px 0; color: #6b7280; font-size: 13px;">Subtotal</td>
+                    <td align="right" style="padding: 20px 0 10px; color: #6b7280; font-size: 13px;">${(itemsSubtotal / 100).toFixed(2)}€</td>
+                </tr>
+                ${order.shipping_cost ? `
+                <tr>
+                    <td colspan="2" align="right" style="padding: 0 20px 10px 0; color: #6b7280; font-size: 13px;">Envío</td>
+                    <td align="right" style="padding: 0 0 10px; color: #6b7280; font-size: 13px;">${(order.shipping_cost / 100).toFixed(2)}€</td>
+                </tr>
+                ` : ''}
                 <tr class="total-row">
                     <td colspan="2" align="right" style="padding-right: 20px;">TOTAL</td>
                     <td align="right">${((order.total_amount || order.total_price || 0) / 100).toFixed(2)}€</td>

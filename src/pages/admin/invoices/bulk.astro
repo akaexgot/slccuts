@@ -297,7 +297,7 @@ const formatPrice = (amount: number) => {
                                 <div class="party-details">
                                     Joaquin Rivera Tirado
                                     <br />
-                                    NIF: 722108440
+                                    Tel: 722108440
                                     <br />
                                     C. Miguel de Cervantes, 79
                                     <br />
@@ -364,6 +364,14 @@ const formatPrice = (amount: number) => {
                                 <span>IVA (21%)</span>
                                 <span>{formatPrice(tax)}</span>
                             </div>
+                            {order.shipping_cost > 0 && (
+                                <div class="total-row" style="color: #6b7280">
+                                    <span>Envío</span>
+                                    <span>
+                                        {formatPrice(order.shipping_cost)}
+                                    </span>
+                                </div>
+                            )}
                             <div class="total-row total-final">
                                 <span>TOTAL</span>
                                 <span>{formatPrice(totalAmount)}</span>
