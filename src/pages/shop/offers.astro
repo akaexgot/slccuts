@@ -28,6 +28,14 @@ if (isEnabled) {
         .eq("active", true)
         .eq("is_offer", true);
 
+    // Search filter
+    const search = url.searchParams.get("search");
+    if (search) {
+        query = query.or(
+            `name.ilike.%${search}%,description.ilike.%${search}%`,
+        );
+    }
+
     if (categorySlug) {
         query = query.eq("category.slug", categorySlug);
     }

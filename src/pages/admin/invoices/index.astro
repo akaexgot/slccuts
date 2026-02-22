@@ -17,7 +17,7 @@ const firstOfMonth = new Date(
 const startDate = Astro.url.searchParams.get("start_date") || firstOfMonth;
 const endDate = Astro.url.searchParams.get("end_date") || today;
 
-// Fetch paid orders within range
+// Fetch paid and cancelled orders within range
 const { data: orders, error } = await supabase
     .from("orders")
     .select(
@@ -30,34 +30,33 @@ const { data: orders, error } = await supabase
         )
     `,
     )
-    .eq("status", "paid")
+    .in("status", ["paid", "cancelled"])
     .gte("created_at", `${startDate}T00:00:00Z`)
     .lte("created_at", `${endDate}T23:59:59Z`)
     .order("created_at", { ascending: false });
 
-// Calculate statistics
+// Calculate statistics (Cancelled orders act as negative invoices / abonos)
 const totalInvoiced =
-    orders?.reduce(
-        (acc: number, order: any) =>
-            acc + (order.total_amount || order.total_price || 0),
-        0,
-    ) || 0;
+    orders?.reduce((acc: number, order: any) => {
+        const amount = order.total_amount || order.total_price || 0;
+        return order.status === "cancelled" ? acc - amount : acc + amount;
+    }, 0) || 0;
+
 const cardPayments =
     orders
         ?.filter((o: any) => o.payment_method === "card")
-        .reduce(
-            (acc: number, order: any) =>
-                acc + (order.total_amount || order.total_price || 0),
-            0,
-        ) || 0;
+        .reduce((acc: number, order: any) => {
+            const amount = order.total_amount || order.total_price || 0;
+            return order.status === "cancelled" ? acc - amount : acc + amount;
+        }, 0) || 0;
+
 const cashPayments =
     orders
         ?.filter((o: any) => o.payment_method === "cash")
-        .reduce(
-            (acc: number, order: any) =>
-                acc + (order.total_amount || order.total_price || 0),
-            0,
-        ) || 0;
+        .reduce((acc: number, order: any) => {
+            const amount = order.total_amount || order.total_price || 0;
+            return order.status === "cancelled" ? acc - amount : acc + amount;
+        }, 0) || 0;
 
 const formatPrice = (price: number) => {
     return new Intl.NumberFormat("es-ES", {
@@ -300,21 +299,43 @@ const formatDate = (dateString: string) => {
                                 </span>
                             </td>
                             <td class="p-8 text-right">
-                                <span class="text-xl font-black text-white italic tabular-nums">
+                                <span
+                                    class={`text-xl font-black italic tabular-nums ${order.status === "cancelled" ? "text-red-400" : "text-white"}`}
+                                >
+                                    {order.status === "cancelled" ? "-" : ""}
                                     {formatPrice(
                                         order.total_amount || order.total_price,
                                     )}
                                 </span>
+                                {order.status === "cancelled" && (
+                                    <span class="block text-[9px] font-bold text-red-500/70 uppercase tracking-widest mt-1">
+                                        Abono
+                                    </span>
+                                )}
                             </td>
                             <td class="p-8 text-right">
-                                <a
-                                    href={`/admin/orders/invoice/${order.id}`}
-                                    target="_blank"
-                                    class="inline-flex items-center justify-center w-12 h-12 bg-white/5 border border-white/10 text-white rounded-xl hover:bg-white hover:text-black transition-all shadow-lg hover:shadow-white/10 active:scale-95"
-                                    title="Descargar Individual"
-                                >
-                                    <span class="text-xl">📄</span>
-                                </a>
+                                <div class="flex justify-end gap-2">
+                                    <a
+                                        href={`/admin/orders/invoice/${order.id}${order.status === "cancelled" ? "?type=refund" : ""}`}
+                                        target="_blank"
+                                        class={`inline-flex items-center justify-center w-12 h-12 border rounded-xl transition-all shadow-lg active:scale-95 ${
+                                            order.status === "cancelled"
+                                                ? "bg-red-500/10 border-red-500/20 text-red-500 hover:bg-red-500 hover:text-white"
+                                                : "bg-white/5 border-white/10 text-white hover:bg-white hover:text-black hover:shadow-white/10"
+                                        }`}
+                                        title={
+                                            order.status === "cancelled"
+                                                ? "Descargar Abono"
+                                                : "Descargar Factura"
+                                        }
+                                    >
+                                        <span class="text-xl">
+                                            {order.status === "cancelled"
+                                                ? "🏷️"
+                                                : "📄"}
+                                        </span>
+                                    </a>
+                                </div>
                             </td>
                         </tr>
                     ))

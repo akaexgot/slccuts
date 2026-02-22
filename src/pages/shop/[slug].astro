@@ -30,6 +30,12 @@ let query = supabase
     .eq("active", true)
     .eq("category_id", category.id);
 
+// Search filter
+const search = url.searchParams.get("search");
+if (search) {
+    query = query.or(`name.ilike.%${search}%,description.ilike.%${search}%`);
+}
+
 // Filter by price range
 if (priceRange) {
     const [min, max] = priceRange.split("-").map(Number);

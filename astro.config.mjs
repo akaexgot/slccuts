@@ -14,6 +14,7 @@ export default defineConfig({
     plugins: [tailwindcss()]
   },
   site: "https://slccuts.es",
+  output: 'server',
 
   adapter: node({
     mode: 'standalone'

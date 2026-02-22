@@ -11,6 +11,9 @@ const ALLOWED_ORIGINS = [
 export const onRequest = defineMiddleware(async (context, next) => {
     const { pathname } = context.url;
     const origin = context.request.headers.get("Origin") || "";
+
+
+
     const allowedOrigin = ALLOWED_ORIGINS.includes(origin) ? origin : ALLOWED_ORIGINS[0];
 
     // --- CORS Configuration for API Routes ---
@@ -42,15 +45,19 @@ export const onRequest = defineMiddleware(async (context, next) => {
 
     const isMaintenanceMode = maintenanceSetting?.value ?? false;
 
-    // --- ADMIN ROUTE PROTECTION (ALWAYS ACTIVE) ---
+    // --- ROUTE PROTECTION (AUTH) ---
     const isAdminRoute = pathname.startsWith("/admin");
+    const isProfileRoute = pathname.startsWith("/profile");
 
-    if (isAdminRoute) {
+    if (isAdminRoute || isProfileRoute) {
         try {
             const accessToken = context.cookies.get("sb-access-token")?.value;
             const refreshToken = context.cookies.get("sb-refresh-token")?.value;
 
-            if (!accessToken || !refreshToken) {
+
+
+            if (!accessToken) {
+
                 return context.redirect("/login");
             }
 
@@ -62,25 +69,30 @@ export const onRequest = defineMiddleware(async (context, next) => {
             const { data: { user }, error } = await supabase.auth.getUser();
 
             if (error || !user) {
+
                 return context.redirect("/login");
             }
 
-            // Check role
-            const { data: profile } = await supabase
-                .from("users")
-                .select("role")
-                .eq("id", user.id)
-                .single();
 
-            if (profile?.role !== "admin") {
-                return context.redirect("/"); // Or unauthorized page
+
+            // Additional check for admin routes
+            if (isAdminRoute) {
+                const { data: profile } = await supabase
+                    .from("users")
+                    .select("role")
+                    .eq("id", user.id)
+                    .single();
+
+                if (profile?.role?.toLowerCase().trim() !== "admin") {
+                    return context.redirect("/"); // Or unauthorized page
+                }
             }
 
             // If protected and authorized, allow access
             return next();
 
         } catch (error) {
-            console.error("Auth middleware error:", error);
+
             return context.redirect("/login");
         }
     }

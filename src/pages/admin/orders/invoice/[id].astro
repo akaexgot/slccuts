@@ -24,6 +24,9 @@ if (error || !order) {
     return Astro.redirect("/admin/orders");
 }
 
+const url = new URL(Astro.request.url);
+const isRefund = url.searchParams.get("type") === "refund";
+
 const formatDate = (dateString: string) => {
     return new Date(dateString).toLocaleDateString("es-ES", {
         year: "numeric",
@@ -35,22 +38,37 @@ const formatDate = (dateString: string) => {
 };
 
 const formatPrice = (amount: number) => {
+    const value = isRefund ? -Math.abs(amount) : amount;
     return new Intl.NumberFormat("es-ES", {
         style: "currency",
         currency: "EUR",
-    }).format(amount / 100);
+    }).format(value / 100);
 };
 
+// Calculate totals robustly
+const itemsTotal = order.order_items.reduce(
+    (acc: number, item: any) => acc + item.price * item.quantity,
+    0,
+);
+const finalTotal = order.total_amount || order.total_price || itemsTotal;
+const shippingCost =
+    order.shipping_cost ||
+    (finalTotal > itemsTotal ? finalTotal - itemsTotal : 0);
+
 // Calculate tax breakdown
-const subtotal = order.total_amount / 1.21;
-const tax = order.total_amount - subtotal;
+const subtotal = finalTotal / 1.21;
+const tax = finalTotal - subtotal;
 ---
 
 <html lang="es">
     <head>
         <meta charset="UTF-8" />
         <meta name="viewport" content="width=device-width" />
-        <title>Factura #{order.id.slice(0, 8).toUpperCase()}</title>
+        <title>
+            {isRefund ? "Factura de Abono" : "Factura"} #{
+                order.id.slice(0, 8).toUpperCase()
+            }
+        </title>
         <link rel="preconnect" href="https://fonts.googleapis.com" />
         <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
         <link
@@ -362,17 +380,37 @@ const tax = order.total_amount - subtotal;
                     </div>
                 </div>
                 <div class="invoice-meta">
-                    <div class="invoice-title">Factura</div>
+                    <div class="invoice-title">
+                        {isRefund ? "Abono" : "Factura"}
+                    </div>
                     <div class="invoice-number">
-                        Nº {order.id.slice(0, 8).toUpperCase()}
+                        Nº {isRefund ? "RE-" : ""}{
+                            order.id.slice(0, 8).toUpperCase()
+                        }
                     </div>
                     <div class="invoice-date">
                         {formatDate(order.created_at)}
                     </div>
+                    {
+                        isRefund && (
+                            <div style="font-size: 10px; color: #666; margin-top: 5px; font-weight: bold;">
+                                Ref. Factura Original: #
+                                {order.id.slice(0, 8).toUpperCase()}
+                            </div>
+                        )
+                    }
                 </div>
             </div>
 
             <div class="invoice-body">
+                {
+                    isRefund && (
+                        <div style="background: #fff5f5; border: 1px solid #feb2b2; color: #c53030; padding: 15px; border-radius: 8px; margin-bottom: 30px; font-size: 13px; font-weight: 600;">
+                            ⚠️ Esta es una FACTURA DE ABONO por la devolución o
+                            cancelación del pedido original.
+                        </div>
+                    )
+                }
                 <div class="parties-grid">
                     <div class="party-box">
                         <div class="party-title">Emisor (Vendedor)</div>
@@ -460,25 +498,42 @@ const tax = order.total_amount - subtotal;
                 </table>
 
                 <div class="totals-section">
-                    <div class="total-row subtotal">
-                        <span>Base Imponible</span>
-                        <span>{formatPrice(subtotal)}</span>
-                    </div>
-                    <div class="total-row subtotal">
-                        <span>IVA (21%)</span>
-                        <span>{formatPrice(tax)}</span>
+                    <div class="total-row">
+                        <span class="text-gray-600">Suma Productos</span>
+                        <span>{formatPrice(itemsTotal)}</span>
                     </div>
                     {
-                        order.shipping_cost > 0 && (
-                            <div class="total-row subtotal">
-                                <span>Envío</span>
-                                <span>{formatPrice(order.shipping_cost)}</span>
+                        shippingCost > 0 && (
+                            <div class="total-row">
+                                <span class="text-gray-600">
+                                    Gastos de Envío
+                                </span>
+                                <span>{formatPrice(shippingCost)}</span>
                             </div>
                         )
                     }
+
+                    <div style="margin: 15px 0; border-top: 1px solid #e5e7eb;">
+                    </div>
+
+                    <div
+                        class="total-row"
+                        style="font-size: 11px; color: #6b7280; margin-bottom: 4px;"
+                    >
+                        <span>Base Imponible (21%)</span>
+                        <span>{formatPrice(subtotal)}</span>
+                    </div>
+                    <div
+                        class="total-row"
+                        style="font-size: 11px; color: #6b7280; margin-bottom: 12px;"
+                    >
+                        <span>Cuota IVA (21%)</span>
+                        <span>{formatPrice(tax)}</span>
+                    </div>
+
                     <div class="total-row final">
                         <span>TOTAL</span>
-                        <span>{formatPrice(order.total_amount)}</span>
+                        <span>{formatPrice(finalTotal)}</span>
                     </div>
                 </div>
             </div>

@@ -32,6 +32,45 @@ import Layout from "../layouts/Layout.astro";
                 </p>
             </div>
 
+            <!-- Success Modal -->
+            <div
+                id="successModal"
+                class="fixed bottom-6 right-6 z-50 transform translate-y-20 opacity-0 pointer-events-none transition-all duration-500 ease-out"
+            >
+                <div
+                    class="bg-black text-white p-5 rounded-2xl shadow-2xl border border-white/10 flex items-center gap-4 min-w-[300px]"
+                >
+                    <div
+                        class="w-10 h-10 bg-emerald-500/20 text-emerald-500 rounded-full flex items-center justify-center flex-shrink-0 animate-bounce"
+                    >
+                        <svg
+                            xmlns="http://www.w3.org/2000/svg"
+                            width="20"
+                            height="20"
+                            viewBox="0 0 24 24"
+                            fill="none"
+                            stroke="currentColor"
+                            stroke-width="3"
+                            stroke-linecap="round"
+                            stroke-linejoin="round"
+                            ><path d="M20 6 9 17l-5-5"></path></svg
+                        >
+                    </div>
+                    <div class="flex-1">
+                        <h4
+                            class="text-sm font-black uppercase tracking-widest italic"
+                        >
+                            ¡Éxito!
+                        </h4>
+                        <p
+                            class="text-[10px] font-bold text-gray-400 uppercase tracking-widest"
+                        >
+                            Sesión iniciada correctamente
+                        </p>
+                    </div>
+                </div>
+            </div>
+
             <form class="mt-8 space-y-6" id="loginForm">
                 <div class="space-y-4 rounded-md shadow-sm">
                     <div>
@@ -110,16 +149,10 @@ import Layout from "../layouts/Layout.astro";
                 "loginForm",
             ) as HTMLFormElement;
             const errorMessage = document.getElementById("errorMessage");
+            const successModal = document.getElementById("successModal");
             const submitBtn = document.getElementById(
                 "submitBtn",
             ) as HTMLButtonElement;
-
-            // Check if already logged in
-            supabase.auth.getSession().then(({ data: { session } }: any) => {
-                if (session) {
-                    // Stay on the login page or redirect to where they came from
-                }
-            });
 
             form?.addEventListener("submit", async (e) => {
                 e.preventDefault();
@@ -132,7 +165,6 @@ import Layout from "../layouts/Layout.astro";
                 const password = formData.get("password") as string;
 
                 try {
-                    console.log("Intentando login...");
                     const { data, error } =
                         await supabase.auth.signInWithPassword({
                             email,
@@ -140,14 +172,10 @@ import Layout from "../layouts/Layout.astro";
                         });
 
                     if (error) {
-                        console.error("Error Auth:", error.message);
                         throw error;
                     }
 
                     if (data.session) {
-                        console.log(
-                            "Sesión iniciada. Buscando perfil admin...",
-                        );
                         // Check if admin in our users table
                         const { data: profile, error: profileError } =
                             await supabase
@@ -156,18 +184,7 @@ import Layout from "../layouts/Layout.astro";
                                 .eq("id", data.session.user.id)
                                 .single();
 
-                        console.log(
-                            "Datos perfil:",
-                            profile,
-                            "Error perfil:",
-                            profileError,
-                        );
-
                         if (profileError) {
-                            console.error(
-                                "Error perfil:",
-                                profileError.message,
-                            );
                             await supabase.auth.signOut();
                             throw new Error(
                                 "Error al verificar permisos: " +
@@ -175,27 +192,44 @@ import Layout from "../layouts/Layout.astro";
                             );
                         }
 
-                        console.log("Sesión iniciada correctamente.");
-
                         // Set cookies for SSR
                         const session = data.session;
-                        if (session) {
-                            const maxAge = 60 * 60 * 24 * 7; // 7 days
-                            document.cookie = `sb-access-token=${session.access_token}; path=/; max-age=${maxAge}; SameSite=Lax; Secure`;
-                            document.cookie = `sb-refresh-token=${session.refresh_token}; path=/; max-age=${maxAge}; SameSite=Lax; Secure`;
+                        const maxAge = 60 * 60 * 24 * 7;
+                        const isSecure = window.location.protocol === "https:";
+
+                        const baseOptions = `path=/; max-age=${maxAge}; SameSite=Lax`;
+                        const options = isSecure
+                            ? `${baseOptions}; Secure`
+                            : baseOptions;
+
+                        document.cookie = `sb-access-token=${session.access_token}; ${options}`;
+                        document.cookie = `sb-refresh-token=${session.refresh_token}; ${options}`;
+
+                        // --- SUCCESS FLOW ---
+                        submitBtn.innerText = "¡Bienvenido!";
+                        submitBtn.classList.remove("bg-black");
+                        submitBtn.classList.add("bg-emerald-500");
+
+                        // Show Modal
+                        if (successModal) {
+                            successModal.classList.remove(
+                                "translate-y-20",
+                                "opacity-0",
+                                "pointer-events-none",
+                            );
                         }
 
-                        // Redirect based on role
-                        if (profile?.role === "admin") {
-                            window.location.href = "/admin";
-                        } else {
-                            window.location.href = "/";
-                        }
+                        // Wait 2 seconds for visual confirmation, then redirect
+                        setTimeout(() => {
+                            if (profile?.role === "admin") {
+                                window.location.href = "/admin";
+                            } else {
+                                window.location.href = "/profile";
+                            }
+                        }, 2000);
                         return;
                     }
                 } catch (error: any) {
-                    console.error("Error completo:", error);
-
                     let friendlyMessage = error.message;
 
                     // Error mapping for Spanish
