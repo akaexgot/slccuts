@@ -66,8 +66,14 @@ const { data: products } = await query.limit(40);
                     />
                 ))
             ) : (
-                <div class="col-span-full py-20 text-center text-gray-500 bg-gray-50 rounded-xl">
-                    <p>No hay novedades disponibles en este momento.</p>
+                <div class="col-span-full py-32 text-center text-gray-500 bg-gray-50 rounded-2xl shadow-sm border border-black/5">
+                    <h2 class="text-3xl font-bebas tracking-wider text-black mb-4">
+                        Próximamente
+                    </h2>
+                    <p class="text-lg">
+                        Nuestra tienda online estará disponible muy pronto con
+                        los mejores productos.
+                    </p>
                 </div>
             )
         }

@@ -104,16 +104,19 @@ const { data: products } = await query.limit(40);
                     />
                 ))
             ) : (
-                <div class="col-span-full py-20 text-center text-gray-500 bg-gray-100 rounded-xl">
-                    <p>
-                        No se encontraron productos en esta categoría con los
-                        filtros seleccionados.
+                <div class="col-span-full py-32 text-center text-gray-500 bg-gray-50 rounded-2xl shadow-sm border border-black/5">
+                    <h2 class="text-3xl font-bebas tracking-wider text-black mb-4">
+                        Próximamente
+                    </h2>
+                    <p class="text-lg">
+                        Nuestra tienda online estará disponible muy pronto con
+                        los mejores productos.
                     </p>
                     <a
-                        href={`/shop/${slug}`}
-                        class="text-black font-bold border-b border-black mt-4 inline-block"
+                        href="/shop/new"
+                        class="text-black font-bold border-b border-black mt-6 inline-block hover:text-gray-600 transition-colors"
                     >
-                        Limpiar filtros
+                        Ver novedades
                     </a>
                 </div>
             )

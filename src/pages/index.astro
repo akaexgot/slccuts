@@ -289,19 +289,24 @@ const galleryEnabled =
 					class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-6"
 				>
 					{
-						(featuredProducts || []).map(
-							(product: any, index: number) => (
-								<ProductCard
-									product={{
-										...product,
-										image_url:
-											product.product_images?.[0]
-												?.image_url,
-									}}
-									loading="lazy"
-								/>
-							),
-						)
+						featuredProducts && featuredProducts.length > 0 ? (
+                            featuredProducts.map((product: any, index: number) => (
+                                <ProductCard
+                                    product={{
+                                        ...product,
+                                        image_url:
+                                            product.product_images?.[0]
+                                                ?.image_url,
+                                    }}
+                                    loading="lazy"
+                                />
+                            ))
+                        ) : (
+                            <div class="col-span-full py-12 text-center text-gray-500 rounded-xl">
+                                <h3 class="text-2xl font-bebas tracking-wider text-black mb-2">Próximamente</h3>
+                                <p class="text-lg italic font-medium">Nuestra tienda estará disponible muy pronto.</p>
+                            </div>
+                        )
 					}
 				</div>
 

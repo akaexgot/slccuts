@@ -80,8 +80,14 @@ const { data: categories } = await supabase
                         );
                     })
                 ) : (
-                    <div class="col-span-full text-center py-20 text-gray-400">
-                        No hay categorías definidas aún.
+                    <div class="col-span-full text-center py-32 text-gray-500 bg-gray-50 rounded-2xl shadow-sm border border-black/5 flex flex-col items-center">
+                        <h2 class="text-3xl font-bebas tracking-wider text-black mb-4">
+                            Próximamente
+                        </h2>
+                        <p class="text-lg">
+                            Nuestras categorías de productos estarán disponibles
+                            muy pronto.
+                        </p>
                     </div>
                 )
             }
