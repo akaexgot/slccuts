@@ -47,7 +47,7 @@ if (Astro.request.method === "POST") {
         <input
             type="file"
             id="fileInput"
-            accept="image/*"
+            accept="image/*,video/*"
             multiple
             class="hidden"
         />
@@ -74,7 +74,7 @@ if (Astro.request.method === "POST") {
             <h3
                 class="text-2xl font-black text-white mb-2 italic uppercase tracking-tighter"
             >
-                Arrastra tus fotos aquí
+                Arrastra tus fotos o vídeos aquí
             </h3>
             <p
                 class="text-gray-500 font-bold uppercase tracking-[0.2em] text-[10px] mb-8"
@@ -215,15 +215,28 @@ if (Astro.request.method === "POST") {
         {
             images?.map((image: any) => (
                 <div class="group relative aspect-square bg-gray-800 rounded-xl overflow-hidden">
-                    <img
-                        src={image.image_url}
-                        alt="Galería"
-                        class="w-full h-full object-cover"
-                    />
-                    <div class="absolute inset-0 bg-black/60 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
+                    {image.image_url.match(/\.(mp4|webm|mov|ogg)$/i) || image.image_url.includes('/video/') ? (
+                        <video 
+                            src={image.image_url} 
+                            class="w-full h-full object-cover"
+                            controls={false}
+                            muted
+                            loop
+                            playsinline
+                            onmouseover="this.play()"
+                            onmouseout="this.pause()"
+                        />
+                    ) : (
+                        <img
+                            src={image.image_url}
+                            alt="Galería"
+                            class="w-full h-full object-cover"
+                        />
+                    )}
+                    <div class="absolute inset-0 bg-black/60 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center pointer-events-none">
                         <button
                             type="button"
-                            class="delete-btn bg-red-600 hover:bg-red-700 text-white px-4 py-2 rounded-lg font-bold text-sm transition-colors"
+                            class="delete-btn bg-red-600 hover:bg-red-700 text-white px-4 py-2 rounded-lg font-bold text-sm transition-colors pointer-events-auto"
                             data-image-id={image.id}
                         >
                             Eliminar
@@ -260,8 +273,8 @@ if (Astro.request.method === "POST") {
                         <circle cx="9" cy="9" r="2" />
                         <path d="m21 15-3.086-3.086a2 2 0 0 0-2.828 0L6 21" />
                     </svg>
-                    <p class="text-lg">No hay fotos en la galería</p>
-                    <p class="text-sm mt-2">¡Arrastra tu primera foto!</p>
+                    <p class="text-lg">No hay fotos ni vídeos en la galería</p>
+                    <p class="text-sm mt-2">¡Arrastra tu primera foto o vídeo!</p>
                 </div>
             )
         }
@@ -428,9 +441,9 @@ if (Astro.request.method === "POST") {
 
         // Handle initial file selection (don't upload yet)
         function handleFiles(files: File[]) {
-            const imageFiles = files.filter((f) => f.type.startsWith("image/"));
+            const imageFiles = files.filter((f) => f.type.startsWith("image/") || f.type.startsWith("video/"));
             if (imageFiles.length === 0) {
-                showToast("Solo se permiten imágenes", true);
+                showToast("Solo se permiten imágenes y vídeos", true);
                 return;
             }
 
@@ -464,7 +477,11 @@ if (Astro.request.method === "POST") {
                     "relative bg-gray-700 rounded-lg overflow-hidden group border border-gray-600 flex flex-col";
                 div.innerHTML = `
                 <div class="relative aspect-square w-full bg-gray-900 flex items-center justify-center">
-                    <img src="${url}" class="max-w-full max-h-full object-contain" />
+                    ${item.file.type.startsWith('video/') ? `
+                        <video src="${url}" class="max-w-full max-h-full object-contain" autoplay muted loop></video>
+                    ` : `
+                        <img src="${url}" class="max-w-full max-h-full object-contain" />
+                    `}
                     <button 
                         onclick="removePendingFile(${index})"
                         class="absolute top-1 right-1 bg-red-600 text-white p-1 rounded-md opacity-0 group-hover:opacity-100 transition-opacity hover:bg-red-700 z-10"
@@ -564,11 +581,15 @@ if (Astro.request.method === "POST") {
             div.className =
                 "group relative aspect-square bg-gray-800 rounded-xl overflow-hidden";
             div.innerHTML = `
-            <img src="${url}" alt="Galería" class="w-full h-full object-cover" />
-            <div class="absolute inset-0 bg-black/60 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
+            ${url.match(/\.(mp4|webm|mov|ogg)$/i) || url.includes('/video/') ? `
+                <video src="${url}" class="w-full h-full object-cover" muted loop playsinline></video>
+            ` : `
+                <img src="${url}" alt="Galería" class="w-full h-full object-cover" />
+            `}
+            <div class="absolute inset-0 bg-black/60 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center pointer-events-none">
                  <button
                     type="button"
-                    class="delete-btn bg-red-600 hover:bg-red-700 text-white px-4 py-2 rounded-lg font-bold text-sm transition-colors"
+                    class="delete-btn bg-red-600 hover:bg-red-700 text-white px-4 py-2 rounded-lg font-bold text-sm transition-colors pointer-events-auto"
                     data-image-id="new" 
                     onclick="window.location.reload()" 
                 >
