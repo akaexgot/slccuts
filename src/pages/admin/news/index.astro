@@ -469,30 +469,34 @@ const formatDate = (dateStr: string) => {
             if (!files || files.length === 0) return;
 
             const file = files[0];
-            const fileExt = file.name.split(".").pop();
-            const fileName = `${Math.random()}.${fileExt}`;
-            const filePath = `news/${fileName}`;
-
+            
             try {
                 dropZone?.classList.add("hidden");
                 progress?.classList.remove("hidden");
 
-                const { error: uploadError } = await supabase.storage
-                    .from("news")
-                    .upload(filePath, file);
+                // Prepare FormData for the API call
+                const formData = new FormData();
+                formData.append('file', file);
 
-                if (uploadError) throw uploadError;
+                const response = await fetch('/api/news/upload', {
+                    method: 'POST',
+                    body: formData
+                });
 
-                const {
-                    data: { publicUrl },
-                } = supabase.storage.from("news").getPublicUrl(filePath);
+                if (!response.ok) {
+                    const errorData = await response.json();
+                    throw new Error(errorData.error || 'Error en el servidor');
+                }
+
+                const data = await response.json();
+                const publicUrl = data.url;
 
                 hiddenUrlInput.value = publicUrl;
                 previewImg.src = publicUrl;
                 previewContainer?.classList.remove("hidden");
                 (window as any).showToast(
                     "Éxito",
-                    "Imagen subida correctamente",
+                    "Imagen subida a Cloudinary correctamente",
                     "success",
                 );
             } catch (error) {
