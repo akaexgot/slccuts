@@ -33,27 +33,44 @@ const displayImages =
                 style="-ms-overflow-style: none; scrollbar-width: none;"
             >
                 {
-                    displayImages.map((img: any, index: number) => (
-                        <div class="snap-center shrink-0 w-[80vw] md:w-[400px] h-[300px] md:h-[400px] relative overflow-hidden rounded-lg shadow-md aspect-square filter grayscale hover:grayscale-0 transition-all duration-500 cursor-pointer group">
-                    <Image
-                        src={img.image_url}
-                        alt={img.alt_text || "Galería SLC CUTS"}
-                        title={img.description || ""}
-                        width={600}
-                        height={600}
-                        class="w-full h-full object-cover transform hover:scale-110 transition-transform duration-700"
-                        loading="lazy"
-                    />
-                    {img.description && (
-                        <div class="absolute bottom-0 left-0 right-0 bg-black/60 p-4 translate-y-full group-hover:translate-y-0 transition-transform duration-300">
-                            <p class="text-white text-sm font-medium truncate">
-                                {img.description}
-                            </p>
-                        </div>
-                    )}
-                </div>
-            ))
-        }
+                    displayImages.map((img: any, index: number) => {
+                        const isVideo = img.image_url.match(/\.(mp4|webm|mov|ogg)$/i) || img.image_url.includes('/video/');
+                        
+                        return (
+                            <div class="snap-center shrink-0 w-[80vw] md:w-[400px] h-[300px] md:h-[400px] relative overflow-hidden rounded-lg shadow-md aspect-square filter grayscale hover:grayscale-0 transition-all duration-500 cursor-pointer group">
+                                {isVideo ? (
+                                    <video
+                                        src={img.image_url}
+                                        class="w-full h-full object-cover transform hover:scale-110 transition-transform duration-700"
+                                        preload="metadata"
+                                        muted
+                                        controls
+                                        playsinline
+                                        poster={img.image_url.replace(/\.[^/.]+$/, ".jpg")}
+                                    />
+                                ) : (
+                                    <Image
+                                        src={img.image_url}
+                                        alt={img.alt_text || "Galería SLC CUTS"}
+                                        title={img.description || ""}
+                                        width={600}
+                                        height={600}
+                                        class="w-full h-full object-cover transform hover:scale-110 transition-transform duration-700"
+                                        loading="lazy"
+                                    />
+                                )}
+                                
+                                {img.description && (
+                                    <div class="absolute bottom-0 left-0 right-0 bg-black/60 p-4 translate-y-full group-hover:translate-y-0 transition-transform duration-300">
+                                        <p class="text-white text-sm font-medium truncate">
+                                            {img.description}
+                                        </p>
+                                    </div>
+                                )}
+                            </div>
+                        );
+                    })
+                }
     </div>
 
     <!-- Gradient Fade for scroll indication (optional aesthetic) -->
