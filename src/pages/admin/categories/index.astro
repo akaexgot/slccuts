@@ -2,7 +2,10 @@
 export const prerender = false;
 
 import AdminLayout from "../../../layouts/AdminLayout.astro";
-import { supabase } from "../../../lib/supabase";
+import { getSupabasePageClient } from "../../../lib/supabase";
+
+// Initialize authenticated Supabase client for the server side
+const supabase = await getSupabasePageClient(Astro.cookies);
 
 // Fetch all categories
 const { data: categories } = await supabase
@@ -20,20 +23,25 @@ if (Astro.request.method === "POST") {
     const imageUrl = formData.get("imageUrl")?.toString();
 
     if (action === "create" && name && slug) {
-        await supabase
+        const { error } = await supabase
             .from("categories")
             .insert({ name, slug, image_url: imageUrl });
+        
+        if (error) console.error("Error creating category:", error.message);
     }
 
     if (action === "update" && categoryId && name && slug) {
-        await supabase
+        const { error } = await supabase
             .from("categories")
             .update({ name, slug, image_url: imageUrl })
             .eq("id", categoryId);
+        
+        if (error) console.error("Error updating category:", error.message);
     }
 
     if (action === "delete" && categoryId) {
-        await supabase.from("categories").delete().eq("id", categoryId);
+        const { error } = await supabase.from("categories").delete().eq("id", categoryId);
+        if (error) console.error("Error deleting category:", error.message);
     }
 
     return Astro.redirect("/admin/categories");

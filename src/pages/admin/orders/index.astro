@@ -1,11 +1,14 @@
 ---
 import AdminLayout from "../../../layouts/AdminLayout.astro";
-import { supabase } from "../../../lib/supabase";
+import { getSupabasePageClient } from "../../../lib/supabase";
 import EmailModal from "../../../components/admin/EmailModal";
 import StatusSelect from "../../../components/admin/StatusSelect";
 import ShippingModal from "../../../components/admin/ShippingModal";
 
 export const prerender = false;
+
+// Initialize authenticated Supabase client
+const supabase = await getSupabasePageClient(Astro.cookies);
 
 // Get current filter from URL
 const currentStatus = Astro.url.searchParams.get("status") || "all";

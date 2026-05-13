@@ -1,7 +1,10 @@
 ---
 export const prerender = false;
 import AdminLayout from "../../layouts/AdminLayout.astro";
-import { supabase } from "../../lib/supabase";
+import { getSupabasePageClient } from "../../lib/supabase";
+
+// Get authenticated client for server-side fetching
+const supabase = await getSupabasePageClient(Astro.cookies);
 
 // Fetch existing promo codes
 const { data: promoCodes, error } = await supabase

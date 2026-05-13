@@ -2,7 +2,10 @@
 export const prerender = false;
 
 import AdminLayout from "../../layouts/AdminLayout.astro";
-import { supabase } from "../../lib/supabase";
+import { getSupabasePageClient } from "../../lib/supabase";
+
+// Initialize authenticated Supabase client for dashboard statistics
+const supabase = await getSupabasePageClient(Astro.cookies);
 
 // Fetch counts for dashboard
 const { count: productCount } = await supabase
